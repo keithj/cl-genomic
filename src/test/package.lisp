@@ -1,4 +1,4 @@
 
 (defpackage :cl-bio-test
-  (:use #:common-lisp #:bio-sequence #:lisp-unit)
+  (:use #:common-lisp #:bio-sequence #:fiveam)
   (:documentation "bio-sequence tests."))

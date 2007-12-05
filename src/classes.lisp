@@ -6,70 +6,83 @@
          :initarg :name
          :reader name-of
          :documentation "The alphabet name.")
-   (symbols :initform ""
-            :initarg :symbols
-            :reader symbols-of
-            :documentation "The set of member symbols of the
+   (tokens :initform ""
+           :initarg :tokens
+           :reader tokens-of
+           :documentation "The set of member tokens of the
 alphabet."))
-  (:documentation "Alphabets are sets of symbols."))
+  (:documentation "Alphabets are sets of tokens."))
 
 (defvar *dna*
   (make-instance 'alphabet
                  :name 'dna
-                 :symbols (make-array 4
-                                      :element-type 'base-string
-                                      :initial-contents "acgt")))
-
+                 :tokens (make-array 4
+                                     :element-type 'base-string
+                                     :initial-contents "acgt")))
 (defvar *rna*
   (make-instance 'alphabet
                  :name 'rna
-                 :symbols (make-array 4
-                                      :element-type 'base-string
-                                      :initial-contents "acgu")))
-
+                 :tokens (make-array 4
+                                     :element-type 'base-string
+                                     :initial-contents "acgu")))
 (defvar *iupac-dna*
-   (make-instance 'alphabet
+  (make-instance 'alphabet
                  :name 'iupac-dna
-                 :symbols
+                 :tokens
                  (make-array 15 :element-type 'base-string
                              :initial-contents "acgtrykmswbdhvn")))
-
 (defvar *iupac-rna*
-   (make-instance 'alphabet
+  (make-instance 'alphabet
                  :name 'iupac-rna
-                 :symbols
+                 :tokens
                  (make-array 15 :element-type 'base-string
                              :initial-contents "acgurykmswbdhvn")))
 
 (defclass bio-sequence ()
   ((alphabet :initarg :alphabet
              :accessor alphabet-of
-             :documentation "The alphabet whose symbols comprise the
+             :documentation "The alphabet whose tokens comprise the
 sequence.")
-   (symbol-seq :initform nil
-               :initarg :symbol-seq
-               :accessor symbol-seq-of
-               :documentation "The residue symbols of the
-sequence."))
+   (token-seq :initform nil
+              :initarg :token-seq
+              :accessor token-seq-of
+              :documentation "The residue tokens of the sequence."))
   (:documentation "A biological sequence comprising an ordered string
-of symbols from a specified alphabet."))
+of tokens from a specified alphabet."))
 
 (defclass encoded-mixin ()
   ((encoder :initarg :encoder
             :reader encoder-of
             :documentation "A function that accepts a single argument
-and returns its encoded sysmcol value.")
+and returns its encoded sybmcol value.")
    (decoder :initarg :decoder
             :reader decoder-of
             :documentation "A function that accepts a single encoded
-symbol datum argument and returns the decoded value."))
-  (:documentation "The encoding used to convert an alphabet's
-symbols."))
+token datum argument and returns the decoded value."))
+  (:documentation "A mixin with support for bio-sequences where the
+residue tokens are encoded from characters to a more compact binary
+format."))
+
+(defclass quality-mixin ()
+  ((metric :initform nil
+           :initarg :metric
+           :reader metric-of
+           :documentation "A description of the quality metric
+measured by the quality values. For example, p-value, Phred score or
+Illumina score. This should be changed to a controlled vocabulary or
+enumeration.")
+   (quality :initform nil
+            :initarg :quality
+            :accessor quality-of
+            :documentation "The array of quality values which should
+be the same length as the array of residue tokens."))
+  (:documentation "A mixin with support for bio-sequences that have a
+numeric quality value for each residue."))
 
 (defclass nucleic-acid-sequence (bio-sequence)
   ()
   (:documentation "A nucleic acid sequence comprising an ordered
-string of symbols from a specified alphabet."))
+string of tokens from a specified alphabet."))
 
 (defclass dna-sequence (nucleic-acid-sequence)
   ()
@@ -105,8 +118,8 @@ and G."))
             :allocation :class)
    (decoder :initform #'decode-rna-2bit
             :allocation :class))
-  (:documentation "An RNA sequence comprising unambiguous bases U, C, A
-and G."))
+  (:documentation "An RNA sequence comprising unambiguous bases U, C,
+A and G."))
 
 (defclass iupac-rna-sequence (rna-sequence encoded-mixin)
   ((alphabet :initform *iupac-rna*
@@ -117,3 +130,9 @@ and G."))
             :allocation :class))
   (:documentation "An RNA sequence comprising IUPAC ambiguity
 bases."))
+
+(defclass simple-dna-quality-sequence (simple-dna-sequence quality-mixin)
+  ())
+
+(defclass iupac-dna-quality-sequence (iupac-dna-sequence quality-mixin)
+  ())

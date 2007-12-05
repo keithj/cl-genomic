@@ -1,6 +1,6 @@
 
 (defpackage bio-sequence
-  (:use #:common-lisp #:cl-gp-utilities)
+  (:use #:common-lisp #:cl-io-utilities #:cl-gp-utilities)
   (:export
    ;; Specials
    #:*dna*
@@ -10,6 +10,14 @@
    ;; Functions
    #:make-dna-seq
    #:make-rna-seq
+   #:make-dna-quality-seq
+   #:phred-quality
+   #:encode-phred-quality
+   #:decode-phred-quality
+   #:illumina-quality
+   #:encode-illumina-quality
+   #:decode-illumina-quality
+   #:illumina-to-phred-quality
    ;; Classes
    #:alphabet
    #:bio-sequence
@@ -20,12 +28,15 @@
    #:simple-rna-sequence
    #:iupac-dna-sequence
    #:iupac-rna-sequence
+   #:simple-dna-quality-sequence
+   #:iupac-dna-quality-sequence
    ;; Generic functions
    #:name-of
-   #:symbols-of
+   #:tokens-of
    #:alphabet-of
    #:residue-of
    #:length-of
    #:copy-sequence
    #:to-string
-   #:from-string))
+   #:metric-of
+   #:quality-of))
