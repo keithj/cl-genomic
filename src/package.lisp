@@ -1,6 +1,6 @@
 
 (defpackage bio-sequence
-  (:use #:common-lisp #:cl-io-utilities #:cl-gp-utilities)
+  (:use #:common-lisp #:cl-io-utilities #:cl-gp-utilities #:split-sequence)
   (:export
    ;; Specials
    #:*dna*

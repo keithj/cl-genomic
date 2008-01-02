@@ -121,4 +121,3 @@
       (is (string= (subseq residues n) (to-string seq n))))
     (dotimes (n 4)
       (is (string= (subseq residues 0 n) (to-string seq 0 n))))))
-

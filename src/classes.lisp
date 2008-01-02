@@ -1,7 +1,8 @@
 
 (in-package :bio-sequence)
 
-(defclass alphabet ()
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defclass alphabet ()
   ((name :initform nil
          :initarg :name
          :reader name-of
@@ -11,32 +12,34 @@
            :reader tokens-of
            :documentation "The set of member tokens of the
 alphabet."))
-  (:documentation "Alphabets are sets of tokens."))
+    (:documentation "Alphabets are sets of tokens."))
 
-(defvar *dna*
-  (make-instance 'alphabet
-                 :name 'dna
-                 :tokens (make-array 4
-                                     :element-type 'base-string
-                                     :initial-contents "acgt")))
-(defvar *rna*
-  (make-instance 'alphabet
-                 :name 'rna
-                 :tokens (make-array 4
-                                     :element-type 'base-string
-                                     :initial-contents "acgu")))
-(defvar *iupac-dna*
-  (make-instance 'alphabet
-                 :name 'iupac-dna
-                 :tokens
-                 (make-array 15 :element-type 'base-string
-                             :initial-contents "acgtrykmswbdhvn")))
-(defvar *iupac-rna*
-  (make-instance 'alphabet
-                 :name 'iupac-rna
-                 :tokens
-                 (make-array 15 :element-type 'base-string
-                             :initial-contents "acgurykmswbdhvn")))
+  (defvar *dna*
+    (make-instance 'alphabet
+                   :name 'dna
+                   :tokens (make-array 4
+                                       :element-type 'base-char
+                                       :initial-contents "acgt")))
+  (defvar *rna*
+    (make-instance 'alphabet
+                   :name 'rna
+                   :tokens (make-array 4
+                                       :element-type 'base-char
+                                       :initial-contents "acgu")))
+  (defvar *iupac-dna*
+    (make-instance 'alphabet
+                   :name 'iupac-dna
+                   :tokens
+                   (make-array 15
+                               :element-type 'base-char
+                               :initial-contents "acgtrykmswbdhvn")))
+  (defvar *iupac-rna*
+    (make-instance 'alphabet
+                   :name 'iupac-rna
+                   :tokens
+                   (make-array 15
+                               :element-type 'base-char
+                               :initial-contents "acgurykmswbdhvn"))))
 
 (defclass bio-sequence ()
   ((alphabet :initarg :alphabet
