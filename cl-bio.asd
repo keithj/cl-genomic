@@ -13,7 +13,8 @@
     :author "Keith James"
     :version "0.1"
     :licence "GPL"
-    :depends-on (:cl-gp-utilities :cl-io-utilities :split-sequence)
+    :depends-on (:cl-gp-utilities :cl-io-utilities :split-sequence
+                                  :cl-ppcre :puri)
     :components ((:module :cl-bio
                           :serial t
                           :pathname "src/"
@@ -26,7 +27,8 @@
                            (:file "bio-sequence")
                            (:file "bio-sequence-io")
                            (:file "fasta")
-                           (:file "fastq")))))
+                           (:file "fastq")
+                           (:file "gff3")))))
 
 
 (in-package #:asdf)

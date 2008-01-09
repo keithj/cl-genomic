@@ -1,7 +1,8 @@
 
 (in-package :bio-sequence)
 
-;; bio-sequence generics
+
+;;; bio-sequence generics
 
 (defgeneric copy-sequence (bio-sequence)
   (:documentation "Returns a copy of BIO-SEQUENCE."))
@@ -9,28 +10,31 @@
 (defgeneric length-of (bio-sequence)
   (:documentation "Returns the length of BIO-SEQUENCE."))
 
-(defgeneric residue-of (bio-sequence subscript)
-  (:documentation "Returns the residue at index SUBSCRIPT of
-BIO-SEQUENCE."))
+(defgeneric residue-of (bio-sequence index)
+  (:documentation "Returns the residue at INDEX of BIO-SEQUENCE."))
 
-(defgeneric (setf residue-of) (value bio-sequence subscript)
-  (:documentation "Sets the residue at index SUBSCRIPT of BIO-SEQUENCE
-to VALUE."))
+(defgeneric (setf residue-of) (value bio-sequence index)
+  (:documentation "Sets the residue at INDEX of BIO-SEQUENCE to
+VALUE."))
 
 (defgeneric to-string (bio-sequence &optional start length)
   (:documentation "Returns the string representing BIO-SEQUENCE,
 starting at the first residue, or index START, and continuing to the
 last residue, or for LENGTH residues."))
 
-(defgeneric from-string (bio-sequence string)
-  (:documentation "."))
+
+;;; bio-sequence io generics
+
+(defgeneric read-fasta (input &optional callback callback-args)
+  (:documentation "Reads a Fasta record from INPUT, optionally
+applying function CALLBACK to the result."))
+
+(defgeneric read-fastq (input &optional callback callback-args)
+  (:documentation "Reads a Fastq record from INPUT, optionally
+applying function CALLBACK to the result."))
 
 
-;; bio-sequence io generics
-
-
-
-;; bio-graph generics
+;;; bio-graph generics
 
 (defgeneric lookup-vertex (identity graph)
   (:documentation "Returns a vertex from GRAPH given its unique

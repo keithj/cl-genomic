@@ -23,8 +23,8 @@
                finally (when line
                          (push-line obj line)))
             (cond ((zerop (length seq-cache))
-                   (error 'malformed-record-error
-                          :text "incomplete Fasta record"))
+                   (error 'malformed-record-error :text
+                          "incomplete Fasta record"))
                   (callback-supplied-p
                    (apply callback
                           (make-dna-sexp name
@@ -56,8 +56,8 @@
                finally (when line
                          (push-line obj line)))
             (cond ((zerop (length seq-cache))
-                   (error 'malformed-record-error
-                          :text "incomplete Fasta record"))
+                   (error 'malformed-record-error :text
+                          "incomplete Fasta record"))
                   (callback-supplied-p
                    (apply callback
                           (make-dna-sexp name
@@ -91,8 +91,7 @@ where the name, description, or both are empty strings."
                          :displaced-index-offset index)
          (make-string 0 :element-type str-elt-type))))))
 
-
-(defun write-fasta-sexp (sexp &optional output-stream)
+(defun write-dna-sexp-fasta (sexp &optional output-stream)
   (if sexp
       (let* ((content (cdr sexp))
              (description (assocdr :description content)))

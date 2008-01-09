@@ -3,16 +3,28 @@
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defclass alphabet ()
-  ((name :initform nil
-         :initarg :name
-         :reader name-of
-         :documentation "The alphabet name.")
-   (tokens :initform ""
-           :initarg :tokens
-           :reader tokens-of
-           :documentation "The set of member tokens of the
+    ((name :initform nil
+           :initarg :name
+           :reader name-of
+           :documentation "The alphabet name.")
+     (tokens :initform ""
+             :initarg :tokens
+             :reader tokens-of
+             :documentation "The set of member tokens of the
 alphabet."))
     (:documentation "Alphabets are sets of tokens."))
+
+  (defclass sequence-strand ()
+    ((name :initarg :name
+           :reader name-of
+           :documentation "The strand name.")
+     (token :initarg :token
+            :reader token-of
+          :documentation "The token representing the strand.")
+     (number :initarg :number
+             :reader number-of
+             :documentation "The number representing the strand."))
+    (:documentation "The strand of a nucleotide sequence."))
 
   (defvar *dna*
     (make-instance 'alphabet
@@ -39,9 +51,51 @@ alphabet."))
                    :tokens
                    (make-array 15
                                :element-type 'base-char
-                               :initial-contents "acgurykmswbdhvn"))))
+                               :initial-contents "acgurykmswbdhvn")))
 
-(defclass bio-sequence ()
+  (defvar *forward-strand*
+    (make-instance 'sequence-strand
+                   :name "forward"
+                   :token #\+
+                   :number 1))
+
+  (defvar *reverse-strand*
+    (make-instance 'sequence-strand
+                   :name "reverse"
+                   :token #\-
+                   :number -1))
+
+  (defvar *without-strand*
+    (make-instance 'sequence-strand
+                   :name "unstranded"
+                   :token #\.
+                   :number 0))
+  (defvar *unknown-strand*
+    (make-instance 'sequence-strand
+                   :name "unknown"
+                   :token #\?
+                   :number nil)))
+
+(defclass located-mixin ()
+  ((location :initform nil
+             :initarg :location
+             :accessor location-of)))
+
+(defclass sequence-location ()
+  ((bio-sequence :initform nil
+                 :initarg :bio-sequence
+                 :reader bio-sequence-of)
+   (start :initform nil
+          :initarg :start
+          :reader start-of)
+   (end :initform nil
+        :initarg :end
+        :reader end-of)
+   (strand :initform nil
+           :initarg :strang
+           :reader strand-of)))
+
+(defclass bio-sequence (ontology-instance-mixin located-mixin)
   ((alphabet :initarg :alphabet
              :accessor alphabet-of
              :documentation "The alphabet whose tokens comprise the

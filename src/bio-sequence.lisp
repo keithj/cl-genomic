@@ -57,8 +57,8 @@ type TOKEN-SEQ-TYPE in the token-seq slot of SEQ."
                 (type simple-base-string ,dest)
                 (type array-index ,source-end ,dest-start)
                 (type function ,decoder))
-       (gpu:copy-array ,token-seq ,start ,source-end
-                       ,dest ,dest-start ,decoder)
+       (copy-array ,token-seq ,start ,source-end
+                   ,dest ,dest-start ,decoder)
        ,dest)))
 
 (defun encode-simple-seq (str encoder)
@@ -70,8 +70,8 @@ array of element type (unsigned-byte 2)."
   (let ((token-seq (make-array (length str)
                                 :element-type '(unsigned-byte 2))))
     (declare (type (encoded-tokens 2) token-seq))
-    (gpu:copy-array str 0 (1- (length str))
-                    token-seq 0 encoder)
+    (copy-array str 0 (1- (length str))
+                token-seq 0 encoder)
     token-seq))
 
 (defun encode-iupac-seq (str encoder)
@@ -83,15 +83,16 @@ array of element type (unsigned-byte 4)."
   (let ((token-seq (make-array (length str)
                                 :element-type '(unsigned-byte 4))))
     (declare (type (encoded-tokens 4) token-seq))
-    (gpu:copy-array str 0 (1- (length str))
-                    token-seq 0 encoder)
+    (copy-array str 0 (1- (length str))
+                token-seq 0 encoder)
     token-seq))
 
 (defun decode-quality (quality decoder)
+  "Decodes the array QUALITY into a new array using function DECODER."
   (let ((quality-seq (make-array (length quality)
                                  :element-type '(unsigned-byte 8))))
-    (gpu:copy-array quality 0 (1- (length quality))
-                    quality-seq 0 decoder)
+    (copy-array quality 0 (1- (length quality))
+                quality-seq 0 decoder)
     quality-seq))
 
 (defun make-simple-seq (class str encoder &rest initargs)
@@ -244,6 +245,13 @@ quality, the default) or :ILLUMINA (Illumina quality)."
                                :element-type
                                (array-element-type token-seq)
                                :initial-contents token-seq))))
+
+(defmethod print-object ((obj alphabet) stream)
+  (format stream "<ALPHABET ~a>" (slot-value obj 'name)))
+
+(defmethod print-object ((obj sequence-strand) stream)
+  (with-slots (name token number) obj
+      (format stream "<SEQUENCE-STRAND ~a/~a/~a>" name token number)))
 
 (defmethod print-object ((obj simple-dna-sequence) stream)
   (print-seq-aux "SIMPLE-DNA-SEQUENCE" obj stream))

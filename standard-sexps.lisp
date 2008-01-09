@@ -14,3 +14,7 @@
                         (:token-seq . "tgctagtcattcggatgcat"))
               (:quality . "<<<<<<<<<<<<<<<<<<<<"))
 
+(:seq-location (:start . 1)
+               (:end . 10)
+               (:strand . 1))
+
