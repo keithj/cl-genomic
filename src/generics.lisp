@@ -25,13 +25,11 @@ last residue, or for LENGTH residues."))
 
 ;;; bio-sequence io generics
 
-(defgeneric read-fasta (input &optional callback callback-args)
-  (:documentation "Reads a Fasta record from INPUT, optionally
-applying function CALLBACK to the result."))
-
-(defgeneric read-fastq (input &optional callback callback-args)
-  (:documentation "Reads a Fastq record from INPUT, optionally
-applying function CALLBACK to the result."))
+(defgeneric read-bio-sequence (input alphabet format &optional callback
+                               &rest callback-args)
+  (:documentation "Reads a sequence record of ALPHABET from INPUT
+which has FORMAT, optionally applying function CALLBACK to the
+result."))
 
 
 ;;; bio-graph generics
@@ -44,21 +42,21 @@ IDENTITY."))
   (:documentation "Returns T if VERTEX is present in GRAPH, or NIL
 otherwise."))
 
-(defgeneric out-edges-of (vertex graph)
+(defgeneric out-edges-of (vertex graph &key filter-fn)
   (:documentation "Returns a list of the out edges of VERTEX in
-GRAPH."))
+GRAPH, minus those that match FILTER-FN."))
 
-(defgeneric in-edges-of (vertex graph)
+(defgeneric in-edges-of (vertex graph &key filter-fn)
   (:documentation "Returns a list of the in edges of VERTEX in
-GRAPH."))
+GRAPH, minus those that match FILTER-FN."))
 
-(defgeneric predecessors-of (vertex graph)
+(defgeneric predecessors-of (vertex graph &key filter-fn)
   (:documentation "Returns a list of the predecessor vertices of
-VERTEX in GRAPH."))
+VERTEX in GRAPH, minus those that match FILTER-FN."))
 
-(defgeneric successors-of (vertex graph)
+(defgeneric successors-of (vertex graph &key filter-fn)
   (:documentation "Returns a list of the successor vertices of VERTEX
-in GRAPH."))
+in GRAPH, minus those that match FILTER-FN."))
 
 (defgeneric add-vertex (vertex graph)
   (:documentation "Adds VERTEX to GRAPH. Throws an error if VERTEX is
@@ -81,3 +79,10 @@ already exists."))
   (:documentation "Removes EDGE from GRAPH. Throws an error if EDGE is
 not present in GRAPH."))
 
+(defgeneric ancestors-of (vertex graph &key filter-fn)
+  (:documentation "Returns a list of ancestors of VERTEX in GRAPH,
+minus those that match FILTER-FN."))
+
+(defgeneric descendants-of (vertex graph &key filter-fn)
+  (:documentation "Returns a list of descendants of VERTEX in GRAPH,
+minus those that match FILTER-FN."))

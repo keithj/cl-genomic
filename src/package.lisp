@@ -8,9 +8,9 @@
    #:*iupac-dna*
    #:*iupac-rna*
    ;; Functions
-   #:make-dna-seq
-   #:make-rna-seq
-   #:make-dna-quality-seq
+   #:make-seq
+   #:make-quality-seq
+   #:make-seq-fasta
    #:phred-quality
    #:encode-phred-quality
    #:decode-phred-quality
@@ -39,4 +39,5 @@
    #:copy-sequence
    #:to-string
    #:metric-of
-   #:quality-of))
+   #:quality-of
+   #:read-bio-sequence))

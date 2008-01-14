@@ -1,41 +1,49 @@
 
 (in-package :bio-sequence)
 
-(defmethod read-fastq ((obj byte-line-buffer) &optional
-                       (callback nil callback-supplied-p)
-                       &rest callback-args)
+(defmethod read-bio-sequence ((line-buffer byte-line-buffer) alphabet
+                              (format (eql :fastq))
+                              &optional (callback nil callback-supplied-p)
+                              &rest callback-args)
   (let ((seq-header (loop
-                       as line = (pull-line obj)
+                       as line = (pull-line line-buffer)
                        while line
                        when (starts-with-byte-p line (char-code #\@))
                        return line)))
     (if seq-header
-        (let ((seq (pull-line obj))
-              (quality-header (pull-line obj))
-              (quality (pull-line obj)))
+        (let ((seq (pull-line line-buffer))
+              (quality-header (pull-line line-buffer))
+              (quality (pull-line line-buffer)))
           (cond ((and seq quality-header quality
                       (starts-with-byte-p quality-header (char-code #\+))
                       callback-supplied-p)
                  (apply callback
-                        (make-quality-sexp-fastq seq-header seq quality)
+                        (make-sexp-fastq seq-header
+                                         seq alphabet quality)
                         callback-args))
                 ((and seq quality-header quality
                       (starts-with-byte-p quality-header (char-code #\+)))
-                 (make-quality-sexp-fastq seq-header seq quality))
+                 (make-sexp-fastq seq-header
+                                  seq alphabet quality))
                 (t
                  (error 'malformed-record-error :text
                         "incomplete Fastq record"))))
       nil)))
 
-(defun make-quality-sexp-fastq (seq-header seq quality)
-  "Creates a canonical quality sexp from the raw byte arrays of the
-header SEQ-HEADER (which must include the '@' character), the sequence
-SEQ and base quality QUALITY."
-  (make-quality-sexp (make-dna-sexp (make-sb-string seq-header 1)
-                                    (make-sb-string seq))
-                     (make-sb-string quality)))
+(defun make-quality-seq-fastq (sexp metric)
+  "Callback which accepts a standard quality SEXP and creates a new
+dna-quality-sequence with quality METRIC."
+  (if sexp
+      (let ((content (cdr sexp)))
+        (make-quality-seq :alphabet (assocdr :alphabet content)
+                          :ambiguity (assocdr :ambiguity content)
+                          :token-seq (assocdr :token-seq content)
+                          :quality (assocdr :quality content)
+                          :name (assocdr :name content)
+                          :metric metric))
+    nil))
 
-(defun write-qual-sexp-fastq (sexp &optional output-stream)
+(defun write-sexp-fastq (sexp &optional output-stream)
   "Callback which accepts a canonical quality SEXP and writes it to
 OUTPUT-STREAM as a Fastq format record. OUTPUT-STREAM defaults to
 *standard-output*."
@@ -48,17 +56,6 @@ OUTPUT-STREAM as a Fastq format record. OUTPUT-STREAM defaults to
         (write-line "+" output-stream)
         (write-line (assocdr :quality qual) output-stream)
         t)
-    nil))
-
-(defun make-qual-seq-from-sexp (sexp metric)
-  "Callback which accepts a standard quality SEXP and creates a new
-dna-quality-sequence with quality METRIC."
-  (if sexp
-      (let ((content (cdr sexp)))
-        (make-dna-quality-seq (assocdr :token-seq content)
-                              (assocdr :quality content)
-                              :ambiguity (assocdr :ambiguity content)
-                              :metric metric))
     nil))
 
 (defun split-fastq-file (filename chunk-size)
@@ -80,8 +77,19 @@ new file of pathname CHUNK-PNAME."
   (with-open-file (out chunk-pname :direction :output
                    :if-exists :error
                    :element-type 'base-char)
-    (do ((fq (read-fastq line-buffer #'write-qual-sexp-fastq out)
-             (read-fastq line-buffer #'write-qual-sexp-fastq out))
+    (do ((fq (read-bio-sequence line-buffer :dna :fastq
+                                #'write-sexp-fastq out)
+             (read-bio-sequence line-buffer :dna :fastq
+                                #'write-sexp-fastq out))
          (count 1 (1+ count)))
         ((or (null fq)
              (= count n)) count))))
+
+(defun make-sexp-fastq (seq-header seq alphabet quality)
+  "Creates a canonical quality sexp from the raw byte arrays of the
+header SEQ-HEADER (which must include the '@' character), the sequence
+SEQ and base quality QUALITY."
+  (make-quality-sexp (make-seq-sexp (make-sb-string seq-header 1)
+                                    (make-sb-string seq))
+                     alphabet
+                     (make-sb-string quality)))

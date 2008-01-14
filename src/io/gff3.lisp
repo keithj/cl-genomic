@@ -28,21 +28,21 @@
 
 (defvar *gff3-sequence-region-regex*
   (cl-ppcre:create-scanner
-   "^##sequence-region\\s+(\\S+)\\s+(\\d+)\s+(\\d+)"))
+   "^##sequence-region\\s+(\\S+)\\s+(\\d+)\\s+(\\d+)"))
 (defvar *gff3-ontology-regex*
   (cl-ppcre:create-scanner "^##\\w+ontology\\s+(\\S+)"))
 
-(defparameter *gff3-field-tags*
+(defvar *parse-fn-symbols*
+ '(parse-seqid parse-source parse-type
+   parse-sequence-coord parse-sequence-coord
+   parse-score parse-strand parse-phase
+   parse-attributes)
+  "GFF field parser function symcols, one for each of the 9 fields.")
+(defvar *gff3-field-tags*
   '(:seqid :source :type :start :end
     :score :strand :phase :attributes)
   "GFF3 field keyword tags, one for each of the 9 fields.")
-(defparameter *parse-fns*
-  (list #'parse-seqid #'parse-source #'parse-type
-        #'parse-sequence-coord #'parse-sequence-coord
-        #'parse-score #'parse-strand #'parse-phase #'parse-attributes)
-  "GFF3 parser functions, one for each of the 9 fields.")
-
-
+  
 ;; extra validation
 
 ;; CDS features must have a phase
@@ -57,30 +57,66 @@
 
 ;; ignore ontology directives for now
 
-;; read-gff3 -- should be a version 3 directive, bail out if not
-;; read-gff3 -- if a sequence region directive, put in hashtable
-;;           -- if a record, hash it by ID, checking for consistency with
-;;              previous records for that ID
-;;           -- if an end-forward-refs, close all open features
+;; unsolved issues:
+;;
+;; where in a vertex object do we put annotation?
+;; 
 
-;; partition features into those whose source matches a sequence
-;; region and those whose source doesn't
+;; read a record; add it to the graph as a vertex; look for its
+;; parent; if the parent is present, add a part_of relation; if the
+;; parent is absent, defer relation by storing in a table with the
+;; parent ID as key and child ID as value.
+
+
+;; sequence-region is a bio-sequence (vertex)
+;; gene is a bio-sequence (vertex) part_of sequence-region
+;; mRNA is a bio-sequence (vertex) part_of gene
+
+;; Make ontology-relationship edges, these have terms as predicates
+;; predicate part_of
+;; predicate derived_from
 
 
 (defun wibble-gff3 (filename)
   (with-open-file (stream filename
                    :direction :input
                    :element-type '(unsigned-byte 8))
-    (let ((line-buffer (make-line-buffer stream)))
-      (do ((r (read-gff3 line-buffer)
-              (read-gff3 line-buffer))
-           (table (make-hash-table :test #'equal)))
-          ((null r) table)
-        (when (eql :record (car r))
-          (let* ((attrs (assocdr :attributes (cdr r)))
-                 (id (assocdr "ID" attrs :test #'string=)))
-            (write id :pretty nil)))))))
-        
+    (let ((line-buffer (make-line-buffer stream))
+          (graph (make-instance 'directed-acyclic-graph)))
+      (unless (equalp (cons :gff-version 3)
+                      (read-gff3 line-buffer))
+        (error "does not appear to be GFF3 format~%"))
+      (do ((x (read-gff3 line-buffer) (read-gff3 line-buffer)))
+          ((null x) graph)
+        (let ((content (cdr x)))
+          (ecase (car x)
+            (:sequence-region
+             (add-vertex (make-instance 'dna-sequence
+                                        :identity
+                                        (assocdr :seqid content)
+                                        :length
+                                        (- (assocdr :end content)
+                                           (assocdr :start content)))
+                         graph))
+            (:record
+             (let ((attrs (assocdr :attributes content)))
+               (add-vertex (make-instance 'dna-sequence
+                                          :identity
+                                          (assocdr "ID" attrs :test #'equal))
+                           graph)))))))))
+
+
+
+(defun add-or-merge (record graph)
+  ;; does a vertex with this ID exist?
+  ;; options: add / merge / error
+  )
+
+;; The situation where data for a graph vertex is either split or
+;; partially duplicated may occur in many contexts. We need a way to
+;; handle this gracefully, especially where we end up trying to put
+;; data with the same identity into the graph several times.
+
 
 
 
@@ -145,21 +181,29 @@ expected."
 (defun parse-sequence-region (str)
   "Returns a list containing a seqid string, an integer sequence start
 coordinate and an integer sequence end coordinate parsed from STR."
-  (cl-ppcre:register-groups-bind ((#'parse-seqid seqid)
-                                  (#'parse-sequence-coord start)
-                                  (#'parse-sequence-coord end))
-      (*gff3-sequence-region-regex* str)
+  (multiple-value-bind (seqid start end)
+      (cl-ppcre:register-groups-bind (x y z)
+          (*gff3-sequence-region-regex* str)
+        (values (parse-seqid x)
+                (parse-sequence-coord y)
+                (parse-sequence-coord z)))
+    (unless (stringp seqid)
+      (error 'malformed-record-error :text
+             (format nil "invalid seqid (~a) in sequence-region directive (~a)"
+                     seqid str)))
+    (unless (integerp start)
+      (error 'malformed-record-error :text
+             (format nil "invalid start (~a) in sequence-region directive (~a)"
+                     start str)))
+    (unless (integerp end)
+      (error 'malformed-record-error :text
+             (format nil "invalid end (~a) in sequence-region directive (~a)"
+                     end str)))
     (unless (<= start end)
       (error 'malformed-record-error :text
              (format nil "invalid sequence-region coordinates (~a ~a); start must be <= end"
                      start end)))
-    (list seqid start end)))
-
-(defun parse-ontology-uri (str)
-  "Returns a URI object parsed from STR."
-  (cl-ppcre:register-groups-bind (uri)
-      (*gff3-ontology-regex* str)
-    (puri:parse-uri uri)))
+    (pairlis '(:seqid :start :end) (list seqid start end))))
 
 (defun parse-gff3-record (str)
   "Returns alist of GFF record data parsed from STR."
@@ -169,10 +213,16 @@ coordinate and an integer sequence end coordinate parsed from STR."
       (error 'malformed-record-error :text
              (format nil "invalid GFF line having ~a fields instead of 9 (~a)"
                      (length field-starts) str)))
-    (let ((fields (mapcar #'(lambda (parse-fn x y)
-                              (funcall parse-fn str x y))
-                          *parse-fns* field-starts field-ends)))
+    (let ((fields (mapcar #'(lambda (fn x y)
+                              (funcall (symbol-function fn) str x y))
+                          *parse-fn-symbols* field-starts field-ends)))
       (pairlis *gff3-field-tags* fields))))
+
+(defun parse-ontology-uri (str)
+  "Returns a URI object parsed from STR."
+  (cl-ppcre:register-groups-bind (uri)
+      (*gff3-ontology-regex* str)
+    (puri:parse-uri uri)))
 
 (defun parse-seqid (str &optional (start 0) end)
   "Returns a seqid string extracted from line STR between START and

@@ -1,19 +1,21 @@
 
-;;; Glossary
-;;;
-;;; Residue token: a character symbolising a biological sequence residue
-;;; in standard nomenclature e.g. t, c, a and g for DNA.
-;;;
-;;; Encoded token: a residue token encoded in some numeric format e.g.
-;;; a 2-bit byte for DNA.
-;;;
-
 (in-package :bio-sequence)
-
-(defvar *seq-len-print-limit* 50)
 
 (deftype encoded-tokens (n)
   `(simple-array (unsigned-byte ,n) *))
+
+(defvar *sequence-class-table*
+  (pairlis '((:dna nil :default) (:rna nil :default)
+             (:dna :iupac :default) (:rna :iupac :default)
+             (:dna nil :quality)
+             (:dna :iupac :quality))
+           '(simple-dna-sequence simple-rna-sequence
+             iupac-dna-sequence iupac-rna-sequence
+             simple-dna-quality-sequence
+             iupac-dna-quality-sequence)))
+
+(defvar *sequence-print-limit* 50
+  "Maximum length of sequence to be pretty-printed.")
 
 (defmacro encode-token (value seq index token-seq-type)
   "Sets the residue token VALUE at INDEX in SEQ. The residue tokens
@@ -95,82 +97,72 @@ array of element type (unsigned-byte 4)."
                 quality-seq 0 decoder)
     quality-seq))
 
-(defun make-simple-seq (class str encoder &rest initargs)
-  "Returns a new bio-sequence of CLASS composed of the tokens in the
-simple-string STR encoded as (unsigned-byte 2) with ENCODER."
-  (apply #'make-instance class
-         :token-seq (encode-simple-seq str encoder) initargs))
+(defun select-sequence-class (alphabet ambiguity quality)
+  "Returns an appropriate sequence class for a given combination of
+ALPHABET, AMBIGUITY and QUALITY."
+  (let ((class (assocdr (list alphabet ambiguity quality)
+                        *sequence-class-table* :test #'equal)))
+    (unless class
+      (error "invalid combination (~a ~a ~a)"
+             alphabet ambiguity quality))
+    class))
 
-(defun make-iupac-seq (class str encoder &rest initargs)
-  "Returns a new bio-sequence of CLASS composed of the tokens in the
-simple-string STR encoded as (unsigned-byte 4) with ENCODER."
-  (apply #'make-instance class
-         :token-seq (encode-iupac-seq str encoder) initargs))
+(defun make-seq (&rest initargs &key (alphabet :dna) ambiguity
+                 &allow-other-keys)
+  "Convenience constructor for bio-sequences."
+  (let ((class (select-sequence-class alphabet ambiguity :default)))
+    (multiple-value-bind (args remaining-initargs)
+        (remove-args '(:alphabet :ambiguity) initargs)
+      (apply #'make-instance class remaining-initargs))))
 
-(defun make-dna-seq (str &key ambiguity)
-   "Returns a new DNA-SEQUENCE object with residues specified by
-simple-string STR. Base ambiguity may be defined with the :AMBIGUITY
-key. Accepted values for :AMBGUITY are NIL (no ambiguity, the default)
-and :IUPAC (IUPAC ambiguity)."
-   (cond ((null ambiguity)
-          (make-simple-seq 'simple-dna-sequence
-                           str #'encode-dna-2bit))
-         ((eql :iupac ambiguity)
-          (make-iupac-seq 'iupac-dna-sequence
-                          str #'encode-dna-4bit))
-         (t
-          (error "Illegal ambiguity: ~a. Expected one of ~a"
-                 ambiguity '(nil :iupac)))))
+(defun make-quality-seq (&rest initargs &key (alphabet :dna) ambiguity
+                         &allow-other-keys)
+  "Convenience constructor for bio-sequences with quality."
+  (let ((class (select-sequence-class alphabet ambiguity :quality)))
+    (multiple-value-bind (args remaining-initargs)
+        (remove-args '(:alphabet :ambiguity) initargs)
+      (apply #'make-instance class remaining-initargs))))
 
-(defun make-rna-seq (str &key ambiguity)
-   "Returns a new RNA-SEQUENCE object with residues specified by
-simple-string STR. Base ambiguity may be defined with the :AMBIGUITY
-key. Accepted values for :AMBGUITY are NIL (no ambiguity, the default)
-and :IUPAC (IUPAC ambiguity)."
-   (cond ((null ambiguity)
-          (make-simple-seq 'simple-rna-sequence
-                           str #'encode-rna-2bit))
-         ((eql :iupac ambiguity)
-          (make-iupac-seq 'iupac-rna-sequence
-                          str #'encode-rna-4bit))
-         (t
-          (error "Illegal ambiguity: ~a. Expected one of ~a"
-                 ambiguity '(nil :iupac)))))
+(defmethod initialize-instance :after ((seq simple-dna-sequence) &key)
+  (with-slots (token-seq length) seq
+    (unless (encodedp token-seq '(unsigned-byte 2))
+      (setf token-seq (encode-simple-seq token-seq #'encode-dna-2bit)))
+    (setf length (length token-seq))))
 
-(defun make-dna-quality-seq (str quality
-                             &key ambiguity (metric :phred))
-  "Returns a new DNA-SEQUENCE object with residues specified by
-simple-string STR and base quality specified by simple-string
-QUALITY. Base ambiguity may be defined with the :AMBIGUITY
-key. Accepted values for :AMBGUITY are NIL (no ambiguity, the default)
-and :IUPAC (IUPAC ambiguity). The quality metric may be defined with
-the :METRIC key. Accepted values for :METRIC are :PHRED (Phred
-quality, the default) or :ILLUMINA (Illumina quality)."
-  (let ((qual-decoder
-         (cond ((eql :phred metric)
-                #'decode-phred-quality)
-               ((eql :illumina metric)
-                #'decode-illumina-quality)
-               (t
-                (error "Illegal metric: ~a. Expected one of ~a"
-                       metric '(:phred :illumina))))))
-    (cond ((null ambiguity)
-           (make-simple-seq 'simple-dna-quality-sequence
-                            str #'encode-dna-2bit
-                            :metric metric
-                            :quality (decode-quality quality
-                                                     qual-decoder)))
-          ((eql :iupac ambiguity)
-           (make-iupac-seq 'iupac-dna-quality-sequence
-                           str #'encode-dna-4bit
-                           :metric metric
-                           :quality (decode-quality quality
-                                                    qual-decoder)))
-          (t
-           (error "Illegal ambiguity: ~a. Expected one of ~a"
-                  metric '(nil :iupac))))))
+(defmethod initialize-instance :after ((seq simple-rna-sequence) &key)
+  (with-slots (token-seq length) seq
+    (unless (encodedp token-seq '(unsigned-byte 2))
+      (setf token-seq (encode-simple-seq token-seq #'encode-rna-2bit)))
+    (setf length (length token-seq))))
 
-(defmethod length-of ((seq bio-sequence))
+(defmethod initialize-instance :after ((seq iupac-dna-sequence) &key)
+  (with-slots (token-seq length) seq
+    (unless (encodedp token-seq '(unsigned-byte 4))
+      (setf token-seq (encode-iupac-seq token-seq #'encode-dna-4bit)))
+    (setf length (length token-seq))))
+
+(defmethod initialize-instance :after ((seq iupac-rna-sequence) &key)
+  (with-slots (token-seq length) seq
+    (unless (encodedp token-seq '(unsigned-byte 4))
+      (setf token-seq (encode-iupac-seq token-seq #'encode-rna-4bit)))
+    (setf length (length token-seq))))
+
+(defmethod initialize-instance :after ((seq quality-mixin) &key)
+  (with-slots (token-seq metric quality) seq
+    (unless (= (length token-seq)
+               (length quality))
+      (error "token-seq and quality must be the same length but were (~a) and (~a) elements long"
+             (length token-seq) (length quality)))
+    (let ((decoder (cond ((eql :phred metric)
+                          #'decode-phred-quality)
+                         ((eql :illumina 
+                               #'decode-illumina-quality))
+                         (t
+                          (error "invalid metric (~a), expected one of ~a"
+                                 metric '(:phred :illumina))))))
+      (setf quality (decode-quality quality decoder)))))
+
+(defmethod length-of ((seq sequenced-mixin))
   (let ((token-seq (token-seq-of seq)))
     (length token-seq)))
 
@@ -274,15 +266,19 @@ quality, the default) or :ILLUMINA (Illumina quality)."
 (defun print-seq-aux (name obj stream)
   "Helper function for printing bio-sequence objects."
   (let ((len (length-of obj)))
-    (if (<= len *seq-len-print-limit*)
+    (if (and len (<= len *sequence-print-limit*))
         (format stream "<~a \"~a\">" name (to-string obj))
       (format stream "<~a length ~d>" name len))))
 
 (defun print-quality-seq-aux (name obj stream)
   "Helper function for printing bio-sequence objects."
   (let ((len (length-of obj)))
-    (if (<= len *seq-len-print-limit*)
+    (if (and len (<= len *sequence-print-limit*))
         (format stream "<~a ~a quality, \"~a\">"
                 name (metric-of obj) (to-string obj))
       (format stream "<~a ~a quality, length ~d>"
               name (metric-of obj) len))))
+
+(defun encodedp (token-seq element-type)
+  "Returns T if TOKEN-SEQ has elements encoded as ELEMENT-TYPE."
+  (equal element-type (array-element-type token-seq)))

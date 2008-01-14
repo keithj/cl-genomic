@@ -15,20 +15,32 @@
     :licence "GPL"
     :depends-on (:cl-gp-utilities :cl-io-utilities :split-sequence
                                   :cl-ppcre :puri)
-    :components ((:module :cl-bio
-                          :serial t
+    :components ((:module :core
                           :pathname "src/"
                           :components
                           ((:file "package")
-                           (:file "bio-sequence-encoding")
-                           (:file "classes")
-                           (:file "generics")
-                           (:file "bio-graph")
-                           (:file "bio-sequence")
-                           (:file "bio-sequence-io")
-                           (:file "fasta")
+                           (:file "bio-sequence-encoding"
+                                  :depends-on ("package"))
+                           (:file "classes"
+                                  :depends-on ("package"))
+                           (:file "generics"
+                                  :depends-on ("package"))
+                           (:file "bio-graph"
+                                  :depends-on ("package"))
+                           (:file "bio-sequence"
+                                  :depends-on ("package"
+                                               "generics"
+                                               "bio-sequence-encoding"
+                                               "classes"
+                                               "bio-graph"))
+                           (:file "bio-sequence-io")))
+                 (:module :io
+                          :pathname "src/io/"
+                          :components
+                          ((:file "fasta")
                            (:file "fastq")
-                           (:file "gff3")))))
+                           (:file "gff3"))
+                          :depends-on (:core))))
 
 
 (in-package #:asdf)
@@ -36,8 +48,9 @@
 (defmethod perform ((op test-op) (c (eql (find-system
                                           'cl-bio))))
   (operate 'load-op :cl-bio-test)
-  (funcall (intern (string :run!) (string :fiveam))
-           'cl-bio-system:testsuite))
+  (let ((*default-pathname-defaults* (component-pathname c)))
+    (funcall (intern (string :run!) (string :fiveam))
+             'cl-bio-system:testsuite)))
 
 (defmethod operation-done-p ((op test-op) (c (eql (find-system
                                                    'cl-bio))))

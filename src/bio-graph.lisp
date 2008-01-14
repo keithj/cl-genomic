@@ -43,7 +43,8 @@ vertices and directed edges."))
 ;;; Vertex and edge classes and special behaviour methods
 
 (defclass vertex ()
-  ((identity :initarg :identity
+  ((identity :initform nil
+             :initarg :identity
              :reader identity-of
              :documentation "A unique string identifying a vertex with
 particlular semantics."))
@@ -74,11 +75,11 @@ target vertex."))
 ;;; behaviour methods
 
 (defclass ontology-term (vertex)
-  ((name :initarg :name
+  ((name :initform nil
+         :initarg :name
          :reader name-of
          :documentation "The human-readable name of the term.")
-   (definition :initform nil
-               :initarg :definition
+   (definition :initarg :definition
                :reader definition-of
                :documentation "The text defining what the term
 represents." )
@@ -93,7 +94,7 @@ name.")
             :documentation "A text comment which does not affect the
 semantics of the term.")))
 
-(defclass ontology-instance-mixin (vertex)
+(defclass ontology-instance-mixin (ontology-term)
   ((ontology-class :initarg :ontology-class
                    :reader ontology-class-of
                    :documentation "The identity of an ontology term
@@ -128,12 +129,6 @@ of an ontological class."))
     (setf identity (list (identity-of source)
                          (identity-of predicate)
                          (identity-of target)))))
-
-
-;;; Methods are missing here...
-;;; traversal limited by edges with certain predicates
-
-
 
 ;;; Vertex methods
 
@@ -171,43 +166,67 @@ of an ontological class."))
 (defmethod contains-vertex-p ((identity string) (graph graph))
   (gethash identity (vertex-table-of graph)))
 
-(defmethod out-edges-of ((source vertex) (graph directed-graph))
+(defmethod out-edges-of ((source vertex) (graph directed-graph)
+                         &key filter-fn)
   (let ((source-table (source-table-of graph))
         (edge-table (edge-table-of graph))
         (source-key (identity-of source)))
-    (mapcar #'(lambda (target-key)
-                (gethash (list source-key target-key) edge-table))
-            (gethash source-key source-table))))
+    (let ((edges (mapcar #'(lambda (target-key)
+                             (gethash (list source-key target-key)
+                                      edge-table))
+                         (gethash source-key source-table))))
+      (if filter-fn
+          (delete-if filter-fn edges)
+        edges))))
 
-(defmethod out-edges-of ((identity string) (graph directed-graph))
-  (out-edges-of (lookup-vertex identity graph)))
+(defmethod out-edges-of ((identity string) (graph directed-graph)
+                         &key filter-fn)
+  (out-edges-of (lookup-vertex identity graph) graph :filter-fn filter-fn))
 
-(defmethod in-edges-of ((target vertex) (graph directed-graph))
+(defmethod in-edges-of ((target vertex) (graph directed-graph)
+                        &key filter-fn)
   (let ((target-table (target-table-of graph))
         (edge-table (edge-table-of graph))
         (target-key (identity-of target)))
-    (mapcar #'(lambda (source-key)
-                (gethash (list source-key target-key) edge-table))
-            (gethash target-key target-table))))
+    (let ((edges (mapcar #'(lambda (source-key)
+                             (gethash (list source-key target-key)
+                                      edge-table))
+                         (gethash target-key target-table))))
+      (if filter-fn
+          (delete-if filter-fn edges)
+        edges))))
 
-(defmethod in-edges-of ((identity string) (graph directed-graph))
-  (in-edges-of (lookup-vertex identity graph)))
+(defmethod in-edges-of ((identity string) (graph directed-graph)
+                        &key filter-fn)
+  (in-edges-of (lookup-vertex identity graph) graph :filter-fn filter-fn))
 
-(defmethod predecessors-of ((vertex vertex) (graph directed-graph))
-  (collect-hash-values (gethash (identity-of vertex)
+(defmethod predecessors-of ((vertex vertex) (graph directed-graph)
+                            &key filter-fn)
+  (let ((predecessors (collect-hash-values
+                       (gethash (identity-of vertex)
                                 (target-table-of graph))
-                       (vertex-table-of graph)))
+                       (vertex-table-of graph))))
+    (if filter-fn
+        (delete-if filter-fn predecessors)
+      predecessors)))
 
-(defmethod predecessors-of ((identity string) (graph directed-graph))
-  (predecessors-of (lookup-vertex identity graph)))
+(defmethod predecessors-of ((identity string) (graph directed-graph)
+                            &key filter-fn)
+  (predecessors-of (lookup-vertex identity graph) graph :filter-fn filter-fn))
 
-(defmethod successors-of ((vertex vertex) (graph directed-graph))
-  (collect-hash-values (gethash (identity-of vertex)
-                                (source-table-of graph))
-                       (vertex-table-of graph)))
+(defmethod successors-of ((vertex vertex) (graph directed-graph)
+                          &key filter-fn)
+  (let ((successors (collect-hash-values
+                     (gethash (identity-of vertex)
+                              (source-table-of graph))
+                     (vertex-table-of graph))))
+    (if filter-fn
+        (delete-if filter-fn successors)
+      successors)))
 
-(defmethod successors-of ((identity string) (graph directed-graph))
-  (successors-of (lookup-vertex identity graph)))
+(defmethod successors-of ((identity string) (graph directed-graph)
+                          &key filter-fn)
+  (successors-of (lookup-vertex identity graph) graph :filter-fn filter-fn))
 
 (defmethod root-vertices-of ((graph directed-graph))
   (loop for vertex being the hash-values in (root-table-of graph)
@@ -278,7 +297,7 @@ a cycle in graph ~a" source target graph))
   (unless (contains-edge-p identity graph)
     (error "edge identified by ~a is not a member of graph ~a"
            identity graph))
-  (remove-edge (lookup-edge identity graph)))
+  (remove-edge (lookup-edge identity graph) graph))
 
 (defmethod lookup-edge ((identity list) (graph graph))
   (gethash identity (edge-table-of graph)))
@@ -305,21 +324,25 @@ a cycle in graph ~a" source target graph))
                       (list (list start))
                       enqueue-fn)))
 
-(defmethod ancestors ((vertex vertex) (graph directed-acyclic-graph))
+(defmethod ancestors-of ((vertex vertex) (graph directed-acyclic-graph)
+                         &key filter-fn)
   (unless (contains-vertex-p vertex graph)
     (error "from vertex ~a is not a member of graph ~a" vertex graph))
   (delete-duplicates
-   (graph-traverse-aux (predecessors-of vertex graph) graph
-                       #'predecessors-of)))
+   (graph-traverse-aux (predecessors-of vertex graph
+                                        :filter-fn filter-fn) graph
+                                        #'predecessors-of filter-fn)))
 
-(defmethod descendants ((vertex vertex) (graph directed-acyclic-graph))
+(defmethod descendants-of ((vertex vertex) (graph directed-acyclic-graph)
+                           &key filter-fn)
  (unless (contains-vertex-p vertex graph)
    (error "from vertex ~a is not a member of graph ~a" vertex graph))
   (delete-duplicates
-   (graph-traverse-aux (successors-of vertex graph) graph
-                       #'successors-of)))
+   (graph-traverse-aux (successors-of vertex graph
+                                      :filter-fn filter-fn) graph
+                                      #'successors-of filter-fn)))
 
-(defun graph-traverse-aux (sub-graph dag traversal-fn)
+(defun graph-traverse-aux (sub-graph dag traversal-fn filter-fn)
   "Traverses directed acyclic graph DAG, starting from SUB-GRAPH (a
 vertex or list of a vertex's successors or predecessors), using the
 traversal function TRAVERSAL-FN to find the next successors or
@@ -330,15 +353,15 @@ include duplicates where DAG contains diamonds."
          nil)
         ((atom sub-graph)
          (cons sub-graph
-               (graph-traverse-aux (funcall traversal-fn
-                                            sub-graph dag)
-                                   dag traversal-fn)))
+               (graph-traverse-aux (funcall traversal-fn sub-graph
+                                            dag :filter-fn filter-fn)
+                                   dag traversal-fn filter-fn)))
         (t
          (concatenate 'list
                       (graph-traverse-aux (car sub-graph)
-                                          dag traversal-fn)
+                                          dag traversal-fn filter-fn)
                       (graph-traverse-aux (cdr sub-graph)
-                                          dag traversal-fn)))))
+                                          dag traversal-fn filter-fn)))))
 
 
 ;;; Printing methods

@@ -48,11 +48,12 @@
                           (bio-sequence::encode-rna-4bit tok)))))))
 
 ;; Test constructors
-(test make-bio-seq
-  (let ((seqs (list (make-dna-seq "tagc" :ambiguity nil)
-                    (make-dna-seq "nnnn" :ambiguity :iupac)
-                    (make-rna-seq "uagc" :ambiguity nil)
-                    (make-rna-seq "nnnn" :ambiguity :iupac)))
+(test make-dna/rna
+  (let ((seqs (list (make-seq :token-seq "tagc")
+                    (make-seq :ambiguity :iupac :token-seq "nnnn")
+                    (make-seq :alphabet :rna :token-seq "uagc")
+                    (make-seq :alphabet :rna :ambiguity :iupac
+                              :token-seq"nnnn")))
         (class-names (list 'simple-dna-sequence
                            'iupac-dna-sequence
                            'simple-rna-sequence
@@ -61,15 +62,16 @@
                 (is (eql class-name (class-name (class-of seq)))))
             seqs class-names)))
 
-(test make-quality-seq
-  (let ((seqs (list (make-dna-quality-seq
-                     "agaatattctgaccccagttactttcaaga"
-                     "<<<<<<<<<<<<<<<<<<<<<735513;3<"
-                     :ambiguity nil :metric :phred)
-                    (make-dna-quality-seq
-                     "ntgccaaaaaatagaaaagtcancgatatt"
-                     "<<<<<<<<<<<<<<<<<8<<<<<<5<3.5:"
-                     :ambiguity :iupac :metric :phred)))
+(test make-quality-dna
+  (let ((seqs (list (make-quality-seq
+                     :token-seq "agaatattctgaccccagttactttcaaga"
+                     :quality "<<<<<<<<<<<<<<<<<<<<<735513;3<"
+                     :metric :phred)
+                    (make-quality-seq
+                     :ambiguity :iupac
+                     :token-seq "ntgccaaaaaatagaaaagtcancgatatt"
+                     :quality "<<<<<<<<<<<<<<<<<8<<<<<<5<3.5:"
+                     :metric :phred)))
         (class-names (list 'simple-dna-quality-sequence
                            'iupac-dna-quality-sequence)))
     (mapcar #'(lambda (seq class-name)
@@ -79,30 +81,35 @@
 ;; Test bio-sequence methods
 (test length-of/bio-sequence
   (let ((len 10))
-    (is (= len (length-of (make-dna-seq "aaaaaaaaaa"
-                                        :ambiguity nil))))
-    (is (= len (length-of (make-rna-seq "aaaaaaaaaa"
-                                        :ambiguity nil))))))
+    (is (= len (length-of (make-instance 'simple-dna-sequence
+                                         :token-seq "aaaaaaaaaa"))))
+    (is (= len (length-of (make-instance 'simple-dna-sequence
+                                         :token-seq "aaaaaaaaaa"))))))
 
 (test residue-of/dna-sequence
   (let ((residues "tttt")
-        (seq (make-dna-seq "aaaa" :ambiguity nil)))
+        (seq (make-instance 'simple-dna-sequence
+                            :token-seq "aaaa")))
     (dotimes (n (length residues))
       (setf (residue-of seq n) (aref residues n))
       (is (char= (residue-of seq n) (aref residues n))))))
 
 (test residue-of/rna-sequence
   (let ((residues "uuuu")
-        (rna-seq (make-rna-seq "aaaa" :ambiguity nil)))
+        (rna-seq (make-instance 'simple-rna-sequence :token-seq "aaaa")))
     (dotimes (n (length residues))
       (setf (residue-of rna-seq n) (aref residues n))
       (is (char= (residue-of rna-seq n) (aref residues n))))))
 
 (test copy-sequence/bio-sequence
-  (let ((seqs (list (make-dna-seq "tagc" :ambiguity nil)
-                    (make-dna-seq "nnnn" :ambiguity :iupac)
-                    (make-rna-seq "uagc" :ambiguity nil)
-                    (make-rna-seq "nnnn" :ambiguity :iupac))))
+  (let ((seqs (list (make-instance 'simple-dna-sequence
+                                   :token-seq "tagc")
+                    (make-instance 'iupac-dna-sequence
+                                   :token-seq "nnnn")
+                    (make-instance 'simple-rna-sequence
+                                   :token-seq "uagc")
+                    (make-instance 'iupac-rna-sequence
+                                   :token-seq "nnnn"))))
     (mapcar #'(lambda (seq)
                 (let ((copy (copy-sequence seq)))
                   (is (= (length-of copy) (length-of seq)))
@@ -113,7 +120,8 @@
 
 (test to-string/dna-sequence
   (let* ((residues "acgt")
-         (seq (make-dna-seq residues :ambiguity nil)))
+         (seq (make-instance 'simple-dna-sequence
+                             :token-seq residues)))
     ;; no args
     (is (string= residues (to-string seq)))
     ;; optional arg start

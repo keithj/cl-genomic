@@ -3,16 +3,15 @@
 
 (defparameter *seq-line-buffer-size* 512)
 
-(defun make-dna-sexp (name token-seq &optional description)
+
+(defun make-seq-sexp (name alphabet token-seq &optional description)
   "Returns a standard DNA sexp, given a sequence NAME, a vector of
 residue tokens TOKEN-SEQ and a DESCRIPTION string."
   (cons :bio-seq (pairlis '(:alphabet :name :description
                             :ambiguity :token-seq)
-                          (list :dna name description
-                                (if (or (position (char-code #\N)
-                                                  token-seq)
-                                        (position (char-code #\n)
-                                                  token-seq))
+                          (list alphabet name description
+                                (if (or (position #\N token-seq)
+                                        (position #\n token-seq))
                                     :iupac
                                   nil)
                                 token-seq))))

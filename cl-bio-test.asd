@@ -5,6 +5,10 @@
     :depends-on (:cl-bio :fiveam)
     :components ((:module :cl-bio-test
                           :pathname "src/test/"
-                          :components ((:file "package")
-                                       (:file "bio-sequence-test"
-                                              :depends-on ("package"))))))
+                          :components
+                          ((:file "package")
+                           (:file "bio-sequence-test"
+                                  :depends-on ("package"))
+                           (:file "bio-sequence-io-test"
+                                  :depends-on ("package"
+                                               "bio-sequence-test"))))))
