@@ -22,18 +22,22 @@
                            (:file "bio-sequence-encoding"
                                   :depends-on ("package"))
                            (:file "classes"
-                                  :depends-on ("package"))
+                                  :depends-on ("package"
+                                               "bio-sequence-encoding"))
                            (:file "generics"
                                   :depends-on ("package"))
                            (:file "bio-graph"
                                   :depends-on ("package"))
+                           (:file "bio-ontology"
+                                  :depends-on ("package"
+                                               "bio-graph"))
                            (:file "bio-sequence"
                                   :depends-on ("package"
                                                "generics"
                                                "bio-sequence-encoding"
-                                               "classes"
-                                               "bio-graph"))
-                           (:file "bio-sequence-io")))
+                                               "classes"))
+                           (:file "bio-sequence-io"
+                                  :depends-on ("package"))))
                  (:module :io
                           :pathname "src/io/"
                           :components

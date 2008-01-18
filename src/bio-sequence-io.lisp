@@ -3,36 +3,60 @@
 
 (defparameter *seq-line-buffer-size* 512)
 
+(defun read-bio-sequence (line-buffer &key alphabet ambiguity format
+                          callback callback-args)
+  "Reads a sequence record from LINE-BUFFER, optionally applying
+function CALLBACK with additional CALLBACK-ARGS to the
+result. Keywords are used to specify the expected alphabet (:dna,
+:rna), ambiguity (:iupac, nil) and record format (:fasta, :fastq)."
+  (unless alphabet
+    (error "an alphabet must be supplied"))
+  (unless format
+    (error "a format must be supplied"))
+  (when (and callback-args
+             (not callback))
+    (error "callback-args (~a) were supplied without a callback"
+           callback-args))
+  (unless (member ambiguity '(:iupac :auto nil))
+    (error "invalid ambiguity (~a), expected one of ~a"
+           ambiguity '(:iupac :auto nil)))
+  (read-bio-sequence-alist line-buffer format alphabet ambiguity
+                           callback callback-args))
 
-(defun make-seq-sexp (name alphabet token-seq &optional description)
-  "Returns a standard DNA sexp, given a sequence NAME, a vector of
-residue tokens TOKEN-SEQ and a DESCRIPTION string."
-  (cons :bio-seq (pairlis '(:alphabet :name :description
-                            :ambiguity :token-seq)
-                          (list alphabet name description
-                                (if (or (position #\N token-seq)
-                                        (position #\n token-seq))
-                                    :iupac
-                                  nil)
-                                token-seq))))
+(defun make-seq-alist (name alphabet ambiguity token-seq
+                       &optional description)
+  "Returns an alist, given a sequence NAME, a vector of residue tokens
+TOKEN-SEQ and a DESCRIPTION string."
+  (pairlis '(:name :alphabet :ambiguity :token-seq :description)
+           (list name alphabet
+                 (cond ((and (eql :auto ambiguity)
+                             (not (simplep token-seq alphabet)))
+                        :iupac)
+                       ((eql :auto ambiguity)
+                        nil)
+                       (t
+                        ambiguity))
+                 token-seq description)))
 
-(defun make-quality-sexp (dna-sexp quality)
-  "Returns a standard quality sexp, given a standard DNA-SEXP and a
-quality vector."
-  ;; FIXME -- check that token-seq and quality strings are the same
-  ;; length
-  (cons :quality-seq (list dna-sexp
-                           (cons :quality quality))))
+(defun make-quality-alist (name alphabet ambiguity token-seq quality)
+  "Returns an alist, given a sequence NAME, a vector of residue tokens
+TOKEN-SEQ and a QUALITY vector."
+  (acons :quality quality
+         (make-seq-alist name alphabet ambiguity token-seq)))
+
+(defun make-seq-from-alist (alist)
+  "A callback which constructs a CLOS bio-sequence object from
+sequence data that has been parsed into an ALIST."
+  (make-seq :alphabet (assocdr :alphabet alist)
+            :ambiguity (assocdr :ambiguity alist)
+            :token-seq (assocdr :token-seq alist)
+            :name (assocdr :name alist)))
 
 (defun make-removing-callback (callback predicate)
   (lambda (sexp &rest callback-args)
     (if (funcall predicate sexp)
         nil
       (apply callback sexp callback-args))))
-
-(defun ambiguous-seq-p (sexp)
-  (let ((content (cdr sexp)))
-    (eql :iupac (cdr (assoc :ambiguity content)))))
 
 (defun make-chunk-pname (file-pname chunk-number)
   "Returns a new pathname for a file chunk based on a file pathname
@@ -43,5 +67,3 @@ FILE-PNAME and an integer CHUNK-NUMBER."
                       (princ-to-string chunk-number))
    :type (pathname-type file-pname)))
 
-
-        

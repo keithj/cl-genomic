@@ -3,10 +3,11 @@
 
 (defparameter *fasta-line-width* 50)
 
-(defmethod read-bio-sequence ((line-buffer byte-line-buffer) alphabet
-                              (format (eql :fasta))
-                              &optional (callback nil callback-supplied-p)
-                              &rest callback-args)
+(defmethod read-bio-sequence-alist ((line-buffer byte-line-buffer)
+                                    (format (eql :fasta))
+                                    alphabet ambiguity
+                                    &optional (callback nil callback-supplied-p)
+                                    callback-args)
   (let ((seq-header (find-line line-buffer #'fasta-header-p)))
     (if seq-header
         (multiple-value-bind (identity description)
@@ -24,44 +25,32 @@
                    (error 'malformed-record-error :text
                           "incomplete Fasta record"))
                   (callback-supplied-p
-                   (apply callback
-                          (make-seq-sexp identity alphabet
-                                         (concat-into-sb-string seq-cache)
-                                         description) callback-args))
+                   (apply callback (make-seq-alist
+                                    identity alphabet ambiguity
+                                    (concat-into-sb-string seq-cache)
+                                    description)
+                          callback-args))
                   (t
-                   (make-seq-sexp identity alphabet
-                                  (concat-into-sb-string seq-cache)
-                                  description)))))
+                   (make-seq-alist
+                    identity alphabet
+                    (concat-into-sb-string seq-cache)
+                    description)))))
       nil)))
 
-(defun make-seq-fasta (sexp)
-  "A callback which constructs a CLOS bio-sequence object from
-sequence data that has been parsed into a standard SEXP."
-  (let ((tag (car sexp))
-        (content (cdr sexp)))      
-    (unless (eql :bio-seq tag)
-      (error "invalid :bio-seq sexp ~a" sexp))
-    (make-seq :alphabet (assocdr :alphabet content)
-              :ambiguity (assocdr :ambiguity content)
-              :token-seq (assocdr :token-seq content)
-              :name (assocdr :name content))))
-
-(defun write-sexp-fasta (sexp &optional output-stream)
-  "A callback which writes sequence data that has been parsed into a
-standard SEXP to OUTPUT-STREAM in Fasta format."
-  (if sexp
-      (let* ((content (cdr sexp))
-             (description (assocdr :description content)))
-        (write-char #\> output-stream)
-        (if (zerop (length description))
-            (write-line (assocdr :identity content) output-stream)
-          (progn
-            (write-string (assocdr :identity content) output-stream)
-            (write-char #\Space output-stream)
-            (write-line description output-stream)))
-        (write-wrapped-string (assocdr :token-seq content)
-                              *fasta-line-width* output-stream))
-    nil))
+(defun write-alist-fasta (alist &optional output-stream)
+  "A callback which writes sequence data that has been parsed into an
+ALIST to OUTPUT-STREAM in Fasta format."
+  (let ((description (assocdr :description alist)))
+    (write-char #\> output-stream)
+    (if (zerop (length description))
+        (write-line (assocdr :identity alist) output-stream)
+      (progn
+        (write-string (assocdr :identity alist) output-stream)
+        (write-char #\Space output-stream)
+        (write-line description output-stream)))
+    (write-wrapped-string (assocdr :token-seq alist)
+                          *fasta-line-width* output-stream))
+  t)
 
 (defun fasta-header-p (bytes)
   (starts-with-byte-p bytes (char-code #\>)))
@@ -76,7 +65,7 @@ cases where the identity, description, or both are empty strings."
     (let ((str-len (length str))
           (str-elt-type (array-element-type str))
           (identity-str (car split)))
-      (values 
+      (values
        (if (> (length identity-str) 1)
            (adjust-array identity-str (- (length identity-str) 1)
                          :displaced-to identity-str

@@ -4,6 +4,10 @@
 (deftype encoded-tokens (n)
   `(simple-array (unsigned-byte ,n) *))
 
+(deftype token-seq-length ()
+  "Type for a sequence length."
+  '(and fixnum (integer 1 *)))
+
 (defvar *sequence-class-table*
   (pairlis '((:dna nil :default) (:rna nil :default)
              (:dna :iupac :default) (:rna :iupac :default)
@@ -17,53 +21,55 @@
 (defvar *sequence-print-limit* 50
   "Maximum length of sequence to be pretty-printed.")
 
-(defmacro encode-token (value seq index token-seq-type)
+(defmacro encode-token (value seq index token-seq-type encoder)
   "Sets the residue token VALUE at INDEX in SEQ. The residue tokens
 are encoded as an array of type TOKEN-SEQ-TYPE in SEQ."
-  (let ((token-seq (gensym))
-        (encoder (gensym)))
-    `(let ((,token-seq (token-seq-of ,seq))
-           (,encoder (encoder-of ,seq)))
-       (declare (type ,token-seq-type ,token-seq)
-                (type function ,encoder))
+  (let ((token-seq (gensym)))
+    `(let ((,token-seq (token-seq-of ,seq)))
+       (declare (type ,token-seq-type ,token-seq))
        (setf (aref ,token-seq ,index)
              (funcall ,encoder ,value)))))
 
-(defmacro decode-token (seq index token-seq-type)
+(defmacro decode-token (seq index token-seq-type decoder)
   "Returns the decoded residue token from INDEX in SEQ. The residue
 tokens are encoded as an array of type TOKEN-SEQ-TYPE in SEQ."
-  (let ((token-seq (gensym))
-        (decoder (gensym)))
-    `(let ((,token-seq (token-seq-of ,seq))
-           (,decoder (decoder-of ,seq)))
-       (declare (type ,token-seq-type ,token-seq)
-                (type function ,decoder))
+  (let ((token-seq (gensym)))
+    `(let ((,token-seq (token-seq-of ,seq)))
+       (declare (type ,token-seq-type ,token-seq))
        (funcall ,decoder (aref ,token-seq ,index)))))
 
-(defmacro decode-token-array (seq start end token-seq-type)
+(defmacro decode-token-array (seq start end token-seq-type decoder)
   "Returns a simple-base-string representing the token-seq of SEQ
 from residues START to END, inclusive. The residues are encoded as
 type TOKEN-SEQ-TYPE in the token-seq slot of SEQ."
   (let ((token-seq (gensym))
         (dest (gensym))
         (source-end (gensym))
-        (dest-start (gensym))
-        (decoder (gensym)))
+        (dest-start (gensym)))
     `(let ((,token-seq (token-seq-of ,seq))
            (,dest (make-string (- ,end ,start)
                                :element-type 'base-char))
            (,source-end (1- ,end))
-           (,dest-start 0)
-           (,decoder (decoder-of seq)))
-       (declare (type ,token-seq-type ,token-seq)
-                (type simple-base-string ,dest)
-                (type array-index ,source-end ,dest-start)
-                (type function ,decoder))
-       (copy-array ,token-seq ,start ,source-end
-                   ,dest ,dest-start ,decoder)
-       ,dest)))
+           (,dest-start 0))
+      (declare (type ,token-seq-type ,token-seq)
+               (type simple-base-string ,dest)
+               (type fixnum ,source-end ,dest-start))
+      (when (< 0 (length ,dest))
+        (copy-array ,token-seq ,start ,source-end
+                    ,dest ,dest-start ,decoder))
+      ,dest)))
 
-(defun encode-simple-seq (str encoder)
+(defun ensure-simple-encoded (vector encoder)
+  (if (equal (array-element-type vector) '(unsigned-byte 2))
+      vector
+    (encode-simple vector encoder)))
+
+(defun ensure-iupac-encoded (vector encoder)
+  (if (equal (array-element-type vector) '(unsigned-byte 4))
+      vector
+    (encode-iupac vector encoder)))
+
+(defun encode-simple (str encoder)
   "Encodes the tokens in simple-string STR with ENCODER and returns an
 array of element type (unsigned-byte 2)."
   (declare (optimize (speed 3) (safety 1)))
@@ -76,7 +82,7 @@ array of element type (unsigned-byte 2)."
                 token-seq 0 encoder)
     token-seq))
 
-(defun encode-iupac-seq (str encoder)
+(defun encode-iupac (str encoder)
    "Encodes the tokens in simple-string STR with ENCODER and returns an
 array of element type (unsigned-byte 4)."
   (declare (optimize (speed 3) (safety 1)))
@@ -103,7 +109,7 @@ ALPHABET, AMBIGUITY and QUALITY."
   (let ((class (assocdr (list alphabet ambiguity quality)
                         *sequence-class-table* :test #'equal)))
     (unless class
-      (error "invalid combination (~a ~a ~a)"
+      (error "invalid (alphabet ambiguity quality) combination (~a ~a ~a)"
              alphabet ambiguity quality))
     class))
 
@@ -113,6 +119,7 @@ ALPHABET, AMBIGUITY and QUALITY."
   (let ((class (select-sequence-class alphabet ambiguity :default)))
     (multiple-value-bind (args remaining-initargs)
         (remove-args '(:alphabet :ambiguity) initargs)
+      (declare (ignore args))
       (apply #'make-instance class remaining-initargs))))
 
 (defun make-quality-seq (&rest initargs &key (alphabet :dna) ambiguity
@@ -121,31 +128,32 @@ ALPHABET, AMBIGUITY and QUALITY."
   (let ((class (select-sequence-class alphabet ambiguity :quality)))
     (multiple-value-bind (args remaining-initargs)
         (remove-args '(:alphabet :ambiguity) initargs)
+      (declare (ignore args))
       (apply #'make-instance class remaining-initargs))))
 
+(defmethod simplep ((token-seq string) (alphabet (eql :dna)))
+  (let ((simple (tokens-of *dna*)))
+    (loop
+       for token across token-seq
+       always (find (char-downcase token) simple))))
+
+(defmethod simplep ((token-seq string) (alphabet (eql :rna)))
+  (let ((simple (tokens-of *rna*)))
+    (loop
+       for token across token-seq
+       always (find (char-downcase token) simple))))
+
 (defmethod initialize-instance :after ((seq simple-dna-sequence) &key)
-  (with-slots (token-seq length) seq
-    (unless (encodedp token-seq '(unsigned-byte 2))
-      (setf token-seq (encode-simple-seq token-seq #'encode-dna-2bit)))
-    (setf length (length token-seq))))
+  (initialize-seq seq #'ensure-simple-encoded #'encode-dna-2bit))
 
 (defmethod initialize-instance :after ((seq simple-rna-sequence) &key)
-  (with-slots (token-seq length) seq
-    (unless (encodedp token-seq '(unsigned-byte 2))
-      (setf token-seq (encode-simple-seq token-seq #'encode-rna-2bit)))
-    (setf length (length token-seq))))
+  (initialize-seq seq #'ensure-simple-encoded #'encode-rna-2bit))
 
 (defmethod initialize-instance :after ((seq iupac-dna-sequence) &key)
-  (with-slots (token-seq length) seq
-    (unless (encodedp token-seq '(unsigned-byte 4))
-      (setf token-seq (encode-iupac-seq token-seq #'encode-dna-4bit)))
-    (setf length (length token-seq))))
+  (initialize-seq seq #'ensure-iupac-encoded #'encode-dna-4bit))
 
 (defmethod initialize-instance :after ((seq iupac-rna-sequence) &key)
-  (with-slots (token-seq length) seq
-    (unless (encodedp token-seq '(unsigned-byte 4))
-      (setf token-seq (encode-iupac-seq token-seq #'encode-rna-4bit)))
-    (setf length (length token-seq))))
+  (initialize-seq seq #'ensure-iupac-encoded #'encode-rna-4bit))
 
 (defmethod initialize-instance :after ((seq quality-mixin) &key)
   (with-slots (token-seq metric quality) seq
@@ -155,80 +163,110 @@ ALPHABET, AMBIGUITY and QUALITY."
              (length token-seq) (length quality)))
     (let ((decoder (cond ((eql :phred metric)
                           #'decode-phred-quality)
-                         ((eql :illumina 
+                         ((eql :illumina
                                #'decode-illumina-quality))
                          (t
                           (error "invalid metric (~a), expected one of ~a"
                                  metric '(:phred :illumina))))))
       (setf quality (decode-quality quality decoder)))))
 
-(defmethod length-of ((seq sequenced-mixin))
-  (let ((token-seq (token-seq-of seq)))
-    (length token-seq)))
+(defmethod token-seq-of ((seq bio-sequence))
+  (slot-value seq 'token-seq))
+
+(defmethod length-of ((seq bio-sequence))
+  (with-slots (token-seq length) seq
+    (if (null token-seq)
+        length
+      (length token-seq))))
+
+(defmethod (setf length-of) (value (seq bio-sequence))
+  (with-slots (token-seq length) seq
+    (if (null token-seq)
+        (setf length value)
+      (error "invalid operation, the length of a concrete sequence may not be changed"))))
+
+(defmethod virtual-seq-p ((seq bio-sequence))
+  (null (slot-value seq 'token-seq)))
+
+(defmethod residue-of :around ((seq bio-sequence) index)
+  (when (virtual-seq-p seq)
+    (error "invalid operation, cannot access a residue in a virtual sequence"))
+  (call-next-method))
+
+(defmethod (setf residue-of) :around (value (seq bio-sequence) index)
+  (when (virtual-seq-p seq)
+    (error "invalid operation, cannot access a residue in a virtual sequence"))
+  (call-next-method))
 
 (defmethod residue-of ((seq simple-dna-sequence) (index fixnum))
   (declare (optimize (speed 3) (safety 1)))
-  (decode-token seq index (encoded-tokens 2)))
+  (decode-token seq index (encoded-tokens 2) #'decode-dna-2bit))
 
 (defmethod (setf residue-of) (value (seq simple-dna-sequence)
                               (index fixnum))
   (declare (optimize (speed 3) (safety 1)))
-  (encode-token value seq index (encoded-tokens 2)))
+  (encode-token value seq index (encoded-tokens 2) #'encode-dna-2bit))
 
 (defmethod residue-of ((seq simple-rna-sequence) (index fixnum))
   (declare (optimize (speed 3) (safety 1)))
-  (decode-token seq index (encoded-tokens 2)))
+  (decode-token seq index (encoded-tokens 2) #'decode-rna-2bit))
 
 (defmethod (setf residue-of) (value (seq simple-rna-sequence)
                               (index fixnum))
   (declare (optimize (speed 3) (safety 1)))
-  (encode-token value seq index (encoded-tokens 2)))
+  (encode-token value seq index (encoded-tokens 2) #'encode-rna-2bit))
 
 (defmethod residue-of ((seq iupac-dna-sequence) (index fixnum))
   (declare (optimize (speed 3) (safety 1)))
-  (decode-token seq index (encoded-tokens 4)))
+  (decode-token seq index (encoded-tokens 4) #'decode-dna-4bit))
 
 (defmethod (setf residue-of) (value (seq iupac-dna-sequence)
                               (index fixnum))
   (declare (optimize (speed 3) (safety 1)))
-  (encode-token value seq index (encoded-tokens 4)))
+  (encode-token value seq index (encoded-tokens 4) #'encode-dna-4bit))
 
 (defmethod residue-of ((seq iupac-rna-sequence) (index fixnum))
   (declare (optimize (speed 3) (safety 1)))
-  (decode-token seq index (encoded-tokens 4)))
+  (decode-token seq index (encoded-tokens 4) #'decode-rna-4bit))
 
 (defmethod (setf residue-of) (value (seq iupac-rna-sequence)
                               (index fixnum))
   (declare (optimize (speed 3) (safety 1)))
-  (encode-token value seq index (encoded-tokens 4)))
+  (encode-token value seq index (encoded-tokens 4) #'encode-rna-4bit))
+
+(defmethod to-string :around ((seq bio-sequence) &optional start end)
+  (declare (ignore start end))
+  (if (virtual-seq-p seq)
+      "<virtual>"
+    (call-next-method)))
 
 (defmethod to-string ((seq simple-dna-sequence) &optional
                       (start 0)
                       (end (length-of seq)))
   (declare (optimize (speed 3) (safety 1)))
   (declare (type array-index start end))
-  (decode-token-array seq start end (encoded-tokens 2)))
+  (decode-token-array seq start end (encoded-tokens 2) #'decode-dna-2bit))
 
 (defmethod to-string ((seq simple-rna-sequence) &optional
                       (start 0)
                       (end (length-of seq)))
   (declare (optimize (speed 3) (safety 1)))
   (declare (type array-index start end))
-  (decode-token-array seq start end (encoded-tokens 2)))
+  (decode-token-array seq start end (encoded-tokens 2) #'decode-rna-2bit))
 
 (defmethod to-string ((seq iupac-dna-sequence) &optional
                       (start 0)
                       (end (length-of seq)))
   (declare (optimize (speed 3) (safety 1)))
   (declare (type array-index start end))
-  (decode-token-array seq start end (encoded-tokens 4)))
+  (decode-token-array seq start end (encoded-tokens 4) #'decode-dna-4bit))
 
 (defmethod to-string ((seq iupac-rna-sequence) &optional
                       (start 0)
                       (end (length-of seq)))
   (declare (optimize (speed 3) (safety 1)))
   (declare (type array-index start end))
-  (decode-token-array seq start end (encoded-tokens 4)))
+  (decode-token-array seq start end (encoded-tokens 4) #'decode-rna-4bit))
 
 (defmethod copy-sequence ((seq bio-sequence))
   (let ((token-seq (token-seq-of seq)))
@@ -279,6 +317,28 @@ ALPHABET, AMBIGUITY and QUALITY."
       (format stream "<~a ~a quality, length ~d>"
               name (metric-of obj) len))))
 
-(defun encodedp (token-seq element-type)
-  "Returns T if TOKEN-SEQ has elements encoded as ELEMENT-TYPE."
-  (equal element-type (array-element-type token-seq)))
+(defun process-token-seq-args (token-seq length)
+  (cond ((and (null token-seq)
+              (null length))
+         (error "invalid token-seq and length; expected one to be non-NIL"))
+        ((and token-seq
+              (null length))
+         (unless (and (vectorp token-seq)
+                      (not (zerop (length token-seq))))
+           (error "invalid token-seq; expected a non-empty vector"))
+         (values token-seq (length token-seq)))
+        ((and (null token-seq)
+              length)
+         (unless (typep length 'token-seq-length)
+           (error "invalid length; expected a fixnum >= 1"))
+         (values token-seq length))
+        (t
+         (error "invalid token-seq and length; expected one to be NIL"))))
+
+(defun initialize-seq (seq seq-encoder token-encoder)
+  (with-slots (token-seq length) seq
+    (multiple-value-bind (valid-token-seq valid-length)
+        (process-token-seq-args token-seq length)
+      (if valid-token-seq
+          (setf token-seq (funcall seq-encoder valid-token-seq token-encoder))
+        (setf length valid-length)))))

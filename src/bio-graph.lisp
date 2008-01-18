@@ -71,65 +71,6 @@ target vertex."))
                          (identity-of target)))))
 
 
-;;; Ontology term (vertex) and relationship (edge) classes and special
-;;; behaviour methods
-
-(defclass ontology-term (vertex)
-  ((name :initform nil
-         :initarg :name
-         :reader name-of
-         :documentation "The human-readable name of the term.")
-   (definition :initarg :definition
-               :reader definition-of
-               :documentation "The text defining what the term
-represents." )
-   (synonyms :initform nil
-             :initarg :synonyms
-             :accessor synonyms-of
-             :documentation "A list of names synonymous with term
-name.")
-   (comment :initform nil
-            :initarg :comment
-            :accessor comment-of
-            :documentation "A text comment which does not affect the
-semantics of the term.")))
-
-(defclass ontology-instance-mixin (ontology-term)
-  ((ontology-class :initarg :ontology-class
-                   :reader ontology-class-of
-                   :documentation "The identity of an ontology term
-which defines a class of which this vertex represents an instance."))
-  (:documentation "A graph vertex which represents the instantiation
-of an ontological class."))
-
-(defclass ontology-relationship (edge)
-  ((predicate :initarg :predicate
-              :reader predicate-of)))
-
-;; Alias source to subject and target to object as a more appropriate
-;; name for an ontology
-(defmethod subject-of ((obj ontology-relationship))
-  (slot-value obj 'source))
-
-(defmethod (setf subject-of) ((obj ontology-relationship)
-                              (term ontology-term))
-  (setf (slot-value obj 'source) term))
-
-(defmethod object-of ((obj ontology-relationship))
-  (slot-value obj 'target))
-
-(defmethod (setf object-of) ((obj ontology-relationship)
-                             (term ontology-term))
-  (setf (slot-value obj 'target) term))
-
-;; Lazily create and cache an identity for a relationship
-(defmethod slot-unbound (class (obj ontology-relationship)
-                         (slot (eql 'identity)))
-  (with-slots (source predicate target identity) obj
-    (setf identity (list (identity-of source)
-                         (identity-of predicate)
-                         (identity-of target)))))
-
 ;;; Vertex methods
 
 (defmethod add-vertex ((vertex vertex) (graph graph))
@@ -391,17 +332,9 @@ include duplicates where DAG contains diamonds."
 (defmethod print-object ((vertex vertex) stream)
   (format stream "<VERTEX ~a>" (slot-value vertex 'identity)))
 
-(defmethod print-object ((term ontology-term) stream)
-  (format stream "<ONTOLOGY-TERM ~a>" (slot-value term 'identity)))
-
 (defmethod print-object ((edge edge) stream)
   (with-slots (source target) edge
     (format stream "<EDGE from ~a to ~a>" source target)))
-
-(defmethod print-object ((relationship ontology-relationship) stream)
-  (with-slots (source predicate target) relationship
-    (format stream "<ONTOLOGY-RELATIONSHIP ~a ~a ~a>"
-            source predicate target)))
 
 
 ;;; Internal functions

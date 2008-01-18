@@ -42,7 +42,7 @@
   '(:seqid :source :type :start :end
     :score :strand :phase :attributes)
   "GFF3 field keyword tags, one for each of the 9 fields.")
-  
+
 ;; extra validation
 
 ;; CDS features must have a phase
@@ -60,7 +60,7 @@
 ;; unsolved issues:
 ;;
 ;; where in a vertex object do we put annotation?
-;; 
+;;
 
 ;; read a record; add it to the graph as a vertex; look for its
 ;; parent; if the parent is present, add a part_of relation; if the
@@ -86,20 +86,20 @@
       (unless (equalp (cons :gff-version 3)
                       (read-gff3 line-buffer))
         (error "does not appear to be GFF3 format~%"))
-      (do ((x (read-gff3 line-buffer) (read-gff3 line-buffer)))
-          ((null x) graph)
-        (let ((content (cdr x)))
-          (ecase (car x)
+      (do ((gff (read-gff3 line-buffer) (read-gff3 line-buffer)))
+          ((null gff) graph)
+        (let ((record-type (assocdr :record-type gff)))
+          (ecase record-type
             (:sequence-region
              (add-vertex (make-instance 'dna-sequence
                                         :identity
-                                        (assocdr :seqid content)
+                                        (assocdr :seqid gff)
                                         :length
-                                        (- (assocdr :end content)
-                                           (assocdr :start content)))
+                                        (- (assocdr :end gff)
+                                           (assocdr :start gff)))
                          graph))
             (:record
-             (let ((attrs (assocdr :attributes content)))
+             (let ((attrs (assocdr :attributes gff)))
                (add-vertex (make-instance 'dna-sequence
                                           :identity
                                           (assocdr "ID" attrs :test #'equal))
@@ -107,17 +107,29 @@
 
 
 
-(defun add-or-merge (record graph)
-  ;; does a vertex with this ID exist?
-  ;; options: add / merge / error
-  )
+(defun add-or-update-vertex (alist graph)
+  (let* ((attrs (assocdr :attributes alist))
+         (id (assocdr "ID" attrs :test #'equal))
+         (vertex (lookup-vertex id graph)))
+    (if vertex
+        ;; (update-vertex vertex alist)
+      (add-vertex (make-instance 'dna-sequence :identity id) graph))))
 
-;; The situation where data for a graph vertex is either split or
-;; partially duplicated may occur in many contexts. We need a way to
-;; handle this gracefully, especially where we end up trying to put
-;; data with the same identity into the graph several times.
+;; (defun update-vertex (vertex alist)
+;;   (if (valid-vertex-update vertex alist)
+;;       ))
 
-
+(defun valid-vertex-update (vertex alist)
+  "Checks that the :seqid :source :type :strand values in the update
+ALIST agree with those already in VERTEX."
+  (dolist (key '(:seqid :source :type :strand))
+    (unless (equal (attribute-of vertex key)
+                   (assocdr alist key))
+      (error 'malformed-record-error :text
+             (format nil "invalid ~a attribute (~a) in feature (~a); expected (~a) from previous record"
+                     key (identity-of vertex) (assocdr alist key)
+                     (attribute-of vertex key)))))
+  t)
 
 
 (defmethod read-gff3 ((line-buffer byte-line-buffer))
@@ -132,55 +144,60 @@
                (process-gff3-record str)))))))
 
 (defun process-gff3-comment (str)
-  "Returns cons whose car is the keyword :comment and whose cdr is the
-entire comment line STR, including the leading '#' character."
-  (cons :comment str))
+  "Returns an alist with key :comment and value being the entire
+comment line STR, including the leading '#' character."
+  (pairlis '(:record-type :comment) (list :comment str)))
 
 (defun process-gff3-directive (str)
-  "Returns a sexp of parsed and tagged GFF directive data parsed from
-STR."
+  "Returns an alist of parsed and tagged GFF directive data parsed
+from STR."
   (cond ((string= "##gff-version" str :end2 13)
-         (cons :gff-version (parse-gff-version str)))
-        ((string= "##sequence-region" str :end2 17) 
-         (cons :sequence-region (parse-sequence-region str)))
+         (acons :record-type :gff-version
+                (parse-gff-version str)))
+        ((string= "##sequence-region" str :end2 17)
+         (acons :record-type :sequence-region
+                (parse-sequence-region str)))
         ((string= "##feature-ontology" str :end2 18)
-         (cons :feature-ontology (parse-ontology-uri str)))
+         (acons :record-type :feature-ontology
+                (parse-ontology-uri str)))
         ((string= "##attribute-ontology" str :end2 20)
-         (cons :attribute-ontology (parse-ontology-uri str)))
+         (acons :record-type :attribute-ontology
+                (parse-ontology-uri str)))
         ((string= "##source-ontology" str :end2 17)
-         (cons :source-ontology (parse-ontology-uri str)))
+         (acons :record-type :source-ontology
+                (parse-ontology-uri str)))
         ((string= "###" str :end2 3)
-         :end-forward-refs)
+         (acons :record-type :end-forward-refs nil))
         ((string= "##FASTA" str :end2 7)
-         :fasta)
+         (acons :record-type :fasta nil))
         (t
          (error 'malformed-record-error :text
                 (format nil "unknown directive (~a)" str)))))
 
 (defun process-gff3-record (str)
-   "Returns a list with a car of :record and a cdr of an alist
-containing the record data. The alist keys are :seqid :source :type
-:start :end :score :strand :phase and :attributes. The value of
-:attributes is itself an alist, keyed by the GFF attribute tag
-strings."
+   "Returns an alist containing the record data. The alist keys are
+:seqid :source :type :start :end :score :strand :phase and
+:attributes. The value of :attributes is itself an alist, keyed by the
+GFF attribute tag strings."
    (let ((record (parse-gff3-record str)))
      (unless (<= (assocdr :start record) (assocdr :end record))
        (error 'malformed-record-error :text
               (format nil "invalid feature coordinates (~a ~a); start must be <= end"
-                      (assocdr :start record) (assocdr :end record)))) 
-     (cons :record record)))
+                      (assocdr :start record) (assocdr :end record))))
+     record))
 
 (defun parse-gff-version (str)
-  "Returns an integer version number from STR. A value of 3 is
-expected."
+  "Returns an alist with key :version and value integer version
+number parsed from STR. A value of 3 is expected."
   (handler-case
-      (parse-integer str :start 13)
+      (acons :version (parse-integer str :start 13) nil)
     (parse-error (condition)
       (error 'malformed-record-error :text (format nil "~a" condition)))))
 
 (defun parse-sequence-region (str)
-  "Returns a list containing a seqid string, an integer sequence start
-coordinate and an integer sequence end coordinate parsed from STR."
+  "Returns an alist containing a seqid string, an integer sequence
+start coordinate and an integer sequence end coordinate parsed from
+STR."
   (multiple-value-bind (seqid start end)
       (cl-ppcre:register-groups-bind (x y z)
           (*gff3-sequence-region-regex* str)
@@ -219,10 +236,11 @@ coordinate and an integer sequence end coordinate parsed from STR."
       (pairlis *gff3-field-tags* fields))))
 
 (defun parse-ontology-uri (str)
-  "Returns a URI object parsed from STR."
+  "Returns an alist with key :uri and value of an URI object parsed
+from STR."
   (cl-ppcre:register-groups-bind (uri)
       (*gff3-ontology-regex* str)
-    (puri:parse-uri uri)))
+    (acons :uri (puri:parse-uri uri) nil)))
 
 (defun parse-seqid (str &optional (start 0) end)
   "Returns a seqid string extracted from line STR between START and
@@ -362,7 +380,7 @@ character codes, or NIL otherwise."
 (defun gff3-directive-p (str)
   "Returns T if STR is a GFF3 directive line, or NIL otherwise."
   (and (>= (length str) 2)
-       (char= #\# (char str 0) (char str 1)))) 
+       (char= #\# (char str 0) (char str 1))))
 
 (defun gff3-comment-p (str)
   "Returns T if STR is a GFF3 comment line, or NIL otherwise."

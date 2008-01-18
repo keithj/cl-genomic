@@ -25,11 +25,11 @@ last residue, or for LENGTH residues."))
 
 ;;; bio-sequence io generics
 
-(defgeneric read-bio-sequence (input alphabet format &optional callback
-                               &rest callback-args)
-  (:documentation "Reads a sequence record of ALPHABET from INPUT
-which has FORMAT, optionally applying function CALLBACK to the
-result."))
+(defgeneric read-bio-sequence-alist (input format alphabet ambiguity
+                                     &optional callback callback-args)
+  (:documentation "Reads a sequence record of ALPHABET with AMBIGUITY
+from INPUT in FORMAT, optionally applying function CALLBACK with
+additional CALLBACK-ARGS to the result."))
 
 
 ;;; bio-graph generics
