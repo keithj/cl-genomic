@@ -5,30 +5,30 @@
 ;;; General purpose graph classes
 
 (defclass graph ()
-  ((vertex-table :initform (make-hash-table :test #'equal)
+  ((vertex-table :initform (make-hash-table)
                  :reader vertex-table-of
                  :documentation "A table of all vertices in the graph,
 keyed by their identity slot value.")
-   (edge-table :initform (make-hash-table :test #'equal)
+   (edge-table :initform (make-hash-table)
                :reader edge-table-of
                :documentation "A table of all edges in the graph,
 keyed by their identity slot value."))
   (:documentation "A graph consisting of a set of indexed vertices."))
 
 (defclass directed-graph (graph)
-  ((source-table :initform (make-hash-table :test #'equal)
+  ((source-table :initform (make-hash-table)
                  :reader source-table-of
                  :documentation "An table of adjacency lists keyed on
 the identity slot value of source vertices. Each list contains
 identities of target vertices. The table is used to follow paths in
 the graph.")
-   (target-table :initform (make-hash-table :test #'equal)
+   (target-table :initform (make-hash-table)
                  :reader target-table-of
                  :documentation "An table of adjacency lists keyed on
 their identity slot value of target vertices. Each list contains
 identities of source vertices. This table is used to look backwards
 along paths in the graph.")
-   (root-vertices :initform (make-hash-table :test #'equal)
+   (root-vertices :initform (make-hash-table)
                   :reader root-table-of
                   :documentation "A table containing the root vertices
 of the graph, keyed by their identity slot value."))
@@ -43,10 +43,9 @@ vertices and directed edges."))
 ;;; Vertex and edge classes and special behaviour methods
 
 (defclass vertex ()
-  ((identity :initform nil
-             :initarg :identity
+  ((identity :initarg :identity
              :reader identity-of
-             :documentation "A unique string identifying a vertex with
+             :documentation "A unique fixnum identifying a vertex with
 particlular semantics."))
   (:documentation "A graph vertex."))
 
@@ -75,7 +74,7 @@ target vertex."))
 
 (defmethod add-vertex ((vertex vertex) (graph graph))
   (when (contains-vertex-p vertex graph)
-    (error "vertex ~a is already a member of graph ~a" vertex graph))
+    (error "Vertex ~a is already a member of graph ~a." vertex graph))
   (setf (gethash (identity-of vertex) (vertex-table-of graph)) vertex))
 
 (defmethod add-vertex :after ((vertex vertex) (graph directed-graph))
@@ -83,7 +82,7 @@ target vertex."))
 
 (defmethod remove-vertex ((vertex vertex) (graph directed-graph))
   (unless (contains-vertex-p vertex graph)
-    (error "vertex ~a is not a member of graph ~a" vertex graph))
+    (error "Vertex ~a is not a member of graph ~a." vertex graph))
   (dolist (out-edge (out-edges-of vertex graph))
     (remove-edge out-edge graph))
   (dolist (in-edge (in-edges-of vertex graph))
@@ -92,19 +91,19 @@ target vertex."))
   (remhash (identity-of vertex) (root-table-of graph))
   vertex)
 
-(defmethod remove-vertex ((identity string) (graph directed-graph))
+(defmethod remove-vertex ((identity fixnum) (graph directed-graph))
   (unless (contains-vertex-p identity graph)
-    (error "vertex identified by ~a is not a member of graph ~a"
+    (error "Vertex identified by ~a is not a member of graph ~a."
            identity graph))
   (remove-vertex (lookup-vertex identity graph) graph))
 
-(defmethod lookup-vertex ((identity string) (graph graph))
+(defmethod lookup-vertex ((identity fixnum) (graph graph))
   (gethash identity (vertex-table-of graph)))
 
 (defmethod contains-vertex-p ((vertex vertex) (graph graph))
   (gethash (identity-of vertex) (vertex-table-of graph)))
 
-(defmethod contains-vertex-p ((identity string) (graph graph))
+(defmethod contains-vertex-p ((identity fixnum) (graph graph))
   (gethash identity (vertex-table-of graph)))
 
 (defmethod out-edges-of ((source vertex) (graph directed-graph)
@@ -120,7 +119,7 @@ target vertex."))
           (delete-if filter-fn edges)
         edges))))
 
-(defmethod out-edges-of ((identity string) (graph directed-graph)
+(defmethod out-edges-of ((identity fixnum) (graph directed-graph)
                          &key filter-fn)
   (out-edges-of (lookup-vertex identity graph) graph :filter-fn filter-fn))
 
@@ -137,7 +136,7 @@ target vertex."))
           (delete-if filter-fn edges)
         edges))))
 
-(defmethod in-edges-of ((identity string) (graph directed-graph)
+(defmethod in-edges-of ((identity fixnum) (graph directed-graph)
                         &key filter-fn)
   (in-edges-of (lookup-vertex identity graph) graph :filter-fn filter-fn))
 
@@ -151,7 +150,7 @@ target vertex."))
         (delete-if filter-fn predecessors)
       predecessors)))
 
-(defmethod predecessors-of ((identity string) (graph directed-graph)
+(defmethod predecessors-of ((identity fixnum) (graph directed-graph)
                             &key filter-fn)
   (predecessors-of (lookup-vertex identity graph) graph :filter-fn filter-fn))
 
@@ -165,7 +164,7 @@ target vertex."))
         (delete-if filter-fn successors)
       successors)))
 
-(defmethod successors-of ((identity string) (graph directed-graph)
+(defmethod successors-of ((identity fixnum) (graph directed-graph)
                           &key filter-fn)
   (successors-of (lookup-vertex identity graph) graph :filter-fn filter-fn))
 
@@ -179,19 +178,19 @@ target vertex."))
 (defmethod add-edge ((source vertex) (target vertex)
                      (graph directed-graph))
   (unless (contains-vertex-p source graph)
-    (error "from vertex ~a is not a member of graph ~a" source graph))
+    (error "Source vertex ~a is not a member of graph ~a." source graph))
   (unless (contains-vertex-p target graph)
-    (error "to vertex ~a is not a member of graph ~a" target graph))
+    (error "Target vertex ~a is not a member of graph ~a." target graph))
   (let ((source-key (identity-of source))
         (target-key (identity-of target)))
     (when (equal source-key target-key)
-      (error "cannot make an edge from vertex ~a to itself" source))
+      (error "Cannot make an edge from vertex ~a to itself." source))
     (let ((source-table (source-table-of graph))
           (target-table (target-table-of graph))
           (new-edge (make-instance 'edge :source source :target target)))
       (when (contains-edge-p new-edge graph)
-        (error "an edge between vertex ~a and vertex ~a is already
-present in graph ~a" source target graph))
+        (error (msg "An edge between vertex ~a and vertex ~a"
+                    "is already present in graph ~a.") source target graph))
       (let ((out-edges (gethash source-key source-table))
             (in-edges (gethash target-key target-table))
             (new-key (identity-of new-edge)))
@@ -201,16 +200,17 @@ present in graph ~a" source target graph))
         (remhash target-key (root-table-of graph)))
       new-edge)))
 
-(defmethod add-edge ((source-indentity string)
-                     (target-indentity string) (graph directed-graph))
+(defmethod add-edge ((source-indentity fixnum)
+                     (target-indentity fixnum) (graph directed-graph))
   (add-edge (lookup-vertex source-indentity graph)
             (lookup-vertex target-indentity graph) graph))
 
 (defmethod add-edge ((source vertex) (target vertex)
                      (graph directed-acyclic-graph))
   (when (would-cycle-p source target graph)
-    (error "adding and edge between vertices ~a and ~a would introduce
-a cycle in graph ~a" source target graph))
+    (error (msg "Adding and edge between vertices ~a and ~a"
+                "would introduce a cycle in graph ~a.")
+           source target graph))
   (call-next-method))
 
 (defmethod remove-edge ((edge edge) (graph directed-graph))
@@ -222,7 +222,7 @@ a cycle in graph ~a" source target graph))
     (let ((out-edge-keys (gethash source-key source-table))
           (in-edge-keys (gethash target-key target-table)))
       (unless (contains-edge-p edge graph)
-        (error "edge ~a is not present in graph ~a" edge graph))
+        (error "Edge ~a is not present in graph ~a." edge graph))
       (update-edges source-key source-table
                     target-key target-table
                     (identity-of edge) edge-table
@@ -236,7 +236,7 @@ a cycle in graph ~a" source target graph))
 
 (defmethod remove-edge ((identity list) (graph directed-graph))
   (unless (contains-edge-p identity graph)
-    (error "edge identified by ~a is not a member of graph ~a"
+    (error "Edge identified by ~a is not a member of graph ~a."
            identity graph))
   (remove-edge (lookup-edge identity graph) graph))
 
@@ -255,9 +255,9 @@ a cycle in graph ~a" source target graph))
 (defmethod graph-search ((start vertex) (end vertex)
                          (graph directed-graph) &key method (test #'eql))
   (unless (contains-vertex-p start graph)
-    (error "from vertex ~a is not a member of graph ~a" start graph))
+    (error "Start vertex ~a is not a member of graph ~a." start graph))
   (unless (contains-vertex-p end graph)
-    (error "to vertex ~a is not a member of graph ~a" end graph))
+    (error "End vertex ~a is not a member of graph ~a." end graph))
   (let ((enqueue-fn (ecase method
                       (:depth-first #'enqueue-first)
                       (:breadth-first #'enqueue-last))))
@@ -268,7 +268,7 @@ a cycle in graph ~a" source target graph))
 (defmethod ancestors-of ((vertex vertex) (graph directed-acyclic-graph)
                          &key filter-fn)
   (unless (contains-vertex-p vertex graph)
-    (error "from vertex ~a is not a member of graph ~a" vertex graph))
+    (error "Vertex ~a is not a member of graph ~a." vertex graph))
   (delete-duplicates
    (graph-traverse-aux (predecessors-of vertex graph
                                         :filter-fn filter-fn) graph
@@ -277,7 +277,7 @@ a cycle in graph ~a" source target graph))
 (defmethod descendants-of ((vertex vertex) (graph directed-acyclic-graph)
                            &key filter-fn)
  (unless (contains-vertex-p vertex graph)
-   (error "from vertex ~a is not a member of graph ~a" vertex graph))
+   (error "Vertex ~a is not a member of graph ~a." vertex graph))
   (delete-duplicates
    (graph-traverse-aux (successors-of vertex graph
                                       :filter-fn filter-fn) graph

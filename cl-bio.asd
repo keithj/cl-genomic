@@ -13,7 +13,8 @@
     :author "Keith James"
     :version "0.1"
     :licence "GPL"
-    :depends-on (:cl-gp-utilities :cl-io-utilities :split-sequence
+    :depends-on (:cl-gp-utilities :cl-io-utilities
+                                  :trivial-gray-streams :split-sequence
                                   :cl-ppcre :puri)
     :components ((:module :core
                           :pathname "src/"
@@ -26,11 +27,8 @@
                                                "bio-sequence-encoding"))
                            (:file "generics"
                                   :depends-on ("package"))
-                           (:file "bio-graph"
+                           (:file "frames"
                                   :depends-on ("package"))
-                           (:file "bio-ontology"
-                                  :depends-on ("package"
-                                               "bio-graph"))
                            (:file "bio-sequence"
                                   :depends-on ("package"
                                                "generics"

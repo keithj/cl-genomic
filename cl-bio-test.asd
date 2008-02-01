@@ -11,4 +11,6 @@
                                   :depends-on ("package"))
                            (:file "bio-sequence-io-test"
                                   :depends-on ("package"
-                                               "bio-sequence-test"))))))
+                                               "bio-sequence-test"))
+                           (:file "frames-test"
+                                  :depends-on ("package"))))))

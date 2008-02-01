@@ -109,7 +109,8 @@ ALPHABET, AMBIGUITY and QUALITY."
   (let ((class (assocdr (list alphabet ambiguity quality)
                         *sequence-class-table* :test #'equal)))
     (unless class
-      (error "invalid (alphabet ambiguity quality) combination (~a ~a ~a)"
+      (error (msg "Invalid (alphabet ambiguity quality)"
+                  "combination (~a ~a ~a).")
              alphabet ambiguity quality))
     class))
 
@@ -159,14 +160,15 @@ ALPHABET, AMBIGUITY and QUALITY."
   (with-slots (token-seq metric quality) seq
     (unless (= (length token-seq)
                (length quality))
-      (error "token-seq and quality must be the same length but were (~a) and (~a) elements long"
+      (error (msg "Token-seq and quality must be the same length"
+                  "but were ~a and ~a elements long, respectively.")
              (length token-seq) (length quality)))
     (let ((decoder (cond ((eql :phred metric)
                           #'decode-phred-quality)
                          ((eql :illumina
                                #'decode-illumina-quality))
                          (t
-                          (error "invalid metric (~a), expected one of ~a"
+                          (error "Invalid metric ~a: expected one of ~a."
                                  metric '(:phred :illumina))))))
       (setf quality (decode-quality quality decoder)))))
 
@@ -183,19 +185,22 @@ ALPHABET, AMBIGUITY and QUALITY."
   (with-slots (token-seq length) seq
     (if (null token-seq)
         (setf length value)
-      (error "invalid operation, the length of a concrete sequence may not be changed"))))
+      (error (msg "Invalid operation: the length of a concrete sequence"
+                  "may not be changed.")))))
 
 (defmethod virtual-seq-p ((seq bio-sequence))
   (null (slot-value seq 'token-seq)))
 
 (defmethod residue-of :around ((seq bio-sequence) index)
   (when (virtual-seq-p seq)
-    (error "invalid operation, cannot access a residue in a virtual sequence"))
+    (error (msg "Invalid operation: cannot access a residue"
+                "in a virtual sequence.")))
   (call-next-method))
 
 (defmethod (setf residue-of) :around (value (seq bio-sequence) index)
   (when (virtual-seq-p seq)
-    (error "invalid operation, cannot access a residue in a virtual sequence"))
+    (error (msg "Invalid operation, cannot access a residue"
+                "in a virtual sequence.")))
   (call-next-method))
 
 (defmethod residue-of ((seq simple-dna-sequence) (index fixnum))
@@ -320,20 +325,20 @@ ALPHABET, AMBIGUITY and QUALITY."
 (defun process-token-seq-args (token-seq length)
   (cond ((and (null token-seq)
               (null length))
-         (error "invalid token-seq and length; expected one to be non-NIL"))
+         (error "Invalid token-seq and length: expected one to be non-NIL."))
         ((and token-seq
               (null length))
          (unless (and (vectorp token-seq)
                       (not (zerop (length token-seq))))
-           (error "invalid token-seq; expected a non-empty vector"))
+           (error "Invalid token-seq: expected a non-empty vector."))
          (values token-seq (length token-seq)))
         ((and (null token-seq)
               length)
          (unless (typep length 'token-seq-length)
-           (error "invalid length; expected a fixnum >= 1"))
+           (error "invalid length: expected a fixnum >= 1."))
          (values token-seq length))
         (t
-         (error "invalid token-seq and length; expected one to be NIL"))))
+         (error "Invalid token-seq and length: expected one to be NIL."))))
 
 (defun initialize-seq (seq seq-encoder token-encoder)
   (with-slots (token-seq length) seq

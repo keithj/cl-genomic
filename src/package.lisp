@@ -1,12 +1,18 @@
 
 (defpackage bio-sequence
-  (:use #:common-lisp #:cl-io-utilities #:cl-gp-utilities #:split-sequence)
+  (:use #:common-lisp #:cl-io-utilities #:cl-gp-utilities
+        #:trivial-gray-streams #:split-sequence)
   (:export
    ;; Specials
    #:*dna*
    #:*rna*
    #:*iupac-dna*
    #:*iupac-rna*
+
+   #:*default-knowledgebase*
+   ;; Conditions
+   #:knowledgebase-error
+
    ;; Functions
    #:read-bio-sequence
    #:make-seq
@@ -31,7 +37,21 @@
    #:iupac-rna-sequence
    #:simple-dna-quality-sequence
    #:iupac-dna-quality-sequence
+
+   #:knowledgebase
+   #:frame
+   #:slot
+   #:reflexive-mixin
+   #:transitive-mixin
+   #:inverse-mixin
+   #:part-of
+   #:has-part
+   #:subsequence-of
+   #:has-subsequence
+   #:instance
+
    ;; Generic functions
+   #:identity-of
    #:name-of
    #:tokens-of
    #:alphabet-of
@@ -41,4 +61,19 @@
    #:to-string
    #:metric-of
    #:quality-of
-   #:read-bio-sequence))
+   #:read-bio-sequence
+
+   #:contains-frame-p
+   #:find-frame
+   #:add-frame
+   #:remove-frame
+   #:contains-slot-p
+   #:find-slot
+   #:slots-of
+   #:add-slot
+   #:remove-slot
+   #:domain-of
+   #:range-of
+   #:value-of
+   #:slot-value-of
+   ))

@@ -3,27 +3,27 @@
 
 (defparameter *fasta-line-width* 50)
 
-(defmethod read-bio-sequence-alist ((line-buffer byte-line-buffer)
+(defmethod read-bio-sequence-alist ((stream binary-line-input-stream)
                                     (format (eql :fasta))
                                     alphabet ambiguity
                                     &optional (callback nil callback-supplied-p)
                                     callback-args)
-  (let ((seq-header (find-line line-buffer #'fasta-header-p)))
+  (let ((seq-header (find-line stream #'fasta-header-p)))
     (if seq-header
         (multiple-value-bind (identity description)
             (parse-fasta-header (make-sb-string seq-header))
           (let ((seq-cache (make-array 0 :adjustable t :fill-pointer t)))
             (loop
-               as line = (pull-line line-buffer)
+               as line = (stream-read-line stream)
                and cache-extend = (max 256 (floor (/ (length seq-cache) 2)))
                while line
                until (starts-with-byte-p line (char-code #\>))
                do (vector-push-extend line seq-cache cache-extend)
                finally (when line
-                         (push-line line-buffer line)))
+                         (push-line stream line)))
             (cond ((zerop (length seq-cache))
                    (error 'malformed-record-error :text
-                          "incomplete Fasta record"))
+                          "Incomplete Fasta record."))
                   (callback-supplied-p
                    (apply callback (make-seq-alist
                                     identity alphabet ambiguity

@@ -21,11 +21,6 @@
                '(#\. #\: #\^ #\* #\$ #\@ #\! #\+ #\_ #\? #\- #\|))
   "Characters that are legal without escapes in GFF3 seqid context.")
 
-(defvar *gff3-reserved-attr-tags*
-  '("ID" "Name" "Alias" "Parent" "Target" "Gap" "Derives_from"
-    "Note" "Dbxref" "Ontology_term" "Index")
-  "Reserved GFF3 attribute tags")
-
 (defvar *gff3-sequence-region-regex*
   (cl-ppcre:create-scanner
    "^##sequence-region\\s+(\\S+)\\s+(\\d+)\\s+(\\d+)"))
@@ -37,11 +32,21 @@
    parse-sequence-coord parse-sequence-coord
    parse-score parse-strand parse-phase
    parse-attributes)
-  "GFF field parser function symcols, one for each of the 9 fields.")
+  "GFF field parser function symbols, one for each of the 9 fields.")
 (defvar *gff3-field-tags*
   '(:seqid :source :type :start :end
     :score :strand :phase :attributes)
   "GFF3 field keyword tags, one for each of the 9 fields.")
+(defvar *gff3-invariant-field-tags*
+  '(:seqid :source :type :score :strand))
+
+(defvar *gff3-reserved-attribute-tags*
+  '("ID" "Name" "Alias" "Parent" "Target" "Gap" "Derives_from"
+    "Note" "Dbxref" "Ontology_term" "Index")
+  "Reserved GFF3 attribute tags")
+(defvar *gff3-invariant-attribute-tags*
+  '("ID" "Name" "Alias" "Parent" "Gap" "Derives_from"
+    "Note" "Dbxref" "Ontology_term" "Index"))
 
 ;; extra validation
 
@@ -76,64 +81,95 @@
 ;; predicate part_of
 ;; predicate derived_from
 
+(defparameter *expected-gff-version* 3)
 
 (defun wibble-gff3 (filename)
-  (with-open-file (stream filename
+  (with-open-file (fs filename
                    :direction :input
                    :element-type '(unsigned-byte 8))
-    (let ((line-buffer (make-line-buffer stream))
-          (graph (make-instance 'directed-acyclic-graph)))
-      (unless (equalp (cons :gff-version 3)
-                      (read-gff3 line-buffer))
-        (error "does not appear to be GFF3 format~%"))
-      (do ((gff (read-gff3 line-buffer) (read-gff3 line-buffer)))
-          ((null gff) graph)
-        (let ((record-type (assocdr :record-type gff)))
+    (let ((stream (make-line-input-stream fs))
+          (graph (make-instance 'directed-acyclic-graph))
+          (records (make-hash-table :test #'equal)))
+      (unless (gff-version-p (read-gff3 stream) *expected-gff-version*)
+        (error "Does not appear to be GFF3 format."))
+      (do ((record (read-gff3 stream) (read-gff3 stream)))
+          ((null record) (make-sequence-features records graph))
+        (let ((record-type (assocdr :record-type record)))
           (ecase record-type
             (:sequence-region
-             (add-vertex (make-instance 'dna-sequence
-                                        :identity
-                                        (assocdr :seqid gff)
-                                        :length
-                                        (- (assocdr :end gff)
-                                           (assocdr :start gff)))
-                         graph))
+             (make-sequence-region record graph))
             (:record
-             (let ((attrs (assocdr :attributes gff)))
-               (add-vertex (make-instance 'dna-sequence
-                                          :identity
-                                          (assocdr "ID" attrs :test #'equal))
-                           graph)))))))))
+             (open-or-update-record record records))
+            (:end-forward-refs
+             (make-sequence-features records graph))))))))
+
+(defun make-sequence-region (record graph)
+  "Returns a new sequence-region vertex created from the data in
+RECORD. A a side-effect, adds the sequence-region to GRAPH."
+  (when (lookup-vertex (assocdr :seqid record) graph)
+    (error 'malformed-record-error :text
+           (format nil (msg "Invalid sequence-region ~a:"
+                            "a region with this seqid has already"
+                            "been found."))))
+  (add-vertex (make-instance 'dna-sequence
+                             :identity (assocdr :seqid record)
+                             :length (- (assocdr :end record)
+                                        (assocdr :start record)))
+              graph))
+
+(defun open-or-update-record (record records)
+  "Adds the data in RECORD to the table of currently open RECORDS."
+  (let ((identity (assocdr "ID" (assocdr :attributes record)
+                           :test #'equal)))
+    (setf (gethash identity records)
+          (merge-records (gethash identity records) record))))
+
+(defun merge-records (new current)
+  (if (null current)
+      (copy-alist new)
+    (let ((conflicts (loop
+                        for field in *gff3-invariant-field-tags*
+                        when (not (eql (assocdr field new)
+                                       (assocdr field current)))
+                        collect field)))
+      (when conflicts
+        (error 'malformed-record-error :text
+               "Invalid record: conflicts in fields ~a." conflicts))
+      (loop
+         for field in (set-difference *gff3-field-tags*
+                                      *gff3-invariant-field-tags*)
+         do (assocpush+ field current (assocdr field new)))
+      ;; FIXME -- deal with attributes here
+      )))
+
+;; (defun valid-vertex-update (vertex alist)
+;;   "Checks that the :seqid :source :type :strand values in the update
+;; ALIST agree with those already in VERTEX."
+;;   (dolist (key '(:seqid :source :type :strand))
+;;     (unless (equal (attribute-of vertex key)
+;;                    (assocdr alist key))
+;;       (error 'malformed-record-error :text
+;;              (format nil (msg "Invalid ~a attribute ~a in feature ~a:"
+;;                               "expected ~a from previous record.")
+;;                      key (identity-of vertex) (assocdr alist key)
+;;                      (attribute-of vertex key)))))
+;;   t)
+
+
+(defun gff-version-p (record version)
+  "Returns T if RECORD is a GFF version directive (:record-type
+:gff-version) indicating VERSION. If RECORD is not a GFF version
+directive an error is thrown."
+  (unless (eql :gff-version (assocdr :record-type record))
+    (error "Record ~a is not a GFF version directive." record))
+  (eql version (assocdr :version record)))
 
 
 
-(defun add-or-update-vertex (alist graph)
-  (let* ((attrs (assocdr :attributes alist))
-         (id (assocdr "ID" attrs :test #'equal))
-         (vertex (lookup-vertex id graph)))
-    (if vertex
-        ;; (update-vertex vertex alist)
-      (add-vertex (make-instance 'dna-sequence :identity id) graph))))
-
-;; (defun update-vertex (vertex alist)
-;;   (if (valid-vertex-update vertex alist)
-;;       ))
-
-(defun valid-vertex-update (vertex alist)
-  "Checks that the :seqid :source :type :strand values in the update
-ALIST agree with those already in VERTEX."
-  (dolist (key '(:seqid :source :type :strand))
-    (unless (equal (attribute-of vertex key)
-                   (assocdr alist key))
-      (error 'malformed-record-error :text
-             (format nil "invalid ~a attribute (~a) in feature (~a); expected (~a) from previous record"
-                     key (identity-of vertex) (assocdr alist key)
-                     (attribute-of vertex key)))))
-  t)
 
 
-(defmethod read-gff3 ((line-buffer byte-line-buffer))
-  (let ((line (find-line line-buffer #'content-bytes-p)))
+(defmethod read-gff3 ((stream binary-line-input-stream))
+  (let ((line (find-line stream #'content-bytes-p)))
     (when line
       (let ((str (make-sb-string line)))
         (cond ((gff3-directive-p str)
@@ -172,7 +208,7 @@ from STR."
          (acons :record-type :fasta nil))
         (t
          (error 'malformed-record-error :text
-                (format nil "unknown directive (~a)" str)))))
+                (format nil "Unknown directive ~a." str)))))
 
 (defun process-gff3-record (str)
    "Returns an alist containing the record data. The alist keys are
@@ -182,7 +218,8 @@ GFF attribute tag strings."
    (let ((record (parse-gff3-record str)))
      (unless (<= (assocdr :start record) (assocdr :end record))
        (error 'malformed-record-error :text
-              (format nil "invalid feature coordinates (~a ~a); start must be <= end"
+              (format nil (msg "Invalid feature coordinates (~a ~a):"
+                               "start must be <= end.")
                       (assocdr :start record) (assocdr :end record))))
      record))
 
@@ -206,19 +243,20 @@ STR."
                 (parse-sequence-coord z)))
     (unless (stringp seqid)
       (error 'malformed-record-error :text
-             (format nil "invalid seqid (~a) in sequence-region directive (~a)"
+             (format nil "Invalid seqid ~a in sequence-region directive ~a."
                      seqid str)))
     (unless (integerp start)
       (error 'malformed-record-error :text
-             (format nil "invalid start (~a) in sequence-region directive (~a)"
+             (format nil "Invalid start ~a in sequence-region directive ~a."
                      start str)))
     (unless (integerp end)
       (error 'malformed-record-error :text
-             (format nil "invalid end (~a) in sequence-region directive (~a)"
+             (format nil "Invalid end ~a in sequence-region directive ~a."
                      end str)))
     (unless (<= start end)
       (error 'malformed-record-error :text
-             (format nil "invalid sequence-region coordinates (~a ~a); start must be <= end"
+             (format nil (msg "Invalid sequence-region coordinates (~a ~a)"
+                              "start must be <= end.")
                      start end)))
     (pairlis '(:seqid :start :end) (list seqid start end))))
 
@@ -228,7 +266,8 @@ STR."
       (vector-split-indices #\Tab str)
     (unless (= 9 (length field-starts))
       (error 'malformed-record-error :text
-             (format nil "invalid GFF line having ~a fields instead of 9 (~a)"
+             (format nil (msg "Invalid GFF line having ~a fields"
+                              "instead of 9: (~a).")
                      (length field-starts) str)))
     (let ((fields (mapcar #'(lambda (fn x y)
                               (funcall (symbol-function fn) str x y))
@@ -251,7 +290,7 @@ END."
                           (when (char= #\% (char str i))
                             (url-escape-p str i))))
       (error 'malformed-record-error :text
-             (format nil "invalid seqid (~a)" (subseq str start end))))
+             (format nil "Invalid seqid ~a." (subseq str start end))))
     (subseq str start end)))
 
 (defun parse-source (str &optional (start 0) end)
@@ -305,7 +344,7 @@ START and END."
       (condition (condition)
         (when (subtypep (type-of condition) 'error)
           (error 'malformed-record-error :text
-                 (format nil "~a" condition)))))))
+                 (format nil "Invalid score ~a." condition)))))))
 
 (defun parse-strand (str &optional (start 0) end)
   "Returns a nucleic acid sequence strand object (canonical
@@ -321,7 +360,7 @@ END."
          *unknown-strand*)
         (t
          (error 'malformed-record-error :text
-                (format nil "invalid sequence strand (~a)"
+                (format nil "Invalid sequence strand ~a."
                         (subseq str start end))))))
 
 (defun parse-phase (str &optional (start 0) end)
@@ -334,11 +373,12 @@ and END."
                    (parse-integer str :start start :end end)
                  (parse-error (condition)
                    (error 'malformed-record-error :text
-                          (format nil "~a" condition))))))
+                          (format nil "Invalis phase ~a." condition))))))
     (unless (and (integerp phase)
                  (<= 0 phase 2))
       (error 'malformed-record-error :text
-             (format nil "invalid phase (~a); a positive integer between 0 and 2 (inclusive) is required"
+             (format nil (msg "Invalid phase (~a): a positive integer"
+                              "between 0 and 2 (inclusive) is required.")
                      phase)))
     phase)))
 
@@ -354,7 +394,7 @@ END."
                           (when (char= #\% (char str i))
                             (url-escape-p str i))))
       (error 'malformed-record-error :text
-             (format nil "invalid type (~a)" (subseq str start end))))
+             (format nil "Invalid type ~a." (subseq str start end))))
     (multiple-value-bind (attr-starts attr-ends)
         (vector-split-indices #\; str :start start :end end)
       (mapcar #'(lambda (x y)

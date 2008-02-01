@@ -75,15 +75,23 @@ alphabet."))
                    :token #\?
                    :number nil)))
 
+(defclass identity-mixin ()
+  ((identity :initform nil
+             :initarg :identity
+             :accessor identity-of
+             :documentation "A temporary locally unique identifier."))
+  (:documentation "A mixin which allows assignment of a temporary
+local identifier to an object."))
+
 (defclass quality-mixin ()
-  ((metric :initform (error "a :metric argument is required")
+  ((metric :initform (error "A metric is required.")
            :initarg :metric
            :reader metric-of
            :documentation "A description of the quality metric
 measured by the quality values. For example, p-value, Phred score or
 Illumina score. This should be changed to a controlled vocabulary or
 enumeration.")
-   (quality :initform (error "a :quality argument is required")
+   (quality :initform (error "A quality argument is required.")
             :initarg :quality
             :accessor quality-of
             :documentation "The array of quality values which should
@@ -91,7 +99,7 @@ be the same length as the array of residue tokens."))
   (:documentation "A mixin with support for bio-sequences that have a
 numeric quality value for each residue."))
 
-(defclass bio-sequence (ontology-instance-mixin)
+(defclass bio-sequence (identity-mixin)
   ((alphabet :initarg :alphabet
              :accessor alphabet-of
              :documentation "The alphabet whose tokens comprise the
