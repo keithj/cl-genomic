@@ -1,3 +1,19 @@
+;;;
+;;; Copyright (C) 2007-2008, Keith James. All rights reserved.
+;;;
+;;; This program is free software: you can redistribute it and/or modify
+;;; it under the terms of the GNU General Public License as published by
+;;; the Free Software Foundation, either version 3 of the License, or
+;;; (at your option) any later version.
+;;;
+;;; This program is distributed in the hope that it will be useful,
+;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;; GNU General Public License for more details.
+;;;
+;;; You should have received a copy of the GNU General Public License
+;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;;;
 
 (in-package :cl-bio-system)
 
@@ -9,8 +25,9 @@
 
 (fiveam:in-suite cl-bio-system:testsuite)
 
-;; Test alphabet
+;;; Test alphabet
 (test name-of/alphabet
+  "Test alphabet."
   (let ((name "test name"))
     (is (string= name
                  (name-of (make-instance 'alphabet
@@ -22,7 +39,7 @@
                  (tokens-of (make-instance 'alphabet
                                            :tokens tokens))))))
 
-;; Test encoding/decoding
+;;; Test encoding/decoding
 (test encode/decode-dna-2bit
   (let ((tokens "tagc"))
     (loop for tok across tokens
@@ -47,7 +64,7 @@
        do (is (char= tok (bio-sequence::decode-rna-4bit
                           (bio-sequence::encode-rna-4bit tok)))))))
 
-;; Test constructors
+;;; Test constructors
 (test make-dna/rna
   (let ((seqs (list (make-seq :token-seq "tagc")
                     (make-seq :ambiguity :iupac :token-seq "nnnn")

@@ -1,3 +1,19 @@
+;;;
+;;; Copyright (C) 2007-2008, Keith James. All rights reserved.
+;;;
+;;; This program is free software: you can redistribute it and/or modify
+;;; it under the terms of the GNU General Public License as published by
+;;; the Free Software Foundation, either version 3 of the License, or
+;;; (at your option) any later version.
+;;;
+;;; This program is distributed in the hope that it will be useful,
+;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;; GNU General Public License for more details.
+;;;
+;;; You should have received a copy of the GNU General Public License
+;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;;;
 
 (in-package :bio-sequence)
 
@@ -6,30 +22,49 @@
                                     alphabet ambiguity
                                     &optional (callback nil callback-supplied-p)
                                     callback-args)
-  (let ((seq-header (find-line stream #'fastq-header-p)))
+  (let ((seq-header (find-line stream #'byte-fastq-header-p)))
     (if seq-header
-        (let ((seq (stream-read-line stream))
-              (quality-header (stream-read-line stream))
-              (quality (stream-read-line stream)))
-          (cond ((and seq quality-header quality
-                      (starts-with-byte-p quality-header (char-code #\+))
-                      callback-supplied-p)
-                 (apply callback (make-quality-alist
-                                  (make-sb-string seq-header 1)
-                                  alphabet ambiguity
-                                  (make-sb-string seq)
-                                  quality)
-                        callback-args))
-                ((and seq quality-header quality
-                      (starts-with-byte-p quality-header (char-code #\+)))
-                 (make-quality-alist (make-sb-string seq-header 1)
-                                     alphabet ambiguity
-                                     (make-sb-string seq)
-                                     quality))
-                (t
-                 (error 'malformed-record-error :text
-                        "Incomplete Fastq record."))))
+        (multiple-value-bind (seq quality-header quality)
+            (read-fastq-record stream #'byte-fastq-quality-header-p)
+          (let ((alist (make-quality-alist
+                        (make-sb-string seq-header 1)
+                        alphabet ambiguity
+                        (make-sb-string seq)
+                        quality)))
+            (if callback-supplied-p
+                (apply callback alist callback-args)
+              alist)))
       nil)))
+
+(defmethod read-bio-sequence-alist ((stream character-line-input-stream)
+                                    (format (eql :fastq))
+                                    alphabet ambiguity
+                                    &optional (callback nil callback-supplied-p)
+                                    callback-args)
+  (let ((seq-header (find-line stream #'char-fastq-header-p)))
+    (if seq-header
+        (multiple-value-bind (seq quality-header quality)
+            (read-fastq-record stream #'char-fastq-quality-header-p)
+          (let ((alist (make-quality-alist
+                        (string-left-trim '(#\@) seq-header)
+                        alphabet ambiguity
+                        seq
+                        quality)))
+            (if callback-supplied-p
+                (apply callback alist callback-args)
+              alist)))
+      nil)))
+
+(defun read-fastq-record (stream qual-header-validate-fn)
+  (let ((seq (stream-read-line stream))
+        (quality-header (stream-read-line stream))
+        (quality (stream-read-line stream)))
+    (unless (and seq
+                 (funcall qual-header-validate-fn quality-header)
+                 quality)
+      (error 'malformed-record-error :text
+             "Incomplete Fastq record."))
+    (values seq quality-header quality)))
 
 (defun make-quality-seq-fastq (alist metric)
   "Callback which accepts a ALIST and creates a new
@@ -78,5 +113,14 @@ file of pathname CHUNK-PNAME."
         ((or (null fq)
              (= count n)) count))))
 
-(defun fastq-header-p (bytes)
+(defun byte-fastq-header-p (bytes)
   (starts-with-byte-p bytes (char-code #\@)))
+
+(defun char-fastq-header-p (str)
+  (starts-with-byte-p str #\@))
+
+(defun byte-fastq-quality-header-p (bytes)
+  (starts-with-byte-p bytes (char-code #\+)))
+
+(defun char-fastq-quality-header-p (str)
+  (starts-with-char-p str #\+))

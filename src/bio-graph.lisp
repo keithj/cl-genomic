@@ -1,9 +1,24 @@
+;;;
+;;; Copyright (C) 2007-2008, Keith James. All rights reserved.
+;;;
+;;; This program is free software: you can redistribute it and/or modify
+;;; it under the terms of the GNU General Public License as published by
+;;; the Free Software Foundation, either version 3 of the License, or
+;;; (at your option) any later version.
+;;;
+;;; This program is distributed in the hope that it will be useful,
+;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;; GNU General Public License for more details.
+;;;
+;;; You should have received a copy of the GNU General Public License
+;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;;;
 
 (in-package :bio-sequence)
 
 
 ;;; General purpose graph classes
-
 (defclass graph ()
   ((vertex-table :initform (make-hash-table)
                  :reader vertex-table-of
@@ -41,14 +56,12 @@ vertices and directed edges."))
 
 
 ;;; Vertex and edge classes and special behaviour methods
-
 (defclass vertex ()
   ((identity :initarg :identity
              :reader identity-of
              :documentation "A unique fixnum identifying a vertex with
 particlular semantics."))
   (:documentation "A graph vertex."))
-
 
 (defclass edge ()
   ((identity :reader identity-of
@@ -71,7 +84,6 @@ target vertex."))
 
 
 ;;; Vertex methods
-
 (defmethod add-vertex ((vertex vertex) (graph graph))
   (when (contains-vertex-p vertex graph)
     (error "Vertex ~a is already a member of graph ~a." vertex graph))
@@ -174,7 +186,6 @@ target vertex."))
 
 
 ;;; Edge methods
-
 (defmethod add-edge ((source vertex) (target vertex)
                      (graph directed-graph))
   (unless (contains-vertex-p source graph)
@@ -251,7 +262,6 @@ target vertex."))
 
 
 ;;; Graph search methods
-
 (defmethod graph-search ((start vertex) (end vertex)
                          (graph directed-graph) &key method (test #'eql))
   (unless (contains-vertex-p start graph)
@@ -306,7 +316,6 @@ include duplicates where DAG contains diamonds."
 
 
 ;;; Printing methods
-
 (defmethod print-object ((graph graph) stream)
   (format stream "<GRAPH ~a vertices>"
           (hash-table-count (slot-value graph 'vertex-table))))
@@ -338,7 +347,6 @@ include duplicates where DAG contains diamonds."
 
 
 ;;; Internal functions
-
 (defun roots-with-edges (directed-graph)
   "Returns a list containing all root nodes that have out-edges."
   (let ((source-table (source-table-of directed-graph)))
