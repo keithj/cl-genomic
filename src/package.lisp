@@ -91,5 +91,9 @@
    #:domain-of
    #:range-of
    #:value-of
-   #:slot-value-of
-   ))
+   #:slot-value-of))
+
+(defpackage bio-sequence-user
+  (:use #:common-lisp #:bio-sequence
+        #:cl-io-utilities #:cl-gp-utilities
+        #:trivial-gray-streams))

@@ -23,9 +23,10 @@
                                     &optional (callback nil callback-supplied-p)
                                     callback-args)
   (let ((seq-header (find-line stream #'byte-fastq-header-p)))
-    (if seq-header
+    (if (vectorp seq-header)
         (multiple-value-bind (seq quality-header quality)
             (read-fastq-record stream #'byte-fastq-quality-header-p)
+          (declare (ignore quality-header))
           (let ((alist (make-quality-alist
                         (make-sb-string seq-header 1)
                         alphabet ambiguity
@@ -42,9 +43,10 @@
                                     &optional (callback nil callback-supplied-p)
                                     callback-args)
   (let ((seq-header (find-line stream #'char-fastq-header-p)))
-    (if seq-header
+    (if (vectorp seq-header)
         (multiple-value-bind (seq quality-header quality)
             (read-fastq-record stream #'char-fastq-quality-header-p)
+          (declare (ignore quality-header))
           (let ((alist (make-quality-alist
                         (string-left-trim '(#\@) seq-header)
                         alphabet ambiguity
@@ -59,9 +61,9 @@
   (let ((seq (stream-read-line stream))
         (quality-header (stream-read-line stream))
         (quality (stream-read-line stream)))
-    (unless (and seq
+    (unless (and (vectorp seq)
                  (funcall qual-header-validate-fn quality-header)
-                 quality)
+                 (vectorp quality))
       (error 'malformed-record-error :text
              "Incomplete Fastq record."))
     (values seq quality-header quality)))
@@ -114,13 +116,21 @@ file of pathname CHUNK-PNAME."
              (= count n)) count))))
 
 (defun byte-fastq-header-p (bytes)
+  "Returns T if BYTES are a Fastq header (start with the character
+code for '@'), or NIL otherwise."
   (starts-with-byte-p bytes (char-code #\@)))
 
 (defun char-fastq-header-p (str)
+  "Returns T if STR is a Fastq header (starts with the character '@'),
+or NIL otherwise."
   (starts-with-byte-p str #\@))
 
 (defun byte-fastq-quality-header-p (bytes)
+  "Returns T if BYTES are a Fastq quality header (start with the
+character code for '+'), or NIL otherwise."
   (starts-with-byte-p bytes (char-code #\+)))
 
 (defun char-fastq-quality-header-p (str)
+ "Returns T if STR is a Fastq header (starts with the character '@'),
+or NIL otherwise."
   (starts-with-char-p str #\+))

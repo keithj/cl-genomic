@@ -26,7 +26,7 @@
                                     &optional (callback nil callback-supplied-p)
                                     callback-args)
   (let ((seq-header (find-line stream #'byte-fasta-header-p)))
-    (if seq-header
+    (if (vectorp seq-header)
         (multiple-value-bind (identity description)
             (parse-fasta-header (make-sb-string seq-header))
           (let ((alist (make-seq-alist
@@ -46,7 +46,7 @@
                                     &optional (callback nil callback-supplied-p)
                                     callback-args)
   (let ((seq-header (find-line stream #'char-fasta-header-p)))
-    (if seq-header
+    (if (vectorp seq-header)
         (multiple-value-bind (identity description)
             (parse-fasta-header seq-header)
           (let ((alist (make-seq-alist
@@ -62,14 +62,18 @@
 
 
 (defun concat-fasta-chunks (stream header-p-fn concat-fn)
+  "Returns a string of concatenated Fasta sequence chunks read from
+line-input-stream STREAM. Lines are read until the next Fasta header
+is encountered (detected by HEADER-P-FN) or until the end of the
+stream is reached. The lines are concatenated using CONCAT-FN."
   (let ((seq-cache (make-array 0 :adjustable t :fill-pointer t)))
     (loop
        as line = (stream-read-line stream)
        and cache-extend = (max 256 (floor (/ (length seq-cache) 2)))
-       while line
+       while (vectorp line)
        until (funcall header-p-fn line)
        do (vector-push-extend line seq-cache cache-extend)
-       finally (when line
+       finally (when (vectorp line)
                  (push-line stream line)))
     (when (zerop (length seq-cache))
       (error 'malformed-record-error :text "Incomplete Fasta record."))
@@ -93,9 +97,13 @@ ALIST to OUTPUT-STREAM in Fasta format."
   t)
 
 (defun byte-fasta-header-p (bytes)
+  "Returns T if BYTES are a Fasta header (start with the character
+code for '>'), or NIL otherwise."
   (starts-with-byte-p bytes (char-code #\>)))
 
 (defun char-fasta-header-p (str)
+  "Returns T if STR is a Fasta header (starts with the character
+'>'), or NIL otherwise."
   (starts-with-char-p str #\>))
 
 (defun parse-fasta-header (str)

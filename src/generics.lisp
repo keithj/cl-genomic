@@ -41,64 +41,13 @@ last residue, or for LENGTH residues."))
 
 ;;; bio-sequence io generics
 
+(defgeneric read-bio-sequence (stream &key alphabet ambiguity format)
+  (:documentation "Reads a sequence record from STREAM. Keywords are
+used to specify the expected alphabet (:dna, :rna), ambiguity (:iupac,
+nil) and record format (:fasta, :fastq)."))
+
 (defgeneric read-bio-sequence-alist (input format alphabet ambiguity
                                      &optional callback callback-args)
   (:documentation "Reads a sequence record of ALPHABET with AMBIGUITY
 from INPUT in FORMAT, optionally applying function CALLBACK with
 additional CALLBACK-ARGS to the result."))
-
-
-;;; bio-graph generics
-
-(defgeneric lookup-vertex (identity graph)
-  (:documentation "Returns a vertex from GRAPH given its unique
-IDENTITY."))
-
-(defgeneric contains-vertex-p (vertex graph)
-  (:documentation "Returns T if VERTEX is present in GRAPH, or NIL
-otherwise."))
-
-(defgeneric out-edges-of (vertex graph &key filter-fn)
-  (:documentation "Returns a list of the out edges of VERTEX in
-GRAPH, minus those that match FILTER-FN."))
-
-(defgeneric in-edges-of (vertex graph &key filter-fn)
-  (:documentation "Returns a list of the in edges of VERTEX in
-GRAPH, minus those that match FILTER-FN."))
-
-(defgeneric predecessors-of (vertex graph &key filter-fn)
-  (:documentation "Returns a list of the predecessor vertices of
-VERTEX in GRAPH, minus those that match FILTER-FN."))
-
-(defgeneric successors-of (vertex graph &key filter-fn)
-  (:documentation "Returns a list of the successor vertices of VERTEX
-in GRAPH, minus those that match FILTER-FN."))
-
-(defgeneric add-vertex (vertex graph)
-  (:documentation "Adds VERTEX to GRAPH. Throws an error if VERTEX is
-already present."))
-
-(defgeneric remove-vertex (vertex graph)
-  (:documentation "Removes VERTEX from GRAPH and removes any edges
-connected to VERTEX. Throws an error if VERTEX is not present."))
-
-(defgeneric contains-edge-p (edge graph)
-  (:documentation "Returns T if EDGE is present in GRAPH, or NIL
-otherwise."))
-
-(defgeneric add-edge (source target graph)
-  (:documentation "Adds an edge to GRAPH directed from vertex SOURCE
-to vertex TARGET. Throws an error if an edge from SOURCE to TARGET
-already exists."))
-
-(defgeneric remove-edge (edge graph)
-  (:documentation "Removes EDGE from GRAPH. Throws an error if EDGE is
-not present in GRAPH."))
-
-(defgeneric ancestors-of (vertex graph &key filter-fn)
-  (:documentation "Returns a list of ancestors of VERTEX in GRAPH,
-minus those that match FILTER-FN."))
-
-(defgeneric descendants-of (vertex graph &key filter-fn)
-  (:documentation "Returns a list of descendants of VERTEX in GRAPH,
-minus those that match FILTER-FN."))

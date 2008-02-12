@@ -27,8 +27,7 @@
     (let* ((stream (make-line-input-stream fs))
            (s (read-bio-sequence stream
                                  :alphabet :dna
-                                 :format :fasta
-                                 :callback #'make-seq-from-alist)))
+                                 :format :fasta)))
       (is (eql 'simple-dna-sequence (type-of s)))
       (is (eql *dna* (alphabet-of s)))
       (is (= 210 (length-of s)))
@@ -40,8 +39,7 @@
            (s (read-bio-sequence stream
                                  :alphabet :dna
                                  :ambiguity :iupac
-                                 :format :fasta
-                                 :callback #'make-seq-from-alist)))
+                                 :format :fasta)))
       (is (eql 'iupac-dna-sequence (type-of s)))
       (is (eql *iupac-dna* (alphabet-of s)))
       (is (= 210 (length-of s)))
@@ -55,8 +53,7 @@
       (dotimes (n 2)
         (let ((s (read-bio-sequence stream
                                     :alphabet :dna
-                                    :format :fasta
-                                    :callback #'make-seq-from-alist)))
+                                    :format :fasta)))
           (is (eql 'simple-dna-sequence (type-of s)))
           (is (eql *dna* (alphabet-of s)))
           (is (= 280 (length-of s)))
@@ -72,8 +69,7 @@
         (let ((s (read-bio-sequence stream
                                     :alphabet :dna
                                     :ambiguity :iupac
-                                    :format :fasta
-                                    :callback #'make-seq-from-alist)))
+                                    :format :fasta)))
           (is (eql 'iupac-dna-sequence (type-of s)))
           (is (eql *iupac-dna* (alphabet-of s)))
           (is (= 280 (length-of s)))

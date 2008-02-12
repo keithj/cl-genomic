@@ -175,3 +175,11 @@ bases U, C, A and G."))
 
 (defclass iupac-dna-quality-sequence (iupac-dna-sequence quality-mixin)
   ())
+
+(defclass bio-sequence-range ()
+  ((start :initarg :start
+          :accessor start-of)
+   (end :initarg :end
+        :accessor end-of)
+   (strand :initarg :strand
+           :accessor strand-of)))

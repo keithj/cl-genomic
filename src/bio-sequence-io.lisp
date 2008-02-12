@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (C) 2007, Keith James. All rights reserved.
+;;; Copyright (C) 2007-2008, Keith James. All rights reserved.
 ;;;
 ;;; This program is free software: you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
@@ -19,12 +19,9 @@
 
 (defparameter *seq-line-buffer-size* 512)
 
-(defun read-bio-sequence (line-input-stream &key alphabet ambiguity
-                          format callback callback-args)
-  "Reads a sequence record from LINE-INPUT-STREAM, optionally applying
-function CALLBACK with additional CALLBACK-ARGS to the
-result. Keywords are used to specify the expected alphabet (:dna,
-:rna), ambiguity (:iupac, nil) and record format (:fasta, :fastq)."
+
+(defmethod read-bio-sequence :before (stream &key alphabet ambiguity format
+                                             callback callback-args)
   (unless alphabet
     (error "An alphabet must be supplied."))
   (unless format
@@ -33,11 +30,12 @@ result. Keywords are used to specify the expected alphabet (:dna,
     (error "Callback arguments ~a were supplied without a callback."
            callback-args))
   (unless (member ambiguity '(:iupac :auto nil))
-    (error "Invalid ambiguity (~a): expected one of ~a."
-           ambiguity '(:iupac :auto nil)))
-  (read-bio-sequence-alist line-input-stream format alphabet
-                           ambiguity callback callback-args))
+    (error "Invalid ambiguity ~a: expected one of ~a."
+           ambiguity '(:iupac :auto nil))))
 
+(defmethod read-bio-sequence (stream &key alphabet ambiguity format)
+  (read-bio-sequence-alist stream format alphabet ambiguity
+                           #'make-seq-from-alist))
 
 
 (defun make-seq-alist (identity alphabet ambiguity token-seq
@@ -55,11 +53,6 @@ tokens TOKEN-SEQ and a DESCRIPTION string."
                         ambiguity))
                  token-seq description)))
 
-(defun make-quality-alist (identity alphabet ambiguity token-seq quality)
-  "Returns an alist, given a sequence IDENTITY, a vector of residue
-tokens TOKEN-SEQ and a QUALITY vector."
-  (acons :quality quality
-         (make-seq-alist identity alphabet ambiguity token-seq)))
 
 (defun make-seq-from-alist (alist)
   "A callback which constructs a CLOS bio-sequence object from
@@ -68,12 +61,6 @@ sequence data that has been parsed into an ALIST."
              :ambiguity (assocdr :ambiguity alist)
              :identity (assocdr :identity alist)
              :token-seq (assocdr :token-seq alist)))
-
-(defun make-removing-callback (callback predicate)
-  (lambda (sexp &rest callback-args)
-    (if (funcall predicate sexp)
-        nil
-      (apply callback sexp callback-args))))
 
 (defun make-chunk-pname (file-pname chunk-number)
   "Returns a new pathname for a file chunk based on a file pathname
@@ -84,3 +71,8 @@ FILE-PNAME and an integer CHUNK-NUMBER."
                       (princ-to-string chunk-number))
    :type (pathname-type file-pname)))
 
+(defun make-quality-alist (identity alphabet ambiguity token-seq quality)
+  "Returns an alist, given a sequence IDENTITY, a vector of residue
+tokens TOKEN-SEQ and a QUALITY vector."
+  (acons :quality quality
+         (make-seq-alist identity alphabet ambiguity token-seq)))

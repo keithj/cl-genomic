@@ -32,7 +32,9 @@
            '(simple-dna-sequence simple-rna-sequence
              iupac-dna-sequence iupac-rna-sequence
              simple-dna-quality-sequence
-             iupac-dna-quality-sequence)))
+             iupac-dna-quality-sequence))
+  "Mappings of (alphabet ambuiguity sequence-quality) tuples to CLOS
+bio-sequence classes.")
 
 (defvar *sequence-print-limit* 50
   "Maximum length of sequence to be pretty-printed.")
@@ -76,11 +78,15 @@ type TOKEN-SEQ-TYPE in the token-seq slot of SEQ."
       ,dest)))
 
 (defun ensure-simple-encoded (vector encoder)
+  "If VECTOR is not of element-type (unsigned-byte 2), attempts to
+encode it as such with ENCODER."
   (if (equal (array-element-type vector) '(unsigned-byte 2))
       vector
     (encode-simple vector encoder)))
 
 (defun ensure-iupac-encoded (vector encoder)
+  "If VECTOR is not of element-type (unsigned-byte 4), attempts to
+encode it as such with ENCODER."
   (if (equal (array-element-type vector) '(unsigned-byte 4))
       vector
     (encode-iupac vector encoder)))
@@ -339,6 +345,8 @@ ALPHABET, AMBIGUITY and QUALITY."
               name (metric-of obj) len))))
 
 (defun process-token-seq-args (token-seq length)
+  "Returns its arguments, having checked their consistency for use
+when making bio-sequence instances."
   (cond ((and (null token-seq)
               (null length))
          (error "Invalid token-seq and length: expected one to be non-NIL."))
@@ -357,9 +365,13 @@ ALPHABET, AMBIGUITY and QUALITY."
          (error "Invalid token-seq and length: expected one to be NIL."))))
 
 (defun initialize-seq (seq seq-encoder token-encoder)
+  "Returns SEQ, having initialized the token-seq of bio-sequence SEQ
+using SEQ-ENCODER to encode the vector and TOKEN-ENCODER to encode the
+elements therein."
   (with-slots (token-seq length) seq
     (multiple-value-bind (valid-token-seq valid-length)
         (process-token-seq-args token-seq length)
       (if valid-token-seq
           (setf token-seq (funcall seq-encoder valid-token-seq token-encoder))
-        (setf length valid-length)))))
+        (setf length valid-length))))
+  seq)
