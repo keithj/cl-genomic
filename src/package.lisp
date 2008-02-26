@@ -25,11 +25,17 @@
    #:*iupac-dna*
    #:*iupac-rna*
 
+   #:*forward-strand*
+   #:*reverse-strand*
+   #:*without-strand*
+   #:*unknown-strand*
+
    #:*default-knowledgebase*
    ;; Conditions
    #:knowledgebase-error
 
    ;; Functions
+   #:find-alphabet
    #:read-bio-sequence
    #:make-seq
    #:make-quality-seq
@@ -56,7 +62,8 @@
 
    #:knowledgebase
    #:frame
-   #:slot
+   #:single-valued-slot
+   #:set-valued-slot
    #:reflexive-mixin
    #:transitive-mixin
    #:inverse-mixin
@@ -69,6 +76,8 @@
    ;; Generic functions
    #:identity-of
    #:name-of
+   #:simplep
+   #:virtualp
    #:tokens-of
    #:alphabet-of
    #:residue-of

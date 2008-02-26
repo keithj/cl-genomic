@@ -19,111 +19,146 @@
 
 (fiveam:in-suite cl-bio-system:testsuite)
 
-;;; Basic adding and removal of frames
-(test add-frame/knowledgebase
-  (let ((kb (make-instance 'knowledgebase))
-        (f (make-instance 'frame :name "thing")))
-    (is (eql f (add-frame f kb)))
-    (is-true (contains-frame-p f kb))
-    (signals knowledgebase-error
-      (add-frame (make-instance 'frame :name "thing") kb))))
 
-(test remove-frame/knowledgebase
-  (let ((kb (make-instance 'knowledgebase))
-        (f (make-instance 'frame :name "thing")))
-    (add-frame f kb)
-    (is-true (contains-frame-p f kb))
-    (is (eql f (remove-frame f kb)))
-    (is-false (contains-frame-p f kb))
-    (signals knowledgebase-error
-      (remove-frame f kb))))
+;; ;;; Basic adding and removal of frames
+;; (test add-frame/knowledgebase
+;;   (let ((kb (make-instance 'knowledgebase))
+;;         (f (make-instance 'frame :name "thing")))
+;;     (is (eql f (add-frame f kb)))
+;;     (is-true (contains-frame-p f kb))
+;;     (signals knowledgebase-error
+;;       (add-frame (make-instance 'frame :name "thing") kb))))
 
-;;; Basic frame existence testing
-(test contains-frame-p/knowledgebase
-  (let ((kb (make-instance 'knowledgebase))
-        (f (make-instance 'frame :name "thing")))
-    (add-frame f kb)
-    (is-true (contains-frame-p f kb))))
+;; (test remove-frame/knowledgebase
+;;   (let ((kb (make-instance 'knowledgebase))
+;;         (f (make-instance 'frame :name "thing")))
+;;     (add-frame f kb)
+;;     (is-true (contains-frame-p f kb))
+;;     (is (eql f (remove-frame f kb)))
+;;     (is-false (contains-frame-p f kb))
+;;     (signals knowledgebase-error
+;;       (remove-frame f kb))))
 
-(test find-frame/knowledgebase
-  (let ((kb (make-instance 'knowledgebase))
-        (f (make-instance 'frame :name "thing")))
-    (is-false (contains-frame-p "thing" kb))
-    (add-frame f kb)
-    (is (eql f (find-frame "thing" kb)))
-    (signals knowledgebase-error
-      (find-frame "no-such-frame" kb))))
 
-;;; Basic adding and removal of slots
-(test add-slot/frame
-  (let ((kb (make-instance 'knowledgebase))
-        (f (make-instance 'frame :name "thing"))
-        (n (make-instance 'slot :name "note")))
-    (signals knowledgebase-error
-      (add-slot f n kb))
-    (add-frame f kb)
-    (is (eql f (add-slot f n kb)))
-    (is (equalp (make-array 1 :initial-contents (list n)) (slots-of f)))
-    (signals knowledgebase-error
-      (add-slot f n kb))))
+;; ;;; Basic frame existence testing
+;; (test contains-frame-p/knowledgebase
+;;   (let ((kb (make-instance 'knowledgebase))
+;;         (f (make-instance 'frame :name "thing")))
+;;     (add-frame f kb)
+;;     (is-true (contains-frame-p f kb))))
 
-(test remove-slot/knowledgebase
-  (let ((kb (make-instance 'knowledgebase))
-        (f (make-instance 'frame :name "thing"))
-        (n (make-instance 'slot :name "note"))
-        (s (make-instance 'slot :name "score")))
-    (add-frame f kb)
-    ;; Test removal where slot is last in the slots vector
-    (add-slot f n kb)
-    (is-true (contains-slot-p f n kb))
-    (is (eql f (remove-slot f n kb)))
-    (is-false (contains-slot-p f n kb))
-    ;; Test removal where slot id not last in the slots vector
-    (add-slot f n kb)
-    (add-slot f s kb)
-    (is-true (contains-slot-p f n kb))
-    (is-true (contains-slot-p f s kb))
-    (is (eql f (remove-slot f s kb)))
-    (is-true (contains-slot-p f n kb))
-    (is-false (contains-slot-p f s kb))))
+;; (test find-frame/knowledgebase
+;;   (let ((kb (make-instance 'knowledgebase))
+;;         (f (make-instance 'frame :name "thing")))
+;;     (is-false (contains-frame-p "thing" kb))
+;;     (add-frame f kb)
+;;     (is (eql f (find-frame "thing" kb)))
+;;     (signals knowledgebase-error
+;;       (find-frame "no-such-frame" kb))))
 
-(test contains-slot-p/frame
-  (let ((kb (make-instance 'knowledgebase))
-        (f (make-instance 'frame :name "thing"))
-        (n (make-instance 'slot :name "note")))
-    (add-frame f kb)
-    (is-false (contains-slot-p f "note" kb))
-    (is-false (contains-slot-p f n kb))
-    (add-slot f n kb)
-    (is-true (contains-slot-p f "note" kb))
-    (is-true (contains-slot-p f n kb))))
 
-(test find-slot/frame
-  (let ((kb (make-instance 'knowledgebase))
-        (f (make-instance 'frame :name "thing"))
-        (n (make-instance 'slot :name "note")))
-    (add-frame f kb)
-    (add-slot f n kb)
-    (is (eql n (find-slot f "note" kb)))))
+;; ;;; Basic adding and removal of slots
+;; (test add-slot/frame
+;;   (let ((kb (make-instance 'knowledgebase))
+;;         (f (make-instance 'frame :name "thing"))
+;;         (n (make-instance 'single-valued-slot :name "note")))
+;;     (signals knowledgebase-error
+;;       (add-slot f n kb))
+;;     (add-frame f kb)
+;;     (is (eql f (add-slot f n kb)))
+;;     (is (equalp (make-array 1 :initial-contents (list n)) (slots-of f)))
+;;     (signals knowledgebase-error
+;;       (add-slot f n kb))))
 
-(test value-of/frame/slot
-  (let ((kb (make-instance 'knowledgebase))
-        (f (make-instance 'frame :name "thing"))
-        (n (make-instance 'slot :name "note")))
-    (add-frame f kb)
-    (add-slot f n kb)
-    (is (null (value-of n)))
-    (is (null (slot-value-of f n kb)))
-    (is (null (slot-value-of "thing" "note" kb)))
-    (setf (slot-value-of f n kb) "A note.")
-    (is (string= "A note." (slot-value-of f n kb)))))
+;; (test remove-slot/knowledgebase
+;;   (let ((kb (make-instance 'knowledgebase))
+;;         (f (make-instance 'frame :name "thing"))
+;;         (n (make-instance 'single-valued-slot :name "note"))
+;;         (s (make-instance 'single-valued-slot :name "score")))
+;;     (add-frame f kb)
+;;     ;; Test removal where slot is last in the slots vector
+;;     (add-slot f n kb)
+;;     (is-true (contains-slot-p f n kb))
+;;     (is (eql f (remove-slot f n kb)))
+;;     (is-false (contains-slot-p f n kb))
+;;     ;; Test removal where slot id not last in the slots vector
+;;     (add-slot f n kb)
+;;     (add-slot f s kb)
+;;     (is-true (contains-slot-p f n kb))
+;;     (is-true (contains-slot-p f s kb))
+;;     (is (eql f (remove-slot f s kb)))
+;;     (is-true (contains-slot-p f n kb))
+;;     (is-false (contains-slot-p f s kb))))
 
-(test value-of/frame/inverse-slot
-  (let ((kb (make-instance 'knowledgebase))
-        (car (make-instance 'frame :name "car"))
-        (wheel (make-instance 'frame :name "wheel"))
-        (wheel-slot (make-instance 'part-of :name "car-part")))
-    (add-frame car kb)
-    (add-frame wheel kb)
-    (add-slot car wheel-slot kb)
-    (setf (slot-value-of car wheel-slot kb) wheel)))
+;; (test contains-slot-p/frame
+;;   (let ((kb (make-instance 'knowledgebase))
+;;         (f (make-instance 'frame :name "thing"))
+;;         (n (make-instance 'single-valued-slot :name "note")))
+;;     (add-frame f kb)
+;;     (is-false (contains-slot-p f "note" kb))
+;;     (is-false (contains-slot-p f n kb))
+;;     (add-slot f n kb)
+;;     (is-true (contains-slot-p f "note" kb))
+;;     (is-true (contains-slot-p f n kb))))
+
+;; (test find-slot/frame
+;;   (let ((kb (make-instance 'knowledgebase))
+;;         (f (make-instance 'frame :name "thing"))
+;;         (n (make-instance 'single-valued-slot :name "note")))
+;;     (add-frame f kb)
+;;     (add-slot f n kb)
+;;     (is (eql n (find-slot f "note" kb)))))
+
+;; (test value-of/frame/slot
+;;   (let ((kb (make-instance 'knowledgebase))
+;;         (f (make-instance 'frame :name "thing"))
+;;         (n (make-instance 'single-valued-slot :name "note")))
+;;     (add-frame f kb)
+;;     (add-slot f n kb)
+;;     (is (null (value-of n)))
+;;     (is (null (slot-value-of f n kb)))
+;;     (is (null (slot-value-of "thing" "note" kb)))
+;;     (setf (slot-value-of f n kb) "A note.")
+;;     (is (string= "A note." (slot-value-of f n kb)))))
+
+
+;; ;;; Adding an inverse slot
+;; (test value-of/frame/inverse-slot
+;;   (let ((kb (make-instance 'knowledgebase))
+;;         (car (make-instance 'frame :name "car"))
+;;         (wheel (make-instance 'frame :name "wheel"))
+;;         (part-of-slot (make-instance 'part-of :name "part-of")))
+;;     (add-frame car kb)
+;;     (add-frame wheel kb)
+;;     (add-slot wheel part-of-slot kb)
+;;     (setf (slot-value-of wheel part-of-slot kb) (list car))
+;;     (is-true (contains-slot-p car "has-part" kb))
+;;     (is (eql (slot-value-of car "has-part") wheel))))
+
+
+;; ;;; Adding a slot with a domain
+;; (test add-slot/domain/frame
+;;   (let ((kb (make-instance 'knowledgebase))
+;;         (f (make-instance 'frame :name "thing"))
+;;         (n (make-instance 'single-valued-slot :name "note" :domain 'frame)))
+;;     (add-frame f kb)
+;;     (is-false (contains-slot-p f n kb))
+;;     (add-slot f n kb)
+;;     (is-true (contains-slot-p f "note" kb))
+;;     (signals knowledgebase-error
+;;       (add-slot f (make-instance 'single-valued-slot :name "note"
+;;                                  :domain 'simple-dna-sequence) kb))))
+
+;; ;;; Adding a slot with a range
+;; (test add-slot/range/frame
+;;   (let ((kb (make-instance 'knowledgebase))
+;;         (f (make-instance 'frame :name "thing"))
+;;         (n (make-instance 'single-valued-slot :name "note" :range 'string)))
+;;     (add-frame f kb)
+;;     (is-false (contains-slot-p f n kb))
+;;     (add-slot f n kb)
+;;     (is (null (slot-value-of "thing" "note" kb)))
+;;     (signals knowledgebase-error
+;;       (setf (slot-value-of f n kb) 999))
+;;     (setf (slot-value-of f n kb) "A note.")
+;;     (is (string= "A note." (slot-value-of f n kb)))))

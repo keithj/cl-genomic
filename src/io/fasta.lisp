@@ -20,21 +20,31 @@
 (defparameter *fasta-line-width* 50
   "Line width for printing Fasta files.")
 
+(defparameter *token-cache-extend* 256
+  "The number of elements by which the token cache is extended when it
+becomes full of chunks of sequence tokens.")
+
+
 (defmethod read-bio-sequence-alist ((stream binary-line-input-stream)
                                     (format (eql :fasta))
-                                    alphabet ambiguity
-                                    &optional (callback nil callback-supplied-p)
+                                    &key alphabet ambiguity virtualp
+                                    (callback nil callback-supplied-p)
                                     callback-args)
   (let ((seq-header (find-line stream #'byte-fasta-header-p)))
     (if (vectorp seq-header)
         (multiple-value-bind (identity description)
             (parse-fasta-header (make-sb-string seq-header))
-          (let ((alist (make-seq-alist
-                        identity alphabet ambiguity
-                        (concat-fasta-chunks stream
-                                             #'byte-fasta-header-p
-                                             #'concat-into-sb-string)
-                        description)))
+          (let ((alist (make-seq-alist identity alphabet ambiguity
+                                       :token-seq (unless virtualp
+                                                    (concat-fasta-chunks
+                                                     stream
+                                                     #'byte-fasta-header-p
+                                                     #'concat-into-sb-string))
+                                       :length (when virtualp
+                                                 (count-fasta-residues
+                                                  stream
+                                                  #'byte-fasta-header-p))
+                                       :description description)))
             (if callback-supplied-p
                 (apply callback alist callback-args)
               alist)))
@@ -42,24 +52,49 @@
 
 (defmethod read-bio-sequence-alist ((stream character-line-input-stream)
                                     (format (eql :fasta))
-                                    alphabet ambiguity
-                                    &optional (callback nil callback-supplied-p)
+                                    &key alphabet ambiguity virtualp
+                                    (callback nil callback-supplied-p)
                                     callback-args)
   (let ((seq-header (find-line stream #'char-fasta-header-p)))
     (if (vectorp seq-header)
         (multiple-value-bind (identity description)
             (parse-fasta-header seq-header)
-          (let ((alist (make-seq-alist
-                        identity alphabet ambiguity
-                        (concat-fasta-chunks stream
-                                             #'char-fasta-header-p
-                                             #'concat-strings)
-                        description)))
+          (let ((alist (make-seq-alist identity alphabet ambiguity
+                                      :token-seq (unless virtualp
+                                                    (concat-fasta-chunks
+                                                     stream
+                                                     #'char-fasta-header-p
+                                                     #'concat-strings))
+                                       :length (when virtualp
+                                                 (count-fasta-residues
+                                                  stream
+                                                  #'char-fasta-header-p))
+                                       :description description)))
             (if callback-supplied-p
                 (apply callback alist callback-args)
               alist)))
       nil)))
 
+(defmethod read-bio-sequence (stream (format (eql :fasta))
+                              &key alphabet ambiguity virtualp)
+  (read-bio-sequence-alist stream format :alphabet alphabet
+                           :ambiguity ambiguity :virtualp virtualp
+                           :callback #'make-seq-from-alist))
+
+(defun count-fasta-residues (stream header-p-fn)
+  "Returns an integer which is the number of Fasta sequence residues
+read from line-input-stream STREAM. Lines are read until the next
+Fasta header is encountered (detected by HEADER-P-FN) or until the end
+of the stream is reached."
+  (let ((num-residues 0))
+    (loop
+       as line = (stream-read-line stream)
+       while (vectorp line)
+       until (funcall header-p-fn line)
+       do (incf num-residues (length line))
+       finally (when (vectorp line)
+                 (push-line stream line))) ; push back the new header
+    num-residues))
 
 (defun concat-fasta-chunks (stream header-p-fn concat-fn)
   "Returns a string of concatenated Fasta sequence chunks read from
@@ -74,11 +109,10 @@ stream is reached. The lines are concatenated using CONCAT-FN."
        until (funcall header-p-fn line)
        do (vector-push-extend line seq-cache cache-extend)
        finally (when (vectorp line)
-                 (push-line stream line)))
+                 (push-line stream line))) ; push back the new header
     (when (zerop (length seq-cache))
       (error 'malformed-record-error :text "Incomplete Fasta record."))
     (funcall concat-fn seq-cache)))
-
 
 (defun write-alist-fasta (alist &optional output-stream)
   "A callback which writes sequence data that has been parsed into an

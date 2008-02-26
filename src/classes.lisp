@@ -17,79 +17,102 @@
 
 (in-package :bio-sequence)
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (defclass alphabet ()
-    ((name :initarg :name
-           :reader name-of
-           :documentation "The alphabet name.")
-     (tokens :initform ""
+(defvar *alphabets* (make-hash-table))
+
+(defun find-alphabet (name)
+  (multiple-value-bind (alphabet presentp)
+      (gethash name *alphabets*)
+    (unless presentp
+      (error "Invalid alphabet ~a." name))
+    alphabet))
+
+(defclass alphabet ()
+  ((name :initarg :name
+         :reader name-of
+         :documentation "The alphabet name.")
+   (encoder :initarg :encoder
+            :reader encoder-of)
+   (decoder :initarg :decoder
+            :reader decoder-of)
+   (encoded-index :initarg :encoded-index
+                  :reader encoded-index-of)
+   (tokens :initform ""
              :initarg :tokens
              :reader tokens-of
              :documentation "The set of member tokens of the
 alphabet."))
-    (:documentation "Alphabets are sets of tokens."))
+  (:documentation "Alphabets are sets of tokens."))
 
-  (defclass sequence-strand ()
-    ((name :initarg :name
-           :reader name-of
-           :documentation "The strand name.")
-     (token :initarg :token
+(defclass sequence-strand ()
+  ((name :initarg :name
+         :reader name-of
+         :documentation "The strand name.")
+   (token :initarg :token
             :reader token-of
-          :documentation "The token representing the strand.")
-     (number :initarg :number
-             :reader number-of
+            :documentation "The token representing the strand.")
+   (number :initarg :number
+           :reader number-of
              :documentation "The number representing the strand."))
-    (:documentation "The strand of a nucleotide sequence."))
+  (:documentation "The strand of a nucleotide sequence."))
 
-  (defvar *dna*
-    (make-instance 'alphabet
-                   :name :dna
-                   :tokens (make-array 4
-                                       :element-type 'base-char
-                                       :initial-contents "acgt")))
-  (defvar *rna*
-    (make-instance 'alphabet
-                   :name :rna
-                   :tokens (make-array 4
-                                       :element-type 'base-char
-                                       :initial-contents "acgu")))
-  (defvar *iupac-dna*
-    (make-instance 'alphabet
-                   :name :iupac-dna
-                   :tokens
-                   (make-array 15
-                               :element-type 'base-char
-                               :initial-contents "acgtrykmswbdhvn")))
-  (defvar *iupac-rna*
-    (make-instance 'alphabet
-                   :name :iupac-rna
-                   :tokens
-                   (make-array 15
-                               :element-type 'base-char
-                               :initial-contents "acgurykmswbdhvn")))
+(setf (gethash :dna *alphabets*)
+      (make-instance 'alphabet
+                     :name :dna
+                     :encoder #'encode-dna-2bit
+                     :decoder #'decode-dna-2bit
+                     :tokens (make-array 4
+                                         :element-type 'base-char
+                                         :initial-contents "acgt")))
+(setf (gethash :rna *alphabets*)
+      (make-instance 'alphabet
+                     :name :rna
+                     :encoder #'encode-rna-2bit
+                     :decoder #'decode-rna-2bit
+                     :tokens (make-array 4
+                                         :element-type 'base-char
+                                         :initial-contents "acgu")))
+(setf (gethash :iupac-dna *alphabets*)
+      (make-instance 'alphabet
+                     :name :iupac-dna
+                     :encoder #'encode-dna-4bit
+                     :decoder #'decode-dna-4bit
+                     :tokens
+                     (make-array 15
+                                 :element-type 'base-char
+                                 :initial-contents "acgtrykmswbdhvn")))
+(setf (gethash :iupac-rna *alphabets*)
+      (make-instance 'alphabet
+                     :name :iupac-rna
+                     :encoder #'encode-rna-4bit
+                     :decoder #'decode-rna-4bit
+                     :tokens
+                     (make-array 15
+                                 :element-type 'base-char
+                                 :initial-contents "acgurykmswbdhvn")))
 
-  (defvar *forward-strand*
-    (make-instance 'sequence-strand
-                   :name :forward
-                   :token #\+
-                   :number 1))
+(defvar *forward-strand*
+  (make-instance 'sequence-strand
+                 :name :forward
+                 :token #\+
+                 :number 1))
 
-  (defvar *reverse-strand*
-    (make-instance 'sequence-strand
-                   :name :reverse
-                   :token #\-
-                   :number -1))
+(defvar *reverse-strand*
+  (make-instance 'sequence-strand
+                 :name :reverse
+                 :token #\-
+                 :number -1))
 
-  (defvar *without-strand*
-    (make-instance 'sequence-strand
-                   :name :unstranded
-                   :token #\.
-                   :number 0))
-  (defvar *unknown-strand*
-    (make-instance 'sequence-strand
-                   :name :unknown
-                   :token #\?
-                   :number nil)))
+(defvar *without-strand*
+  (make-instance 'sequence-strand
+                 :name :unstranded
+                 :token #\.
+                 :number 0))
+
+(defvar *unknown-strand*
+  (make-instance 'sequence-strand
+                 :name :unknown
+                 :token #\?
+                 :number nil))
 
 (defclass identity-mixin ()
   ((identity :initform nil
@@ -147,25 +170,25 @@ sequences."))
   (:documentation "A logical RNA sequence."))
 
 (defclass iupac-dna-sequence (dna-sequence)
-  ((alphabet :initform *iupac-dna*
+  ((alphabet :initform (find-alphabet :iupac-dna)
              :allocation :class))
   (:documentation "A concrete DNA sequence comprising IUPAC ambiguity
 bases."))
 
 (defclass simple-dna-sequence (dna-sequence)
-  ((alphabet :initform *dna*
+  ((alphabet :initform (find-alphabet :dna)
              :allocation :class))
   (:documentation "A concrete DNA sequence comprising unambiguous
 bases T, C, A and G."))
 
 (defclass iupac-rna-sequence (rna-sequence)
-  ((alphabet :initform *iupac-rna*
+  ((alphabet :initform (find-alphabet :iupac-rna)
              :allocation :class))
   (:documentation "A concrete RNA sequence comprising IUPAC ambiguity
 bases."))
 
 (defclass simple-rna-sequence (rna-sequence)
-  ((alphabet :initform *rna*
+  ((alphabet :initform (find-alphabet :rna)
              :allocation :class))
   (:documentation "A concrete RNA sequence comprising unambiguous
 bases U, C, A and G."))
@@ -175,11 +198,3 @@ bases U, C, A and G."))
 
 (defclass iupac-dna-quality-sequence (iupac-dna-sequence quality-mixin)
   ())
-
-(defclass bio-sequence-range ()
-  ((start :initarg :start
-          :accessor start-of)
-   (end :initarg :end
-        :accessor end-of)
-   (strand :initarg :strand
-           :accessor strand-of)))

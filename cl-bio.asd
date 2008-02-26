@@ -27,7 +27,7 @@
 (defsystem cl-bio
     :name "Common Lisp Bioinformatics"
     :author "Keith James"
-    :version "0.1.0"
+    :version "0.1.1"
     :licence "GPL v3"
     :depends-on (:cl-gp-utilities :cl-io-utilities
                                   :trivial-gray-streams :split-sequence

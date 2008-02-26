@@ -49,21 +49,31 @@ frames."))
          :documentation "The slot name.")
    (domain :initform nil
            :initarg :domain
-           :accessor domain-of
-           :documentation "The slot domain facet.")
+           :reader domain-of
+           :documentation "The slot domain facet. A non-NIL value
+indicates the type of frame of which the slot may be a member.")
    (range :initform nil
           :initarg :range
-          :accessor range-of
-          :documentation "The slot range facet.")
+          :reader range-of
+          :documentation "The slot range facet. A non-NIL value
+indicates the type of values the slot may contain.")
    (value :initform nil
           :initarg :value
           :accessor value-of
           :documentation "The slot value facet."))
   (:documentation "A slot in a knowledgebase frame."))
 
+(defclass single-valued-slot (slot)
+  ()
+  (:documentation "A slot whose value is a single object."))
+
+(defclass set-valued-slot (slot)
+  ()
+  (:documentation "A slot whose value is a set of objects."))
+
 (defclass reflexive-mixin ()
   ()
-   (:documentation "A mixin identifying a relationship that is
+  (:documentation "A mixin identifying a relationship that is
 reflexive."))
 
 (defclass transitive-mixin ()
@@ -83,11 +93,17 @@ the inverse."))
   (:documentation "A slot which has an inverse relationship with
 another."))
 
-(defclass part-of (slot inverse-mixin transitive-mixin)
+(defclass single-valued-inverse-slot (single-valued-slot inverse-mixin)
+  ())
+
+(defclass set-valued-inverse-slot (set-valued-slot inverse-mixin)
+  ())
+
+(defclass part-of (set-valued-inverse-slot transitive-mixin)
   ((name :initform "part-of")
    (inverse :initform 'has-part)))
 
-(defclass has-part (slot inverse-mixin transitive-mixin)
+(defclass has-part (set-valued-inverse-slot transitive-mixin)
   ((name :initform "has-part")
    (inverse :initform 'part-of)))
 
@@ -101,7 +117,7 @@ larger sequence.")))
 (defclass has-subsequence (has-part)
   ((inverse :initform 'subsequence-of)))
 
-(defclass instance (slot)
+(defclass instance (single-valued-slot)
   ((ontology-class :initarg :onto-class
                    :reader onto-class-of
                    :documentation "The ontology class of which the
@@ -129,7 +145,7 @@ frame."))
          :reader text-of
          :documentation "Error message text."))
   (:report (lambda (condition stream)
-             (format stream "Knowledgebase error~@[: ~a~]."
+             (format stream "Knowledgebase error~@[: ~a~]"
                      (text-of condition)))))
 
 
@@ -144,81 +160,59 @@ frame."))
     (setf inverse-name (string-downcase (symbol-name inverse)))))
 
 
+(defgeneric contains-frame-p (frame-name &optional knowledgebase))
+
+(defgeneric find-frame (frame-name &optional knowledgebase))
+(defgeneric add-frame (frame &optional knowledgebase))
+(defgeneric remove-frame (frame-name &optional knowledgebase))
+
+(defgeneric contains-slot-p (frame slot-name))
+(defgeneric find-slot (frame slot-name))
+(defgeneric add-slot (frame slot))
+(defgeneric remove-slot (frame slot))
+(defgeneric slot-value-of (frame slot-name))
+(defgeneric (setf slot-value-of) (value frame slot-name))
+
 ;;; Print a frame
 (defmethod print-object ((frame frame) stream)
   (with-slots (name slots) frame
       (format stream "<FRAME ~a ~a>" name slots)))
 
 (defmethod print-object ((slot slot) stream)
-  (with-slots (name) slot
-    (format stream "<SLOT ~a>" name)))
-
-
-;;; Frame methods with string parameters
-(defmethod contains-frame-p ((name string)
-                             &optional (kb *default-knowledgebase*))
-  (gethash name (frames-of kb)))
-
-(defmethod find-frame ((name string)
-                       &optional (kb *default-knowledgebase*))
-  (multiple-value-bind (frame present-p)
-      (gethash name (frames-of kb))
-    (unless present-p
-      (error 'knowledgebase-error :text
-             (format nil "~a is not present in ~a." name kb)))
-    frame))
-
-(defmethod remove-frame ((name string)
-                         &optional (kb *default-knowledgebase*))
-  (remove-frame (find-frame name kb)))
-
-(defmethod contains-slot-p ((frame frame) (name string)
-                            &optional (kb *default-knowledgebase*))
-  (declare (ignore kb))
-  (find name (slots-of frame) :key #'name-of :test #'equal))
-
-
-;;; Slot method with string parameters
-(defmethod find-slot :before ((frame frame) (name string)
-                              &optional (kb *default-knowledgebase*))
-  (unless (contains-slot-p frame name)
-    (error 'knowledgebase-error :text
-           (format nil "~a is not a slot of ~a in ~a." name frame kb))))
-
-(defmethod find-slot ((frame frame) (name string)
-                      &optional (kb *default-knowledgebase*))
-  (declare (ignore kb))
-  (let* ((slots (slots-of frame))
-         (slot-pos (position name slots :key #'name-of :test #'equal)))
-    (aref slots slot-pos)))
-
-(defmethod slot-value-of ((frame-name string) (slot-name string)
-                          &optional (kb *default-knowledgebase*))
-  (value-of (find-slot (find-frame frame-name kb) slot-name kb)))
-
-(defmethod (setf slot-value-of) (value (frame-name string) (slot-name string)
-                                 &optional (kb *default-knowledgebase*))
-  (setf (value-of (find-slot (find-frame frame-name kb) slot-name kb))
-        value))
+  (with-slots (name value) slot
+    (format stream "<SLOT ~a: ~a>" name (type-of value))))
 
 
 ;;; Frame methods
-(defmethod contains-frame-p ((frame frame)
+(defmethod find-frame ((frame-name string)
+                       &optional (kb *default-knowledgebase*))
+  (multiple-value-bind (frame present-p)
+      (gethash frame-name (frames-of kb))
+    (unless present-p
+      (error 'knowledgebase-error :text
+             (format nil "~a is not present in ~a." frame-name kb)))
+    frame))
+
+(defmethod contains-frame-p ((frame-name string)
                              &optional (kb *default-knowledgebase*))
+  (gethash frame-name (frames-of kb)))
+
+(defmethod contains-frame-p ((frame frame) &optional
+                             (kb *default-knowledgebase*))
   (gethash (name-of frame) (frames-of kb)))
 
-(defmethod add-frame :before ((frame frame)
-                              &optional (kb *default-knowledgebase*))
+(defmethod add-frame :before ((frame frame) &optional
+                              (kb *default-knowledgebase*))
   (when (contains-frame-p frame kb)
     (error 'knowledgebase-error :text
            (format nil "~a is already present in ~a." frame kb))))
 
-(defmethod add-frame ((frame frame)
-                      &optional (kb *default-knowledgebase*))
+(defmethod add-frame ((frame frame) &optional
+                      (kb *default-knowledgebase*))
   (setf (gethash (name-of frame) (frames-of kb)) frame))
 
-(defmethod remove-frame :before (frame
-                                 &optional (kb *default-knowledgebase*))
+(defmethod remove-frame :before (frame &optional
+                                 (kb *default-knowledgebase*))
   (unless (contains-frame-p frame kb)
     (error 'knowledgebase-error :text
            (format nil "~a is not present in ~a." frame kb))))
@@ -230,39 +224,45 @@ frame."))
 
 
 ;;; Slot methods
-(defmethod contains-slot-p ((frame frame) (slot slot)
-                            &optional (kb *default-knowledgebase*))
-  (declare (ignore kb))
+(defmethod find-slot :before ((frame frame) (slot-name string))
+  (unless (contains-slot-p frame slot-name)
+    (error 'knowledgebase-error :text
+           (format nil "~a is not a slot of ~a." slot-name frame))))
+
+(defmethod find-slot ((frame frame) (slot-name string))
+  (let* ((slots (slots-of frame))
+         (slot-pos (position slot-name slots :key #'name-of :test #'equal)))
+    (aref slots slot-pos)))
+
+(defmethod contains-slot-p ((frame frame) (slot-name string))
+  (find slot-name (slots-of frame) :key #'name-of :test #'equal))
+
+(defmethod contains-slot-p ((frame frame) (slot slot))
   (find slot (slots-of frame)))
 
-(defmethod add-slot :before ((frame frame) (slot slot)
-                             &optional (kb *default-knowledgebase*))
-  (unless (contains-frame-p frame kb)
+(defmethod add-slot :before ((frame frame) (slot slot))
+  (when (contains-slot-p frame slot)
     (error 'knowledgebase-error :text
-           (format nil "~a is not present in ~a." frame kb)))
-  (when (contains-slot-p frame slot kb)
-    (error 'knowledgebase-error :text
-           (format nil "~a is already a slot of ~a in ~a."
-                   slot frame kb))))
+           (format nil "~a is already a slot of ~a." slot frame)))
+  (let ((slot-domain (domain-of slot)))
+    (when slot-domain
+      (unless (subtypep (type-of frame) slot-domain)
+        (error 'knowledgebase-error :text
+               (format nil (msg "Invalid assignment of ~a into ~a:"
+                                "the domain of ~a is restricted"
+                                "to subtypes of ~a.")
+                       slot frame slot slot-domain))))))
 
-(defmethod add-slot ((frame frame) (slot slot)
-                     &optional (kb *default-knowledgebase*))
-  (declare (ignore kb))
+(defmethod add-slot ((frame frame) (slot slot))
   (vector-push-extend slot (slots-of frame))
   frame)
 
-(defmethod remove-slot :before ((frame frame) (slot slot)
-                                &optional (kb *default-knowledgebase*))
-  (unless (contains-frame-p frame kb)
+(defmethod remove-slot :before ((frame frame) (slot slot))
+  (unless (contains-slot-p frame slot)
     (error 'knowledgebase-error :text
-           (format nil "~a is not present in ~a." frame kb)))
-  (unless (contains-slot-p frame slot kb)
-    (error 'knowledgebase-error :text
-           (format nil "~a is not a slot of ~a in ~a." slot frame kb))))
+           (format nil "~a is not a slot of ~a." slot frame))))
 
-(defmethod remove-slot ((frame frame) (slot slot)
-                        &optional (kb *default-knowledgebase*))
-  (declare (ignore kb))
+(defmethod remove-slot ((frame frame) (slot slot))
   (let* ((slots (slots-of frame))
          (last-slot-pos (1- (length slots)))
          (slot-pos (position slot slots)))
@@ -274,42 +274,77 @@ frame."))
     (adjust-array slots (length slots) :fill-pointer last-slot-pos))
   frame)
 
-;;; Slot removal currently does not remove inverse slots - should it?
+(defmethod slot-value-of ((frame frame) (slot-name string))
+  (value-of (find-slot frame slot-name)))
+
+(defmethod (setf slot-value-of) (value (frame frame) (slot-name string))
+  (update-slot-value frame (find-slot frame slot-name) value))
 
 
-(defmethod slot-value-of ((frame frame) (slot slot)
-                          &optional (kb *default-knowledgebase*))
-  (declare (ignore kb))
-  (value-of slot))
+(defmethod update-slot-value :before ((frame frame) (slot single-valued-slot)
+                                      value)
+  (let ((slot-range (range-of slot)))
+    (when slot-range
+      (unless (subtypep (type-of value) slot-range)
+        (error 'knowledgebase-error :text
+               (format nil (msg "Invalid slot value ~a: the range of"
+                                "~a is restricted to subtypes of ~a.")
+                       value slot slot-range))))))
 
-(defmethod (setf slot-value-of) (value (frame frame) (slot slot)
-                                 &optional (kb *default-knowledgebase*))
-  (declare (ignore kb))
+(defmethod update-slot-value ((frame frame) (slot single-valued-slot)
+                              value)
   (setf (value-of slot) value))
 
-(defmethod (setf slot-value-of) ((object frame) (subject frame)
-                                 (slot inverse-mixin)
-                                 &optional (kb *default-knowledgebase*))
+
+(defmethod update-slot-value :before ((frame frame) (slot set-valued-slot)
+                                      (values list))
+  (let ((slot-range (range-of slot)))
+    (when slot-range
+      (dolist (value values)
+        (unless (subtypep (type-of value) slot-range)
+          (error 'knowledgebase-error :text
+                 (format nil (msg "Invalid slot value ~a: the range of"
+                                  "~a is restricted to subtypes of ~a.")
+                         value slot slot-range)))))))
+
+(defmethod update-slot-value ((frame frame) (slot set-valued-slot)
+                              (values list))
+  (setf (value-of slot) values))
+
+(defmethod update-slot-value ((subject frame) (slot single-valued-inverse-slot)
+                              (object frame))
+  (let* ((inverse-name (inverse-name-of slot))
+         (inverse-slot (find-or-make-slot object inverse-name
+                                          (inverse-of slot)
+                                          :name inverse-name
+                                          :domain (range-of slot)
+                                          :range (domain-of slot))))
+    (update-slot-value subject slot object) ; or add or call-next-method ?
+    (update-inverse-slot-value object inverse-slot subject)))
+
+(defun find-or-make-slot (frame slot-name slot-class &rest slot-initargs)
+  (if (contains-slot-p frame slot-name)
+      (find-slot frame slot-name)
+    (let ((slot (apply #'make-instance slot-class slot-initargs)))
+      (add-slot frame slot)
+      slot)))
+
+
+(defmethod update-slot-value ((subject frame) (slot set-valued-inverse-slot)
+                              (objects list))
   (let ((inverse-name (inverse-name-of slot)))
-    (if (contains-slot-p object inverse-name)
-        (setf (slot-value-of object inverse-name) subject)
-      (let ((inverse-slot (make-instance (inverse-of slot)
-                                         :name inverse-name
-                                         :domain (range-of slot)
-                                         :range (domain-of slot)
-                                         :value subject)))
-        (add-slot object inverse-slot kb))))
-  (call-next-method))
+    (dolist (object objects)
+      (let ((inverse-slot (find-or-make-slot object inverse-name
+                                             (inverse-of slot)
+                                             :name inverse-name
+                                             :domain (range-of slot)
+                                             :range (domain-of slot))))
+        (update-slot-value subject slot object) ; or add or call-next-method ?
+        (update-inverse-slot-value object inverse-slot subject)))))
+        
+;;; FIXME -- should set-valued slots be using add-slot-value rather
+;;; than setting the whole set?
 
-(defmethod slot-value-of ((frame frame) (slot transitive-mixin)
-                          &optional (kb *default-knowledgebase*))
-  ;; apply slot-value-of to all values of slot that are frames
-
-  ;; all values of the slot should be of the same type (or if
-  ;; set-valued, all members of the slot's set)
-
-  ;; Need to check domain and range to ensure that this is true
-  )
 
 
 
