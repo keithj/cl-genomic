@@ -17,7 +17,6 @@
 
 (in-package :bio-sequence)
 
-
 (defmethod read-bio-sequence :before (stream format &key alphabet ambiguity
                                              virtualp)
   (unless alphabet

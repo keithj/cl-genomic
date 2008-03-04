@@ -17,15 +17,6 @@
 
 (in-package :bio-sequence)
 
-(defvar *alphabets* (make-hash-table))
-
-(defun find-alphabet (name)
-  (multiple-value-bind (alphabet presentp)
-      (gethash name *alphabets*)
-    (unless presentp
-      (error "Invalid alphabet ~a." name))
-    alphabet))
-
 (defclass alphabet ()
   ((name :initarg :name
          :reader name-of
@@ -37,11 +28,64 @@
    (encoded-index :initarg :encoded-index
                   :reader encoded-index-of)
    (tokens :initform ""
-             :initarg :tokens
-             :reader tokens-of
-             :documentation "The set of member tokens of the
+           :initarg :tokens
+           :reader tokens-of
+           :documentation "The set of member tokens of the
 alphabet."))
   (:documentation "Alphabets are sets of tokens."))
+
+
+(defvar *dna*
+  (make-instance 'alphabet
+                 :name :dna
+                 :encoder #'encode-dna-2bit
+                 :decoder #'decode-dna-2bit
+                 :tokens (make-array 4
+                                     :element-type 'base-char
+                                     :initial-contents "acgt")))
+(defvar *rna*
+  (make-instance 'alphabet
+                 :name :rna
+                 :encoder #'encode-rna-2bit
+                 :decoder #'decode-rna-2bit
+                 :tokens (make-array 4
+                                     :element-type 'base-char
+                                     :initial-contents "acgu")))
+(defvar *iupac-dna*
+  (make-instance 'alphabet
+                 :name :iupac-dna
+                 :encoder #'encode-dna-4bit
+                 :decoder #'decode-dna-4bit
+                 :tokens
+                 (make-array 15
+                             :element-type 'base-char
+                             :initial-contents "acgtrykmswbdhvn")))
+(defvar *iupac-rna*
+  (make-instance 'alphabet
+                 :name :iupac-rna
+                 :encoder #'encode-rna-4bit
+                 :decoder #'decode-rna-4bit
+                 :tokens
+                 (make-array 15
+                             :element-type 'base-char
+                             :initial-contents "acgurykmswbdhvn")))
+
+
+(defvar *alphabets* (make-hash-table))
+
+(eval-when (:compile-toplevel :load-toplevel)
+  (defun find-alphabet (name)
+    (multiple-value-bind (alphabet presentp)
+        (gethash name *alphabets*)
+      (unless presentp
+        (error "Invalid alphabet ~a." name))
+      alphabet)))
+
+(setf (gethash :dna *alphabets*) *dna*)
+(setf (gethash :rna *alphabets*) *rna*)
+(setf (gethash :iupac-dna *alphabets*) *iupac-dna*)
+(setf (gethash :iupac-rna *alphabets*) *iupac-rna*)
+
 
 (defclass sequence-strand ()
   ((name :initarg :name
@@ -54,41 +98,6 @@ alphabet."))
            :reader number-of
              :documentation "The number representing the strand."))
   (:documentation "The strand of a nucleotide sequence."))
-
-(setf (gethash :dna *alphabets*)
-      (make-instance 'alphabet
-                     :name :dna
-                     :encoder #'encode-dna-2bit
-                     :decoder #'decode-dna-2bit
-                     :tokens (make-array 4
-                                         :element-type 'base-char
-                                         :initial-contents "acgt")))
-(setf (gethash :rna *alphabets*)
-      (make-instance 'alphabet
-                     :name :rna
-                     :encoder #'encode-rna-2bit
-                     :decoder #'decode-rna-2bit
-                     :tokens (make-array 4
-                                         :element-type 'base-char
-                                         :initial-contents "acgu")))
-(setf (gethash :iupac-dna *alphabets*)
-      (make-instance 'alphabet
-                     :name :iupac-dna
-                     :encoder #'encode-dna-4bit
-                     :decoder #'decode-dna-4bit
-                     :tokens
-                     (make-array 15
-                                 :element-type 'base-char
-                                 :initial-contents "acgtrykmswbdhvn")))
-(setf (gethash :iupac-rna *alphabets*)
-      (make-instance 'alphabet
-                     :name :iupac-rna
-                     :encoder #'encode-rna-4bit
-                     :decoder #'decode-rna-4bit
-                     :tokens
-                     (make-array 15
-                                 :element-type 'base-char
-                                 :initial-contents "acgurykmswbdhvn")))
 
 (defvar *forward-strand*
   (make-instance 'sequence-strand
@@ -113,6 +122,7 @@ alphabet."))
                  :name :unknown
                  :token #\?
                  :number nil))
+
 
 (defclass identity-mixin ()
   ((identity :initform nil

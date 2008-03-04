@@ -175,12 +175,14 @@ frame."))
 
 ;;; Print a frame
 (defmethod print-object ((frame frame) stream)
-  (with-slots (name slots) frame
-      (format stream "<FRAME ~a ~a>" name slots)))
+  (let ((*print-circle* t))
+    (with-slots (name slots) frame
+      (format stream "<FRAME ~a ~a>" name slots))))
 
 (defmethod print-object ((slot slot) stream)
-  (with-slots (name value) slot
-    (format stream "<SLOT ~a: ~a>" name (type-of value))))
+  (let ((*print-circle* t))
+    (with-slots (name value) slot
+      (format stream "<SLOT ~a: ~a>" name value))))
 
 
 ;;; Frame methods
@@ -274,6 +276,8 @@ frame."))
     (adjust-array slots (length slots) :fill-pointer last-slot-pos))
   frame)
 
+
+;;; Slot value methods
 (defmethod slot-value-of ((frame frame) (slot-name string))
   (value-of (find-slot frame slot-name)))
 
@@ -281,6 +285,7 @@ frame."))
   (update-slot-value frame (find-slot frame slot-name) value))
 
 
+;;; Slot update methods
 (defmethod update-slot-value :before ((frame frame) (slot single-valued-slot)
                                       value)
   (let ((slot-range (range-of slot)))
@@ -294,7 +299,6 @@ frame."))
 (defmethod update-slot-value ((frame frame) (slot single-valued-slot)
                               value)
   (setf (value-of slot) value))
-
 
 (defmethod update-slot-value :before ((frame frame) (slot set-valued-slot)
                                       (values list))
@@ -319,16 +323,8 @@ frame."))
                                           :name inverse-name
                                           :domain (range-of slot)
                                           :range (domain-of slot))))
-    (update-slot-value subject slot object) ; or add or call-next-method ?
-    (update-inverse-slot-value object inverse-slot subject)))
-
-(defun find-or-make-slot (frame slot-name slot-class &rest slot-initargs)
-  (if (contains-slot-p frame slot-name)
-      (find-slot frame slot-name)
-    (let ((slot (apply #'make-instance slot-class slot-initargs)))
-      (add-slot frame slot)
-      slot)))
-
+    (update-inverse-slot-value subject inverse-slot object))
+  (call-next-method))
 
 (defmethod update-slot-value ((subject frame) (slot set-valued-inverse-slot)
                               (objects list))
@@ -339,14 +335,28 @@ frame."))
                                              :name inverse-name
                                              :domain (range-of slot)
                                              :range (domain-of slot))))
-        (update-slot-value subject slot object) ; or add or call-next-method ?
-        (update-inverse-slot-value object inverse-slot subject)))))
-        
-;;; FIXME -- should set-valued slots be using add-slot-value rather
-;;; than setting the whole set?
+        (update-inverse-slot-value subject inverse-slot object))))
+  (call-next-method))
+
+(defmethod update-inverse-slot-value ((object frame) (slot single-valued-slot)
+                                      (subject frame))
+  ;; FIXME
+  )
+
+(defmethod update-inverse-slot-value ((object frame) (slot set-valued-slot)
+                                      (subject frame))
+  ;; FIXME -- should set-valued slots be using add-slot-value rather
+  ;; than setting the whole set?
+  (let ((values (value-of slot)))
+    (setf (value-of slot) (adjoin object values))))
 
 
-
+(defun find-or-make-slot (frame slot-name slot-class &rest slot-initargs)
+  (if (contains-slot-p frame slot-name)
+      (find-slot frame slot-name)
+    (let ((slot (apply #'make-instance slot-class slot-initargs)))
+      (add-slot frame slot)
+      slot)))
 
 (defun graph-traverse-aux (sub-graph dag traversal-fn filter-fn)
   "Traverses directed acyclic graph DAG, starting from SUB-GRAPH (a

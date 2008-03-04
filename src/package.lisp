@@ -105,4 +105,5 @@
 (defpackage bio-sequence-user
   (:use #:common-lisp #:bio-sequence
         #:cl-io-utilities #:cl-gp-utilities
-        #:trivial-gray-streams))
+        #:trivial-gray-streams)
+  (:nicknames #:bsu))

@@ -148,7 +148,15 @@ ALPHABET, AMBIGUITY and QUALITY."
 
 (defun make-seq (&rest initargs &key (alphabet :dna) ambiguity
                  &allow-other-keys)
-  "Convenience constructor for bio-sequences."
+  "
+ Purpose: Convenience constructor for bio-sequences. 
+
+     key: ALPHABET (:dna or :rna).
+          AMBIGUITY (:iupac or NIL).
+   &rest: INITARGS passed to MAKE-INSTANCE.
+
+ Returns: A BIO-SEQUENCE object.
+"
   (let ((class (select-sequence-class alphabet ambiguity :default)))
     (multiple-value-bind (args remaining-initargs)
         (remove-args '(:alphabet :ambiguity) initargs)
@@ -157,7 +165,15 @@ ALPHABET, AMBIGUITY and QUALITY."
 
 (defun make-quality-seq (&rest initargs &key (alphabet :dna) ambiguity
                          &allow-other-keys)
-  "Convenience constructor for bio-sequences with quality."
+  "
+ Purpose: Convenience constructor for bio-sequences with quality. 
+
+     key: ALPHABET (:dna or :rna).
+          AMBIGUITY (:iupac or NIL).
+   &rest: INITARGS passed to MAKE-INSTANCE.
+
+ Returns: A BIO-SEQUENCE object.
+"
   (let ((class (select-sequence-class alphabet ambiguity :quality)))
     (multiple-value-bind (args remaining-initargs)
         (remove-args '(:alphabet :ambiguity) initargs)
@@ -242,7 +258,7 @@ ALPHABET, AMBIGUITY and QUALITY."
 
 (defmethod (setf residue-of) :around (value (seq bio-sequence) index)
   (when (virtualp seq)
-    (error (msg "Invalid operation, cannot access a residue"
+    (error (msg "Invalid operation: cannot access a residue"
                 "in a virtual sequence.")))
   (call-next-method))
 

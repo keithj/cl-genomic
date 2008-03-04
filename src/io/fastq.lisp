@@ -117,10 +117,12 @@ file of pathname CHUNK-PNAME."
   (with-open-file (out chunk-pname :direction :output
                    :if-exists :error
                    :element-type 'base-char)
-    (do ((fq (read-bio-sequence-alist stream :alphabet :dna :format :fastq
-                                      #'write-alist-fastq out)
-             (read-bio-sequence-alist stream :alphabet :dna :format :fastq
-                                      #'write-alist-fastq out))
+    (do ((fq (read-bio-sequence-alist stream :fastq :alphabet :dna
+                                      :callback #'write-alist-fastq
+                                      :callback-args (list out))
+             (read-bio-sequence-alist stream :fastq :alphabet :dna
+                                      :callback #'write-alist-fastq
+                                      :callback-args (list out)))
          (count 1 (1+ count)))
         ((or (null fq)
              (= count n)) count))))
