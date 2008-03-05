@@ -19,7 +19,6 @@
 
 (fiveam:in-suite cl-bio-system:testsuite)
 
-
 ;;; Basic adding and removal of frames
 (test add-frame/knowledgebase
   (let ((kb (make-instance 'knowledgebase))
@@ -123,6 +122,17 @@
 
 
 ;;; Adding a single-valued inverse slot
+(test value-of/frame/single-valued-inverse-slot
+  (let ((kb (make-instance 'knowledgebase))
+        (lock (make-instance 'frame :name "socket"))
+        (key (make-instance 'frame :name "key"))
+        (fits) (make-instance 'single-valued-inverse-slot :name "fits"))
+    (add-frame lock kb)
+    (add-frame key kb)
+    (add-slot lock fits)
+    (setf (slot-value-of lock "fits") key)
+    (is-true (contains-slot-p key "fits"))
+    (is (eql (slot-value-of key "fits") lock))))
 
 
 ;;; Adding a set-valued inverse slot
@@ -165,3 +175,4 @@
       (setf (slot-value-of f "note") 999))
     (setf (slot-value-of f "note") "A note.")
     (is (string= "A note." (slot-value-of f "note")))))
+

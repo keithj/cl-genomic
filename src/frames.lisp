@@ -279,11 +279,18 @@ frame."))
 
 ;;; Slot value methods
 (defmethod slot-value-of ((frame frame) (slot-name string))
+  ;; Need to delegate correctly so that dispatch on slot type can
+  ;; occur
   (value-of (find-slot frame slot-name)))
 
 (defmethod (setf slot-value-of) (value (frame frame) (slot-name string))
   (update-slot-value frame (find-slot frame slot-name) value))
 
+
+
+
+;; Possibly separate methods for direct slot values transitive slot
+;; values?
 
 ;;; Slot update methods
 (defmethod update-slot-value :before ((frame frame) (slot single-valued-slot)
@@ -340,8 +347,7 @@ frame."))
 
 (defmethod update-inverse-slot-value ((object frame) (slot single-valued-slot)
                                       (subject frame))
-  ;; FIXME
-  )
+  (setf (value-of slot) object))
 
 (defmethod update-inverse-slot-value ((object frame) (slot set-valued-slot)
                                       (subject frame))

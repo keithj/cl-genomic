@@ -107,25 +107,29 @@ except the last file, containing up to CHUNK-SIZE records."
       (do* ((stream (make-line-input-stream in))
             (chunk-count 0 (1+ chunk-count))
             (chunk-pname (make-chunk-pname file-pname chunk-count)
-                         (make-chunk-pname file-pname chunk-count)))
-           ((not (more-lines-p stream)))
-        (write-n-fastq stream chunk-size chunk-pname)))))
+                         (make-chunk-pname file-pname chunk-count))
+            (n (write-n-fastq stream chunk-size chunk-pname)
+               (write-n-fastq stream chunk-size chunk-pname)))
+           ((zerop n))))))
 
 (defun write-n-fastq (stream n chunk-pname)
   "Reads up to N Fastq records from STREAM and writes them into a new
-file of pathname CHUNK-PNAME."
-  (with-open-file (out chunk-pname :direction :output
-                   :if-exists :error
-                   :element-type 'base-char)
-    (do ((fq (read-bio-sequence-alist stream :fastq :alphabet :dna
-                                      :callback #'write-alist-fastq
-                                      :callback-args (list out))
-             (read-bio-sequence-alist stream :fastq :alphabet :dna
-                                      :callback #'write-alist-fastq
-                                      :callback-args (list out)))
-         (count 1 (1+ count)))
-        ((or (null fq)
-             (= count n)) count))))
+file of pathname CHUNK-PNAME. Returns the number of records actually
+written, which may be 0 if the stream contained to further records."
+  (if (more-lines-p stream)
+      (with-open-file (out chunk-pname :direction :output
+                       :if-exists :supersede
+                       :element-type 'base-char)
+        (do ((fq (read-bio-sequence-alist stream :fastq :alphabet :dna
+                                          :callback #'write-alist-fastq
+                                          :callback-args (list out))
+                 (read-bio-sequence-alist stream :fastq :alphabet :dna
+                                          :callback #'write-alist-fastq
+                                          :callback-args (list out)))
+             (count 1 (1+ count)))
+            ((or (null fq)
+                 (= count n)) count)))
+    0))
 
 (defun byte-fastq-header-p (bytes)
   "Returns T if BYTES are a Fastq header (start with the character
