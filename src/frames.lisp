@@ -23,12 +23,6 @@
 ;; their names - saves having to write many methods twice. If all we
 ;; have are the names, just look up the frame or slot by name first.
 
-;; Inverse slots need special value setting methods to set up the
-;; inverse relationship
-
-;; Slots with domain or range specified need methods to check the
-;; validity of those constraints (the OO way of looking at it).
-
 ;; Transitive slots need methods for collecting transitive closure.
 
 ;; Reflexive slots need methods for adding the frame to the values.
@@ -101,11 +95,13 @@ another."))
 
 (defclass part-of (set-valued-inverse-slot transitive-mixin)
   ((name :initform "part-of")
-   (inverse :initform 'has-part)))
+   (inverse :initform 'has-part)
+   (inverse-name :initform "has-part")))
 
 (defclass has-part (set-valued-inverse-slot transitive-mixin)
   ((name :initform "has-part")
-   (inverse :initform 'part-of)))
+   (inverse :initform 'part-of)
+   (inverse-name :initform "part-of")))
 
 (defclass subsequence-of (part-of)
   ((inverse :initform 'has-subsequence)
@@ -155,9 +151,12 @@ frame."))
 (defmethod initialize-instance :after ((kb knowledgebase) &key)
   )
 
+;;; Set default inverse-name, if possible
 (defmethod initialize-instance :after ((slot inverse-mixin) &key)
-  (with-slots (inverse inverse-name) slot
-    (setf inverse-name (string-downcase (symbol-name inverse)))))
+  (when (and (slot-boundp slot 'inverse)
+             (not (slot-boundp slot 'inverse-name)))
+    (with-slots (inverse inverse-name) slot
+      (setf inverse-name (string-downcase (symbol-name inverse))))))
 
 
 (defgeneric contains-frame-p (frame-name &optional knowledgebase))
@@ -287,6 +286,13 @@ frame."))
   (update-slot-value frame (find-slot frame slot-name) value))
 
 
+(defmethod read-slot-value ((frame frame) (slot single-valued-slot))
+
+  )
+
+(defmethod read-slot-value ((frame frame) (slot transitive-mixin))
+  
+  )
 
 
 ;; Possibly separate methods for direct slot values transitive slot

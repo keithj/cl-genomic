@@ -124,9 +124,12 @@
 ;;; Adding a single-valued inverse slot
 (test value-of/frame/single-valued-inverse-slot
   (let ((kb (make-instance 'knowledgebase))
-        (lock (make-instance 'frame :name "socket"))
+        (lock (make-instance 'frame :name "lock"))
         (key (make-instance 'frame :name "key"))
-        (fits) (make-instance 'single-valued-inverse-slot :name "fits"))
+        (fits (make-instance 'single-valued-inverse-slot
+                             :name "fits"
+                             :inverse 'single-valued-inverse-slot
+                             :inverse-name "fits")))
     (add-frame lock kb)
     (add-frame key kb)
     (add-slot lock fits)
@@ -140,7 +143,7 @@
   (let ((kb (make-instance 'knowledgebase))
         (car (make-instance 'frame :name "car"))
         (wheel (make-instance 'frame :name "wheel"))
-        (part-of-slot (make-instance 'part-of :name "part-of")))
+        (part-of-slot (make-instance 'part-of)))
     (add-frame car kb)
     (add-frame wheel kb)
     (add-slot wheel part-of-slot)
@@ -161,6 +164,7 @@
     (signals knowledgebase-error
       (add-slot f (make-instance 'single-valued-slot :name "note"
                                  :domain 'simple-dna-sequence)))))
+
 
 ;;; Adding a slot with a range
 (test add-slot/range/frame

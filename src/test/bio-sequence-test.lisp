@@ -118,22 +118,22 @@
       (setf (residue-of rna-seq n) (aref residues n))
       (is (char= (residue-of rna-seq n) (aref residues n))))))
 
-(test copy-sequence/bio-sequence
-  (let ((seqs (list (make-instance 'simple-dna-sequence
-                                   :token-seq "tagc")
-                    (make-instance 'iupac-dna-sequence
-                                   :token-seq "nnnn")
-                    (make-instance 'simple-rna-sequence
-                                   :token-seq "uagc")
-                    (make-instance 'iupac-rna-sequence
-                                   :token-seq "nnnn"))))
-    (mapcar #'(lambda (seq)
-                (let ((copy (copy-sequence seq)))
-                  (is (= (length-of copy) (length-of seq)))
-                  (dotimes (n 4)
-                    (is (char= (residue-of copy n)
-                               (residue-of seq n))))))
-            seqs)))
+;; (test copy-sequence/bio-sequence
+;;   (let ((seqs (list (make-instance 'simple-dna-sequence
+;;                                    :token-seq "tagc")
+;;                     (make-instance 'iupac-dna-sequence
+;;                                    :token-seq "nnnn")
+;;                     (make-instance 'simple-rna-sequence
+;;                                    :token-seq "uagc")
+;;                     (make-instance 'iupac-rna-sequence
+;;                                    :token-seq "nnnn"))))
+;;     (mapcar #'(lambda (seq)
+;;                 (let ((copy (copy-sequence seq)))
+;;                   (is (= (length-of copy) (length-of seq)))
+;;                   (dotimes (n 4)
+;;                     (is (char= (residue-of copy n)
+;;                                (residue-of seq n))))))
+;;             seqs)))
 
 (test to-string/dna-sequence
   (let* ((residues "acgt")

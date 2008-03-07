@@ -34,7 +34,6 @@
 alphabet."))
   (:documentation "Alphabets are sets of tokens."))
 
-
 (defvar *dna*
   (make-instance 'alphabet
                  :name :dna
@@ -130,7 +129,8 @@ alphabet."))
              :accessor identity-of
              :documentation "A temporary locally unique identifier."))
   (:documentation "A mixin which allows assignment of a temporary
-local identifier to an object."))
+local identifier to an object. An identity of NIL signifies an
+anonymous object."))
 
 (defclass quality-mixin ()
   ((metric :initform (error "A metric is required.")

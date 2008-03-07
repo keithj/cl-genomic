@@ -17,6 +17,108 @@
 
 (in-package :bio-sequence)
 
+(defun complement-dna (base)
+  "Returns the complentary DNA base to that represented by the
+character BASE."
+  (ecase base
+    ((#\t #\T) #\a)
+    ((#\c #\C) #\g)
+    ((#\a #\A) #\t)
+    ((#\g #\G) #\c)
+    ((#\r #\R) #\y)
+    ((#\y #\Y) #\r)
+    ((#\k #\K) #\m)
+    ((#\m #\M) #\k)
+    ((#\s #\S) #\s)
+    ((#\w #\W) #\w)
+    ((#\b #\B) #\v)
+    ((#\d #\D) #\h)
+    ((#\h #\H) #\d)
+    ((#\v #\V) #\b)
+    ((#\n #\N) #\n)))
+
+(defun complement-rna (base)
+  "Returns the complentary RNA base to that represented by the
+character BASE."
+  (ecase base
+    ((#\u #\U) #\a)
+    ((#\c #\C) #\g)
+    ((#\a #\A) #\u)
+    ((#\g #\G) #\c)
+    ((#\r #\R) #\y)
+    ((#\y #\Y) #\r)
+    ((#\k #\K) #\m)
+    ((#\m #\M) #\k)
+    ((#\s #\S) #\s)
+    ((#\w #\W) #\w)
+    ((#\b #\B) #\v)
+    ((#\d #\D) #\h)
+    ((#\h #\H) #\d)
+    ((#\v #\V) #\b)
+    ((#\n #\N) #\n)))
+
+(declaim (inline complement-dna-2bit))
+(defun complement-dna-2bit (encoded-base)
+  "Returns the complentary encoded DNA base to that represented by
+ENCODED-BASE."
+  (ecase encoded-base
+    (#b00 #b10)
+    (#b01 #b11)
+    (#b10 #b00)
+    (#b11 #b01)))
+
+(declaim (inline complement-rna-2bit))
+(defun complement-rna-2bit (encoded-base)
+  "Returns the complentary encoded RNA base to that represented by
+ENCODED-BASE."
+  (ecase encoded-base
+    (#b00 #b10)
+    (#b01 #b11)
+    (#b10 #b00)
+    (#b11 #b01)))
+
+(declaim (inline complement-dna-4bit))
+(defun complement-dna-4bit (encoded-base)
+  "Returns the complentary encoded DNA base to that represented by
+ENCODED-BASE."
+  (ecase encoded-base
+    (#b0001 #b0100)
+    (#b0010 #b1000)
+    (#b0100 #b0001)
+    (#b1000 #b0010)
+    (#b1100 #b0011)
+    (#b0011 #b1100)
+    (#b1001 #b0110)
+    (#b0110 #b1001)
+    (#b1010 #b1010)
+    (#b0101 #b0101)
+    (#b1011 #b1110)
+    (#b1101 #b0111)
+    (#b0111 #b1101)
+    (#b1110 #b1011)
+    (#b1111 #b1111)))
+
+(declaim (inline complement-rna-4bit))
+(defun complement-rna-4bit (encoded-base)
+  "Returns the complentary encoded RNA base to that represented by
+ENCODED-BASE."
+  (ecase encoded-base
+    (#b0001 #b0100)
+    (#b0010 #b1000)
+    (#b0100 #b0001)
+    (#b1000 #b0010)
+    (#b1100 #b0011)
+    (#b0011 #b1100)
+    (#b1001 #b0110)
+    (#b0110 #b1001)
+    (#b1010 #b1010)
+    (#b0101 #b0101)
+    (#b1011 #b1110)
+    (#b1101 #b0111)
+    (#b0111 #b1101)
+    (#b1110 #b1011)
+    (#b1111 #b1111)))
+
 (declaim (inline encode-dna-2bit))
 (defun encode-dna-2bit (base)
   "Encodes DNA standard-char BASE as a 2-bit byte, representing T as
@@ -30,12 +132,20 @@ significant 2-bit byte and the last base is in the least significant
     ((#\g #\G) #b11)))
 
 (declaim (inline decode-dna-2bit))
-(defun decode-dna-2bit (encoded-residue)
-  (ecase encoded-residue
+(defun decode-dna-2bit (encoded-base)
+  (ecase encoded-base
     (#b00 #\t)
     (#b01 #\c)
     (#b10 #\a)
     (#b11 #\g)))
+
+(declaim (inline encode-dna-comp-2bit))
+(defun encode-dna-comp-2bit (base)
+  (encode-dna-2bit (complement-dna base)))
+
+(declaim (inline decode-dna-comp-2bit))
+(defun decode-dna-comp-2bit (encoded-base)
+  (complement-dna (decode-dna-2bit encoded-base)))
 
 (declaim (inline encode-dna-4bit))
 (defun encode-dna-4bit (base)
@@ -62,8 +172,8 @@ combinations of these."
     ((#\n #\N) #b1111)))
 
 (declaim (inline decode-dna-4bit))
-(defun decode-dna-4bit (encoded-residue)
-  (ecase encoded-residue
+(defun decode-dna-4bit (encoded-base)
+  (ecase encoded-base
     (#b0001 #\t)
     (#b0010 #\c)
     (#b0100 #\a)
@@ -80,6 +190,14 @@ combinations of these."
     (#b1110 #\v)
     (#b1111 #\n)))
 
+(declaim (inline encode-dna-comp-4bit))
+(defun encode-dna-comp-4bit (base)
+  (encode-dna-4bit (complement-dna base)))
+
+(declaim (inline decode-dna-comp-4bit))
+(defun decode-dna-comp-4bit (encoded-base)
+  (complement-dna (decode-dna-4bit encoded-base)))
+
 (declaim (inline encode-rna-2bit))
 (defun encode-rna-2bit (base)
   "Encodes RNA standard-char BASE as a 2-bit byte, representing U as
@@ -93,12 +211,20 @@ two-bit byte."
     ((#\g #\G) #b11)))
 
 (declaim (inline decode-rna-2bit))
-(defun decode-rna-2bit (encoded-residue)
-  (ecase encoded-residue
+(defun decode-rna-2bit (encoded-base)
+  (ecase encoded-base
     (#b00 #\u)
     (#b01 #\c)
     (#b10 #\a)
     (#b11 #\g)))
+
+(declaim (inline encode-rna-comp-2bit))
+(defun encode-rna-comp-2bit (base)
+  (encode-rna-2bit (complement-rna base)))
+
+(declaim (inline decode-rna-comp-2bit))
+(defun decode-rna-comp-2bit (encoded-base)
+  (complement-rna (decode-rna-2bit encoded-base)))
 
 (declaim (inline encode-rna-4bit))
 (defun encode-rna-4bit (base)
@@ -125,8 +251,8 @@ combinations of these."
     ((#\n #\N) #b1111)))
 
 (declaim (inline decode-rna-4bit))
-(defun decode-rna-4bit (encoded-residue)
-  (ecase encoded-residue
+(defun decode-rna-4bit (encoded-base)
+  (ecase encoded-base
     (#b0001 #\u)
     (#b0010 #\c)
     (#b0100 #\a)
@@ -142,6 +268,14 @@ combinations of these."
     (#b0111 #\h)
     (#b1110 #\v)
     (#b1111 #\n)))
+
+(declaim (inline encode-rna-comp-4bit))
+(defun encode-rna-comp-4bit (base)
+  (encode-rna-4bit (complement-rna base)))
+
+(declaim (inline decode-rna-comp-4bit))
+(defun decode-rna-comp-4bit (encoded-base)
+  (complement-rna (decode-rna-4bit encoded-base)))
 
 ;; (declaim (inline encode-aa-8bit))
 ;; (defun encode-aa-8bit (aa)

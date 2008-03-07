@@ -35,6 +35,8 @@
    #:knowledgebase-error
 
    ;; Functions
+   #:complement-dna
+   #:complement-rna
    #:find-alphabet
    #:read-bio-sequence
    #:make-seq
@@ -47,6 +49,7 @@
    #:encode-illumina-quality
    #:decode-illumina-quality
    #:illumina-to-phred-quality
+
    ;; Classes
    #:alphabet
    #:bio-sequence
@@ -61,12 +64,14 @@
    #:iupac-dna-quality-sequence
 
    #:knowledgebase
-   #:frame
-   #:single-valued-slot
-   #:set-valued-slot
    #:reflexive-mixin
    #:transitive-mixin
    #:inverse-mixin
+   #:frame
+   #:single-valued-slot
+   #:set-valued-slot
+   #:single-valued-inverse-slot
+   #:set-valued-inverse-slot
    #:part-of
    #:has-part
    #:subsequence-of
@@ -74,6 +79,7 @@
    #:instance
 
    ;; Generic functions
+   #:anonymousp
    #:identity-of
    #:name-of
    #:simplep
@@ -82,7 +88,10 @@
    #:alphabet-of
    #:residue-of
    #:length-of
-   #:copy-sequence
+   #:reverse-sequence
+   #:nreverse-sequence
+   #:complement-sequence
+   #:reverse-complement
    #:to-string
    #:metric-of
    #:quality-of

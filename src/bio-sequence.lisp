@@ -52,6 +52,16 @@ are encoded as an array of type TOKEN-SEQ-TYPE in SEQ."
        (setf (aref ,token-seq ,index)
              (funcall ,encoder ,value)))))
 
+(defun encode-token-2bit (value seq index)
+  "Sets the residue token VALUE at INDEX in SEQ. The residue tokens
+are encoded as an array of type (encoded-tokens 2) in SEQ."
+  (let ((token-seq (token-seq-of seq))
+        (encoder (encoder-of (alphabet-of seq))))
+    (declare (type (encoded-tokens 2) token-seq)
+             (type function encoder))
+    (setf (aref token-seq index)
+          (funcall encoder value))))
+
 (defmacro decode-token (seq index token-seq-type)
   "Returns the decoded residue token from INDEX in SEQ. The residue
 tokens are encoded as an array of type TOKEN-SEQ-TYPE in SEQ."
@@ -87,7 +97,7 @@ type TOKEN-SEQ-TYPE in the token-seq slot of SEQ."
                     ,dest ,dest-start ,decoder))
       ,dest)))
 
-(defun encode-simple (str encoder)
+(defun encode-2bit (str encoder)
   "Encodes the tokens in simple-string STR with ENCODER and returns an
 array of element type (unsigned-byte 2)."
   (declare (optimize (speed 3) (safety 1)))
@@ -100,7 +110,7 @@ array of element type (unsigned-byte 2)."
                 token-seq 0 encoder)
     token-seq))
 
-(defun encode-iupac (str encoder)
+(defun encode-4bit (str encoder)
    "Encodes the tokens in simple-string STR with ENCODER and returns an
 array of element type (unsigned-byte 4)."
   (declare (optimize (speed 3) (safety 1)))
@@ -113,19 +123,19 @@ array of element type (unsigned-byte 4)."
                 token-seq 0 encoder)
     token-seq))
 
-(defun ensure-simple-encoded (vector encoder)
+(defun ensure-2bit-encoded (vector encoder)
   "If VECTOR is not of element-type (unsigned-byte 2), attempts to
 encode it as such with ENCODER."
   (if (equal (array-element-type vector) '(unsigned-byte 2))
       vector
-    (encode-simple vector encoder)))
+    (encode-2bit vector encoder)))
 
-(defun ensure-iupac-encoded (vector encoder)
+(defun ensure-4bit-encoded (vector encoder)
   "If VECTOR is not of element-type (unsigned-byte 4), attempts to
 encode it as such with ENCODER."
   (if (equal (array-element-type vector) '(unsigned-byte 4))
       vector
-    (encode-iupac vector encoder)))
+    (encode-4bit vector encoder)))
 
 (defun decode-quality (quality decoder)
   "Decodes the array QUALITY into a new array using function DECODER."
@@ -180,6 +190,9 @@ ALPHABET, AMBIGUITY and QUALITY."
       (declare (ignore args))
       (apply #'make-instance class remaining-initargs))))
 
+(defmethod anonymousp ((obj identity-mixin))
+  (null (identity-of obj)))
+
 (defmethod simplep ((token-seq string) (alphabet (eql :dna)))
   (let ((simple (tokens-of (find-alphabet :dna))))
     (loop
@@ -204,16 +217,16 @@ ALPHABET, AMBIGUITY and QUALITY."
             (gethash element index-table)))))
 
 (defmethod initialize-instance :after ((seq simple-dna-sequence) &key)
-  (initialize-seq seq #'ensure-simple-encoded (encoder-of (alphabet-of seq))))
+  (initialize-seq seq #'ensure-2bit-encoded (encoder-of (alphabet-of seq))))
 
 (defmethod initialize-instance :after ((seq simple-rna-sequence) &key)
-  (initialize-seq seq #'ensure-simple-encoded (encoder-of (alphabet-of seq))))
+  (initialize-seq seq #'ensure-2bit-encoded (encoder-of (alphabet-of seq))))
 
 (defmethod initialize-instance :after ((seq iupac-dna-sequence) &key)
-  (initialize-seq seq #'ensure-iupac-encoded (encoder-of (alphabet-of seq))))
+  (initialize-seq seq #'ensure-4bit-encoded (encoder-of (alphabet-of seq))))
 
 (defmethod initialize-instance :after ((seq iupac-rna-sequence) &key)
-  (initialize-seq seq #'ensure-iupac-encoded (encoder-of (alphabet-of seq))))
+  (initialize-seq seq #'ensure-4bit-encoded (encoder-of (alphabet-of seq))))
 
 (defmethod initialize-instance :after ((seq quality-mixin) &key)
   (with-slots (token-seq metric quality) seq
@@ -317,6 +330,7 @@ ALPHABET, AMBIGUITY and QUALITY."
 ;;     (+ (start-of (elt target-ranges range-num))
 ;;        (- source-position (start-of (elt source-ranges range-num))))))
 
+
 (defmethod to-string :around ((seq bio-sequence) &optional start end)
   (declare (ignore start end))
   (if (virtualp seq)
@@ -351,13 +365,66 @@ ALPHABET, AMBIGUITY and QUALITY."
   (declare (type array-index start end))
   (decode-token-array seq start end (encoded-tokens 4)))
 
-(defmethod copy-sequence ((seq bio-sequence))
-  (let ((token-seq (token-seq-of seq)))
-    (make-instance (class-of seq) :token-seq
-                   (make-array (length token-seq)
+;;; FIXME -- add a means of making a reversed and/or complemented view
+;;; of a sequence without modifying it
+
+(defun reverse-complement-index (index len)
+  (- len index))
+
+(defmethod subsequence ((seq bio-sequence) (start fixnum) &optional end)
+  (let* ((token-seq (token-seq-of seq))
+         (end (or end (length token-seq)))
+         (sub-seq (make-array (- end start)
+                              :element-type
+                              (array-element-type token-seq))))
+    (copy-array token-seq start (1- end)
+                sub-seq 0)
+    (make-instance (class-of seq) :token-seq sub-seq)))
+
+(defmethod reverse-sequence ((seq bio-sequence))
+  (make-instance (class-of seq)
+                 :token-seq (reverse (token-seq-of seq))))
+
+(defmethod nreverse-sequence ((seq bio-sequence))
+  (make-instance (class-of seq)
+                 :token-seq (nreverse (token-seq-of seq))))
+
+;;; FIXME -- factor out the common code in the complement methods,
+;;; perhaps when or if it's time to add type declarations
+(defun complement-token-seq (token-seq comp-fn &optional (start 0) end)
+  (let* ((end (or end (length token-seq)))
+         (comp-seq (make-array (- end start)
                                :element-type
-                               (array-element-type token-seq)
-                               :initial-contents token-seq))))
+                               (array-element-type token-seq))))
+    (copy-array token-seq start (1- end)
+                comp-seq 0 comp-fn)
+    comp-seq))
+
+(defmethod complement-sequence ((seq simple-dna-sequence)
+                                &optional (start 0) end)
+  (make-instance 'simple-dna-sequence :token-seq
+                 (complement-token-seq
+                  (token-seq-of seq) #'complement-dna-2bit start end)))
+
+(defmethod complement-sequence ((seq simple-dna-sequence)
+                                &optional (start 0) end)
+  (make-instance 'iupac-dna-sequence :token-seq
+                 (complement-token-seq
+                  (token-seq-of seq) #'complement-dna-4bit start end)))
+
+(defmethod reverse-complement ((seq simple-dna-sequence)
+                               &optional (start 0) end)
+  (make-instance 'simple-dna-sequence :token-seq
+                 (nreverse
+                  (complement-token-seq
+                   (token-seq-of seq) #'complement-dna-2bit start end))))
+
+(defmethod reverse-complement ((seq iupac-dna-sequence)
+                               &optional (start 0) end)
+  (make-instance 'iupac-dna-sequence :token-seq
+                 (nreverse
+                  (complement-token-seq
+                   (token-seq-of seq) #'complement-dna-4bit start end))))
 
 (defmethod residue-frequencies :before ((seq bio-sequence))
   (when (virtualp seq)
