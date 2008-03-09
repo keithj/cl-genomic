@@ -27,6 +27,8 @@
             :reader decoder-of)
    (encoded-index :initarg :encoded-index
                   :reader encoded-index-of)
+   (decoded-index :initarg :decoded-index
+                  :reader decoded-index-of)
    (tokens :initform ""
            :initarg :tokens
            :reader tokens-of
@@ -155,6 +157,7 @@ numeric quality value for each residue."))
 sequence.")
    (token-seq :initform nil
               :initarg :token-seq
+              :accessor token-seq-of
               :documentation "The residue tokens of the sequence or
 NIL if no sequence data are available.")
    (length :initform nil

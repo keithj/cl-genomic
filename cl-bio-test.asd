@@ -29,4 +29,5 @@
                                   :depends-on ("package"
                                                "bio-sequence-test"))
                            (:file "frames-test"
-                                  :depends-on ("package"))))))
+                                  :depends-on ("package"
+                                               "bio-sequence-test"))))))

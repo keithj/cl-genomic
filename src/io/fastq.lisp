@@ -68,6 +68,10 @@
 
 
 (defun read-fastq-record (stream qual-header-validate-fn)
+  "Reads the body of a Fastq record that follows the header from
+STREAM, validates the quality header with the predicate
+QUAL-HEADER-VALIDATE-FN and returns three vector values: the sequence,
+the quality header and the quality."
   (let ((seq (stream-read-line stream))
         (quality-header (stream-read-line stream))
         (quality (stream-read-line stream)))
@@ -98,10 +102,11 @@ Fastq format record. OUTPUT-STREAM defaults to *standard-output*."
   (write-line (assocdr :quality alist) output-stream)
   t)
 
-(defun split-fastq-file (filename chunk-size)
-  "Splits Fastq file FILENAME into automatically named chunks, each,
-except the last file, containing up to CHUNK-SIZE records."
-  (let ((file-pname (pathname filename)))
+(defun split-fastq-file (filespec chunk-size)
+  "Splits Fastq file identified by FILESPEC into automatically named
+chunks, each, except the last file, containing up to CHUNK-SIZE
+records."
+  (let ((file-pname (pathname filespec)))
     (with-open-file (in file-pname :direction :input
                      :element-type '(unsigned-byte 8))
       (do* ((stream (make-line-input-stream in))
@@ -112,24 +117,61 @@ except the last file, containing up to CHUNK-SIZE records."
                (write-n-fastq stream chunk-size chunk-pname)))
            ((zerop n))))))
 
+;; (defun write-n-fastq (stream n chunk-pname)
+;;   "Reads up to N Fastq records from STREAM and writes them into a new
+;; file of pathname CHUNK-PNAME. Returns the number of records actually
+;; written, which may be 0 if the stream contained to further records."
+;;   (if (more-lines-p stream)
+;;       (with-open-file (out chunk-pname :direction :output
+;;                        :if-exists :supersede
+;;                        :element-type 'base-char)
+;;         (do ((fq (read-bio-sequence-alist stream :fastq :alphabet :dna
+;;                                           :callback #'write-alist-fastq
+;;                                           :callback-args (list out))
+;;                  (read-bio-sequence-alist stream :fastq :alphabet :dna
+;;                                           :callback #'write-alist-fastq
+;;                                           :callback-args (list out)))
+;;              (count 1 (1+ count)))
+;;             ((or (null fq)
+;;                  (= count n)) count)))
+;;     0))
+
+;; (defun write-n-fastq (stream n chunk-pname)
+;;   "Reads up to N Fastq records from STREAM and writes them into a new
+;; file of pathname CHUNK-PNAME. Returns the number of records actually
+;; written, which may be 0 if the stream contained to further records."
+;;   (with-open-file (out chunk-pname :direction :output
+;;                    :if-exists :supersede
+;;                    :element-type 'base-char)
+;;     (loop
+;;        for count from 0 below n
+;;        with written = 0
+;;        do (let ((fq (read-bio-sequence-alist stream :fastq :alphabet :dna)))
+;;             (if (null fq)
+;;                 (return written)
+;;               (progn
+;;                 (write-alist-fastq fq out)
+;;                 (incf written))))
+;;        finally (return written))))
+
 (defun write-n-fastq (stream n chunk-pname)
   "Reads up to N Fastq records from STREAM and writes them into a new
 file of pathname CHUNK-PNAME. Returns the number of records actually
 written, which may be 0 if the stream contained to further records."
-  (if (more-lines-p stream)
-      (with-open-file (out chunk-pname :direction :output
-                       :if-exists :supersede
-                       :element-type 'base-char)
-        (do ((fq (read-bio-sequence-alist stream :fastq :alphabet :dna
-                                          :callback #'write-alist-fastq
-                                          :callback-args (list out))
-                 (read-bio-sequence-alist stream :fastq :alphabet :dna
-                                          :callback #'write-alist-fastq
-                                          :callback-args (list out)))
-             (count 1 (1+ count)))
-            ((or (null fq)
-                 (= count n)) count)))
-    0))
+  (let ((written 
+         (with-open-file (out chunk-pname :direction :output
+                          :if-exists :supersede
+                          :element-type 'base-char)
+           (loop
+              for count from 0 below n
+              for fq = (read-bio-sequence-alist stream :fastq :alphabet :dna)
+              then (read-bio-sequence-alist stream :fastq :alphabet :dna)
+              while fq
+              do (write-alist-fastq fq out)
+              finally (return count)))))
+    (when (zerop written)
+      (delete-file chunk-pname))
+    written))
 
 (defun byte-fastq-header-p (bytes)
   "Returns T if BYTES are a Fastq header (start with the character
@@ -139,7 +181,7 @@ code for '@'), or NIL otherwise."
 (defun char-fastq-header-p (str)
   "Returns T if STR is a Fastq header (starts with the character '@'),
 or NIL otherwise."
-  (starts-with-byte-p str #\@))
+  (starts-with-char-p str #\@))
 
 (defun byte-fastq-quality-header-p (bytes)
   "Returns T if BYTES are a Fastq quality header (start with the

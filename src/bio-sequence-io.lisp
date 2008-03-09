@@ -69,5 +69,3 @@ FILE-PNAME and an integer CHUNK-NUMBER."
    :name (concatenate 'string (pathname-name file-pname) "."
                       (princ-to-string chunk-number))
    :type (pathname-type file-pname)))
-
-

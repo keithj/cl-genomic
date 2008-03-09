@@ -39,6 +39,7 @@
    #:complement-rna
    #:find-alphabet
    #:read-bio-sequence
+   #:read-bio-sequence-alist
    #:make-seq
    #:make-quality-seq
    #:make-seq-from-alist
@@ -85,6 +86,8 @@
    #:simplep
    #:virtualp
    #:tokens-of
+   #:encoded-index-of
+   #:decoded-index-of
    #:alphabet-of
    #:residue-of
    #:length-of
