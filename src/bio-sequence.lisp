@@ -154,6 +154,9 @@ Purpose: Convenience constructor for bio-sequences with quality.
 (defmethod anonymousp ((obj identity-mixin))
   (null (identity-of obj)))
 
+(defmethod member-of ((alphabet alphabet) (char character))
+  (contains-char-p (tokens-of alphabet) char))
+
 (defmethod simplep ((token-seq string) (alphabet (eql :dna)))
   (let ((simple (tokens-of (find-alphabet :dna))))
     (loop

@@ -95,11 +95,12 @@ dna-quality-sequence with quality METRIC."
 (defun write-alist-fastq (alist &optional output-stream)
   "Callback which accepts an ALIST and writes it to OUTPUT-STREAM as a
 Fastq format record. OUTPUT-STREAM defaults to *standard-output*."
-  (write-char #\@ output-stream)
-  (write-line (assocdr :identity alist) output-stream)
-  (write-line (assocdr :token-seq alist) output-stream)
-  (write-line "+" output-stream)
-  (write-line (assocdr :quality alist) output-stream)
+  (let ((*print-pretty* nil))
+    (write-char #\@ output-stream)
+    (write-line (assocdr :identity alist) output-stream)
+    (write-line (assocdr :token-seq alist) output-stream)
+    (write-line "+" output-stream)
+    (write-line (assocdr :quality alist) output-stream))
   t)
 
 (defun split-fastq-file (filespec chunk-size)

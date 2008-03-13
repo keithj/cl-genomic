@@ -95,6 +95,7 @@
    #:nreverse-sequence
    #:complement-sequence
    #:reverse-complement
+   #:residue-frequencies
    #:to-string
    #:metric-of
    #:quality-of
