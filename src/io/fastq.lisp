@@ -17,7 +17,7 @@
 
 (in-package :bio-sequence)
 
-(defmethod read-bio-sequence-alist ((stream binary-line-input-stream)
+(defmethod read-bio-sequence-datum ((stream binary-line-input-stream)
                                     (format (eql :fastq))
                                     &key alphabet ambiguity virtualp
                                     (callback nil callback-supplied-p)
@@ -27,18 +27,18 @@
         (multiple-value-bind (seq quality-header quality)
             (read-fastq-record stream #'byte-fastq-quality-header-p)
           (declare (ignore quality-header))
-          (let ((alist (make-quality-alist
+          (let ((datum (make-quality-datum
                         (make-sb-string seq-header 1)
                         alphabet ambiguity
                         :token-seq (unless virtualp (make-sb-string seq))
                         :length (when virtualp (length seq))
                         :quality (make-sb-string quality))))
             (if callback-supplied-p
-                (apply callback alist callback-args)
-              alist)))
+                (apply callback datum callback-args)
+              datum)))
       nil)))
 
-(defmethod read-bio-sequence-alist ((stream character-line-input-stream)
+(defmethod read-bio-sequence-datum ((stream character-line-input-stream)
                                     (format (eql :fastq))
                                     &key alphabet ambiguity virtualp
                                     (callback nil callback-supplied-p)
@@ -48,20 +48,20 @@
         (multiple-value-bind (seq quality-header quality)
             (read-fastq-record stream #'char-fastq-quality-header-p)
           (declare (ignore quality-header))
-          (let ((alist (make-quality-alist
+          (let ((datum (make-quality-datum
                         (string-left-trim '(#\@) seq-header)
                         alphabet ambiguity
                         :token-seq (unless virtualp seq)
                         :length (when virtualp (length seq))
                         :quality quality)))
             (if callback-supplied-p
-                (apply callback alist callback-args)
-              alist)))
+                (apply callback datum callback-args)
+              datum)))
       nil)))
 
 (defmethod read-bio-sequence (stream (format (eql :fastq))
                               &key alphabet ambiguity virtualp metric)
-  (read-bio-sequence-alist stream format :alphabet alphabet
+  (read-bio-sequence-datum stream format :alphabet alphabet
                            :ambiguity ambiguity :virtualp virtualp
                            :callback #'make-quality-seq-fastq
                            :callback-args (list metric)))
@@ -82,25 +82,25 @@ the quality header and the quality."
              "Incomplete Fastq record."))
     (values seq quality-header quality)))
 
-(defun make-quality-seq-fastq (alist metric)
-  "Callback which accepts a ALIST and creates a new
+(defun make-quality-seq-fastq (datum metric)
+  "Callback which accepts a DATUM and creates a new
 dna-quality-sequence with quality METRIC."
-  (make-quality-seq :alphabet (assocdr :alphabet alist)
-                    :ambiguity (assocdr :ambiguity alist)
-                    :token-seq (assocdr :token-seq alist)
-                    :quality (assocdr :quality alist)
-                    :identity (assocdr :identity alist)
+  (make-quality-seq :alphabet (seq-datum-alphabet datum)
+                    :ambiguity (seq-datum-ambiguity datum)
+                    :token-seq (seq-datum-token-seq datum)
+                    :quality (seq-datum-quality datum)
+                    :identity (seq-datum-identity datum)
                     :metric metric))
 
-(defun write-alist-fastq (alist &optional output-stream)
-  "Callback which accepts an ALIST and writes it to OUTPUT-STREAM as a
+(defun write-datum-fastq (datum &optional output-stream)
+  "Callback which accepts a DATUM and writes it to OUTPUT-STREAM as a
 Fastq format record. OUTPUT-STREAM defaults to *standard-output*."
   (let ((*print-pretty* nil))
     (write-char #\@ output-stream)
-    (write-line (assocdr :identity alist) output-stream)
-    (write-line (assocdr :token-seq alist) output-stream)
+    (write-line (seq-datum-identity datum) output-stream)
+    (write-line (seq-datum-token-seq datum) output-stream)
     (write-line "+" output-stream)
-    (write-line (assocdr :quality alist) output-stream))
+    (write-line (seq-datum-quality datum) output-stream))
   t)
 
 (defun split-fastq-file (filespec chunk-size)
@@ -118,61 +118,26 @@ records."
                (write-n-fastq stream chunk-size chunk-pname)))
            ((zerop n))))))
 
-;; (defun write-n-fastq (stream n chunk-pname)
-;;   "Reads up to N Fastq records from STREAM and writes them into a new
-;; file of pathname CHUNK-PNAME. Returns the number of records actually
-;; written, which may be 0 if the stream contained to further records."
-;;   (if (more-lines-p stream)
-;;       (with-open-file (out chunk-pname :direction :output
-;;                        :if-exists :supersede
-;;                        :element-type 'base-char)
-;;         (do ((fq (read-bio-sequence-alist stream :fastq :alphabet :dna
-;;                                           :callback #'write-alist-fastq
-;;                                           :callback-args (list out))
-;;                  (read-bio-sequence-alist stream :fastq :alphabet :dna
-;;                                           :callback #'write-alist-fastq
-;;                                           :callback-args (list out)))
-;;              (count 1 (1+ count)))
-;;             ((or (null fq)
-;;                  (= count n)) count)))
-;;     0))
-
-;; (defun write-n-fastq (stream n chunk-pname)
-;;   "Reads up to N Fastq records from STREAM and writes them into a new
-;; file of pathname CHUNK-PNAME. Returns the number of records actually
-;; written, which may be 0 if the stream contained to further records."
-;;   (with-open-file (out chunk-pname :direction :output
-;;                    :if-exists :supersede
-;;                    :element-type 'base-char)
-;;     (loop
-;;        for count from 0 below n
-;;        with written = 0
-;;        do (let ((fq (read-bio-sequence-alist stream :fastq :alphabet :dna)))
-;;             (if (null fq)
-;;                 (return written)
-;;               (progn
-;;                 (write-alist-fastq fq out)
-;;                 (incf written))))
-;;        finally (return written))))
-
 (defun write-n-fastq (stream n chunk-pname)
   "Reads up to N Fastq records from STREAM and writes them into a new
 file of pathname CHUNK-PNAME. Returns the number of records actually
 written, which may be 0 if the stream contained to further records."
-  (let ((written 
+  (let ((num-written 
          (with-open-file (out chunk-pname :direction :output
                           :if-exists :supersede
                           :element-type 'base-char)
            (loop
               for count from 0 below n
-              for fq = (read-bio-sequence-alist stream :fastq :alphabet :dna)
-              then (read-bio-sequence-alist stream :fastq :alphabet :dna)
+              for fq = (read-bio-sequence-datum
+                        stream :fastq :alphabet :dna)
+              then (read-bio-sequence-datum
+                    stream :fastq :alphabet :dna)
               while fq
-              do (write-alist-fastq fq out)
+              do (write-datum-fastq fq out)
               finally (return count)))))
-    (when (zerop written)
+    (when (zerop num-written)
       (delete-file chunk-pname))
-    written))
+    num-written))
 
 (defun byte-fastq-header-p (bytes)
   "Returns T if BYTES are a Fastq header (start with the character

@@ -15,12 +15,28 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;
 
-
 (in-package :cl-bio-test)
 
 (fiveam:in-suite cl-bio-system:testsuite)
 
 ;;; Test reading unambiguous/IUPAC Fasta DNA/RNA
+(test read-bio-sequence/interface
+  (with-open-file (fs (merge-pathnames "data/simple-dna1.fa")
+                   :direction :input
+                   :element-type '(unsigned-byte 8))
+    (let ((stream (make-line-input-stream fs)))
+      (signals error
+        (read-bio-sequence stream :fasta
+                           :alphabet nil))
+      (signals error
+        (read-bio-sequence stream :fasta
+                           :alphabet :dna
+                           :ambiguity :invalid-ambiguity))
+      (signals error
+        (read-bio-sequence stream :fasta
+                           :alphabet :dna
+                           :virtualp :invalid-virtualp)))))
+
 (test read-bio-sequence/fasta/dna-simple
   (with-open-file (fs (merge-pathnames "data/simple-dna1.fa")
                    :direction :input

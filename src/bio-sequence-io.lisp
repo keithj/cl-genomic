@@ -28,39 +28,6 @@
     (error "Invalid virtualp ~a: expected one of ~a."
            virtualp '(t nil))))
 
-
-(defun make-seq-alist (identity alphabet ambiguity &key token-seq
-                       length description)
-  "Returns an alist, given a sequence IDENTITY, a vector of residue
-tokens TOKEN-SEQ and a DESCRIPTION string."
-  (pairlis '(:identity :alphabet :ambiguity :token-seq :length :description)
-           (list identity alphabet
-                 (cond ((and (eql :auto ambiguity)
-                             (not (simplep token-seq alphabet)))
-                        :iupac)
-                       ((eql :auto ambiguity)
-                        nil)
-                       (t
-                        ambiguity))
-                 token-seq length description)))
-
-(defun make-quality-alist (identity alphabet ambiguity &key token-seq
-                           length quality)
-  "Returns an alist, given a sequence IDENTITY, a vector of residue
-tokens TOKEN-SEQ and a QUALITY vector."
-  (acons :quality quality
-         (make-seq-alist identity alphabet ambiguity
-                         :token-seq token-seq :length length)))
-
-(defun make-seq-from-alist (alist)
-  "A callback which constructs a CLOS bio-sequence object from
-sequence data that has been parsed into an ALIST."
-  (make-seq  :alphabet (assocdr :alphabet alist)
-             :ambiguity (assocdr :ambiguity alist)
-             :identity (assocdr :identity alist)
-             :token-seq (assocdr :token-seq alist)
-             :length (assocdr :length alist)))
-
 (defun make-chunk-pname (file-pname chunk-number)
   "Returns a new pathname for a file chunk based on a file pathname
 FILE-PNAME and an integer CHUNK-NUMBER."

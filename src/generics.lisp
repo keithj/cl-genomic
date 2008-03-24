@@ -31,6 +31,14 @@ identifier of NIL."))
 residues according to the alphabets specified by ALPHABET-DESIGNATOR,
 or NIL otherwise."))
 
+(defgeneric size-of (alphabet)
+  (:documentation "Returns the number of tokens in ALPHABET as a
+fixnum."))
+
+(defgeneric memberp (alphabet char)
+  (:documentation "Returns T if CHAR is a member token of ALPHABET, or
+NIL otherwise."))
+
 (defgeneric virtualp (bio-sequence)
   (:documentation "Returns T if BIO-SEQUENCE has no concrete token-seq
 representation, merely a length, or NIL otherwise."))

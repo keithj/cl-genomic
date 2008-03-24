@@ -85,12 +85,15 @@
    #:name-of
    #:simplep
    #:virtualp
+   #:size-of
+   #:memberp
    #:tokens-of
    #:encoded-index-of
    #:decoded-index-of
    #:alphabet-of
    #:residue-of
    #:length-of
+   #:subsequence
    #:reverse-sequence
    #:nreverse-sequence
    #:complement-sequence

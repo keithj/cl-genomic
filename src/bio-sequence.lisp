@@ -154,7 +154,10 @@ Purpose: Convenience constructor for bio-sequences with quality.
 (defmethod anonymousp ((obj identity-mixin))
   (null (identity-of obj)))
 
-(defmethod member-of ((alphabet alphabet) (char character))
+(defmethod size-of ((alphabet alphabet))
+  (length (tokens-of alphabet)))
+
+(defmethod memberp ((alphabet alphabet) (char character))
   (contains-char-p (tokens-of alphabet) char))
 
 (defmethod simplep ((token-seq string) (alphabet (eql :dna)))
@@ -228,7 +231,7 @@ Purpose: Convenience constructor for bio-sequences with quality.
   (with-slots (token-seq length) seq
     (if (null token-seq)
         (setf length value)
-      (error (msg "Invalid operation: the length of a concrete sequence"
+      (error (msg "Invalid operation: the length of a concrete sequence" 
                   "may not be changed.")))))
 
 (defmethod virtualp ((seq bio-sequence))
@@ -381,7 +384,7 @@ index END."
                  (complement-token-seq
                   (token-seq-of seq) #'complement-dna-2bit start end)))
 
-(defmethod complement-sequence ((seq simple-dna-sequence)
+(defmethod complement-sequence ((seq iupac-dna-sequence)
                                 &optional (start 0) end)
   (make-instance 'iupac-dna-sequence :token-seq
                  (complement-token-seq

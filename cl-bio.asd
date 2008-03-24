@@ -38,6 +38,8 @@
                           ((:file "package")
                            (:file "bio-sequence-encoding"
                                   :depends-on ("package"))
+                           (:file "data-structures"
+                                  :depends-on ("package"))
                            (:file "classes"
                                   :depends-on ("package"
                                                "bio-sequence-encoding"))
@@ -51,7 +53,8 @@
                                                "bio-sequence-encoding"
                                                "classes"))
                            (:file "bio-sequence-io"
-                                  :depends-on ("package"))))
+                                  :depends-on ("package"
+                                               "data-structures"))))
                  (:module :io
                           :pathname "src/io/"
                           :components
@@ -66,6 +69,7 @@
 (defmethod perform ((op test-op) (c (eql (find-system
                                           'cl-bio))))
   (operate 'load-op :cl-bio-test)
+
   (let ((*default-pathname-defaults* (component-pathname c)))
     (funcall (intern (string :run!) (string :fiveam))
              'cl-bio-system:testsuite)))

@@ -25,7 +25,7 @@
 becomes full of chunks of sequence tokens.")
 
 
-(defmethod read-bio-sequence-alist ((stream binary-line-input-stream)
+(defmethod read-bio-sequence-datum ((stream binary-line-input-stream)
                                     (format (eql :fasta))
                                     &key alphabet ambiguity virtualp
                                     (callback nil callback-supplied-p)
@@ -34,7 +34,7 @@ becomes full of chunks of sequence tokens.")
     (if (vectorp seq-header)
         (multiple-value-bind (identity description)
             (parse-fasta-header (make-sb-string seq-header))
-          (let ((alist (make-seq-alist identity alphabet ambiguity
+          (let ((datum (make-seq-datum identity alphabet ambiguity
                                        :token-seq (unless virtualp
                                                     (concat-fasta-chunks
                                                      stream
@@ -46,11 +46,11 @@ becomes full of chunks of sequence tokens.")
                                                   #'byte-fasta-header-p))
                                        :description description)))
             (if callback-supplied-p
-                (apply callback alist callback-args)
-              alist)))
+                (apply callback datum callback-args)
+              datum)))
       nil)))
 
-(defmethod read-bio-sequence-alist ((stream character-line-input-stream)
+(defmethod read-bio-sequence-datum ((stream character-line-input-stream)
                                     (format (eql :fasta))
                                     &key alphabet ambiguity virtualp
                                     (callback nil callback-supplied-p)
@@ -59,7 +59,7 @@ becomes full of chunks of sequence tokens.")
     (if (vectorp seq-header)
         (multiple-value-bind (identity description)
             (parse-fasta-header seq-header)
-          (let ((alist (make-seq-alist identity alphabet ambiguity
+          (let ((datum (make-seq-datum identity alphabet ambiguity
                                       :token-seq (unless virtualp
                                                     (concat-fasta-chunks
                                                      stream
@@ -71,15 +71,15 @@ becomes full of chunks of sequence tokens.")
                                                   #'char-fasta-header-p))
                                        :description description)))
             (if callback-supplied-p
-                (apply callback alist callback-args)
-              alist)))
+                (apply callback datum callback-args)
+              datum)))
       nil)))
 
 (defmethod read-bio-sequence (stream (format (eql :fasta))
                               &key alphabet ambiguity virtualp)
-  (read-bio-sequence-alist stream format :alphabet alphabet
+  (read-bio-sequence-datum stream format :alphabet alphabet
                            :ambiguity ambiguity :virtualp virtualp
-                           :callback #'make-seq-from-alist))
+                           :callback #'make-seq-from-datum))
 
 (defun count-fasta-residues (stream header-p-fn)
   "Returns an integer which is the number of Fasta sequence residues
@@ -114,19 +114,19 @@ stream is reached. The lines are concatenated using CONCAT-FN."
       (error 'malformed-record-error :text "Incomplete Fasta record."))
     (funcall concat-fn seq-cache)))
 
-(defun write-alist-fasta (alist &optional output-stream)
+(defun write-datum-fasta (datum &optional output-stream)
   "A callback which writes sequence data that has been parsed into an
 ALIST to OUTPUT-STREAM in Fasta format."
-  (let ((description (assocdr :description alist))
+  (let ((description (seq-datum-description datum))
         (*print-pretty* nil))
     (write-char #\> output-stream)
     (if (zerop (length description))
-        (write-line (assocdr :identity alist) output-stream)
+        (write-line (seq-datum-identity datum) output-stream)
       (progn
-        (write-string (assocdr :identity alist) output-stream)
+        (write-string (seq-datum-identity datum) output-stream)
         (write-char #\Space output-stream)
         (write-line description output-stream)))
-    (write-wrapped-string (assocdr :token-seq alist)
+    (write-wrapped-string (seq-datum-token-seq datum)
                           *fasta-line-width* output-stream))
   t)
 
