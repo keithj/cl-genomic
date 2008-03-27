@@ -25,11 +25,11 @@
 becomes full of chunks of sequence tokens.")
 
 
-(defmethod read-bio-sequence-datum ((stream binary-line-input-stream)
-                                    (format (eql :fasta))
-                                    &key alphabet ambiguity virtualp
-                                    (callback nil callback-supplied-p)
-                                    callback-args)
+(defmethod read-seq-datum ((stream binary-line-input-stream)
+                           (format (eql :fasta))
+                           &key alphabet ambiguity virtualp
+                           (callback nil callback-supplied-p)
+                           callback-args)
   (let ((seq-header (find-line stream #'byte-fasta-header-p)))
     (if (vectorp seq-header)
         (multiple-value-bind (identity description)
@@ -50,11 +50,11 @@ becomes full of chunks of sequence tokens.")
               datum)))
       nil)))
 
-(defmethod read-bio-sequence-datum ((stream character-line-input-stream)
-                                    (format (eql :fasta))
-                                    &key alphabet ambiguity virtualp
-                                    (callback nil callback-supplied-p)
-                                    callback-args)
+(defmethod read-seq-datum ((stream character-line-input-stream)
+                           (format (eql :fasta))
+                           &key alphabet ambiguity virtualp
+                           (callback nil callback-supplied-p)
+                           callback-args)
   (let ((seq-header (find-line stream #'char-fasta-header-p)))
     (if (vectorp seq-header)
         (multiple-value-bind (identity description)
@@ -77,9 +77,9 @@ becomes full of chunks of sequence tokens.")
 
 (defmethod read-bio-sequence (stream (format (eql :fasta))
                               &key alphabet ambiguity virtualp)
-  (read-bio-sequence-datum stream format :alphabet alphabet
-                           :ambiguity ambiguity :virtualp virtualp
-                           :callback #'make-seq-from-datum))
+  (read-seq-datum stream format :alphabet alphabet
+                  :ambiguity ambiguity :virtualp virtualp
+                  :callback #'make-seq-from-datum))
 
 (defun count-fasta-residues (stream header-p-fn)
   "Returns an integer which is the number of Fasta sequence residues

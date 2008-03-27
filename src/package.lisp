@@ -39,10 +39,8 @@
    #:complement-rna
    #:find-alphabet
    #:read-bio-sequence
-   #:read-bio-sequence-alist
    #:make-seq
    #:make-quality-seq
-   #:make-seq-from-alist
    #:phred-quality
    #:encode-phred-quality
    #:decode-phred-quality
@@ -51,6 +49,18 @@
    #:decode-illumina-quality
    #:illumina-to-phred-quality
 
+   #:read-seq-datum
+   #:make-seq-datum
+   #:make-quality-datum
+   #:seq-datum-identity
+   #:seq-datum-alphabet
+   #:seq-datum-ambiguity
+   #:seq-datum-token-seq
+   #:seq-datum-length
+   #:seq-datum-description
+   #:seq-datum-quality
+   #:make-seq-from-datum
+   
    ;; Classes
    #:alphabet
    #:bio-sequence

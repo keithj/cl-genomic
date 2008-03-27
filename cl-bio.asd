@@ -38,7 +38,7 @@
                           ((:file "package")
                            (:file "bio-sequence-encoding"
                                   :depends-on ("package"))
-                           (:file "data-structures"
+                           (:file "bio-sequence-adt"
                                   :depends-on ("package"))
                            (:file "classes"
                                   :depends-on ("package"
@@ -54,7 +54,7 @@
                                                "classes"))
                            (:file "bio-sequence-io"
                                   :depends-on ("package"
-                                               "data-structures"))))
+                                               "bio-sequence-adt"))))
                  (:module :io
                           :pathname "src/io/"
                           :components

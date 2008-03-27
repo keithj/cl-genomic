@@ -17,11 +17,11 @@
 
 (in-package :bio-sequence)
 
-(defmethod read-bio-sequence-datum ((stream binary-line-input-stream)
-                                    (format (eql :fastq))
-                                    &key alphabet ambiguity virtualp
-                                    (callback nil callback-supplied-p)
-                                    callback-args)
+(defmethod read-seq-datum ((stream binary-line-input-stream)
+                           (format (eql :fastq))
+                           &key alphabet ambiguity virtualp
+                           (callback nil callback-supplied-p)
+                           callback-args)
   (let ((seq-header (find-line stream #'byte-fastq-header-p)))
     (if (vectorp seq-header)
         (multiple-value-bind (seq quality-header quality)
@@ -38,11 +38,11 @@
               datum)))
       nil)))
 
-(defmethod read-bio-sequence-datum ((stream character-line-input-stream)
-                                    (format (eql :fastq))
-                                    &key alphabet ambiguity virtualp
-                                    (callback nil callback-supplied-p)
-                                    callback-args)
+(defmethod read-seq-datum ((stream character-line-input-stream)
+                           (format (eql :fastq))
+                           &key alphabet ambiguity virtualp
+                           (callback nil callback-supplied-p)
+                           callback-args)
   (let ((seq-header (find-line stream #'char-fastq-header-p)))
     (if (vectorp seq-header)
         (multiple-value-bind (seq quality-header quality)
@@ -61,10 +61,10 @@
 
 (defmethod read-bio-sequence (stream (format (eql :fastq))
                               &key alphabet ambiguity virtualp metric)
-  (read-bio-sequence-datum stream format :alphabet alphabet
-                           :ambiguity ambiguity :virtualp virtualp
-                           :callback #'make-quality-seq-fastq
-                           :callback-args (list metric)))
+  (read-seq-datum stream format :alphabet alphabet
+                  :ambiguity ambiguity :virtualp virtualp
+                  :callback #'make-quality-seq-fastq
+                  :callback-args (list metric)))
 
 
 (defun read-fastq-record (stream qual-header-validate-fn)
@@ -128,10 +128,10 @@ written, which may be 0 if the stream contained to further records."
                           :element-type 'base-char)
            (loop
               for count from 0 below n
-              for fq = (read-bio-sequence-datum
-                        stream :fastq :alphabet :dna)
-              then (read-bio-sequence-datum
-                    stream :fastq :alphabet :dna)
+              for fq = (read-seq-datum stream :fastq
+                                       :alphabet :dna)
+              then (read-seq-datum stream :fastq
+                                   :alphabet :dna)
               while fq
               do (write-datum-fastq fq out)
               finally (return count)))))

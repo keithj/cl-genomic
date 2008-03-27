@@ -97,7 +97,7 @@ having the correct length, but no concrete residues. If no sequence
 can be read, NIL should be returned. This is the high-level sequence
 reading interface which returns bio-sequence CLOS objects."))
 
-(defgeneric read-bio-sequence-alist (stream format &key alphabet ambiguity
+(defgeneric read-bio-sequence-datum (stream format &key alphabet ambiguity
                                      virtualp callback callback-args)
   (:documentation "Reads a sequence record of ALPHABET with AMBIGUITY
 from STREAM in FORMAT, optionally applying function CALLBACK with
