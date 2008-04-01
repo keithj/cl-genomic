@@ -50,6 +50,8 @@
    #:illumina-to-phred-quality
 
    #:read-seq-datum
+   #:write-seq-datum
+   #:filter-seq-datum
    #:make-seq-datum
    #:make-quality-datum
    #:seq-datum-identity

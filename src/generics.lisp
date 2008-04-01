@@ -90,15 +90,15 @@ cumulative total lengths of RANGES."))
 (defgeneric read-bio-sequence (stream format &key alphabet ambiguity
                                virtualp &allow-other-keys)
   (:documentation "Reads a sequence record from STREAM of FORMAT
-(e.g. :fasta, :fastq). Keywords are used to specify the expected
-alphabet (:dna, :rna) and ambiguity (:iupac, nil). The VIRTUALP
+e.g. :fasta, :fastq. Keywords are used to specify the expected
+alphabet {:dna :rna} and ambiguity {:iupac nil}. The VIRTUALP
 keyword, if T, indicates that a virtual sequence should be created,
 having the correct length, but no concrete residues. If no sequence
 can be read, NIL should be returned. This is the high-level sequence
 reading interface which returns bio-sequence CLOS objects."))
 
-(defgeneric read-bio-sequence-datum (stream format &key alphabet ambiguity
-                                     virtualp callback callback-args)
+(defgeneric read-seq-datum (stream format &key alphabet ambiguity
+                            virtualp callback callback-args)
   (:documentation "Reads a sequence record of ALPHABET with AMBIGUITY
 from STREAM in FORMAT, optionally applying function CALLBACK with
 additional CALLBACK-ARGS to the result. The VIRTUALP keyword, if T,
@@ -110,3 +110,9 @@ be supplied which should be a function accepting the alist as the
 first argument, plus any number of additional arguments to be supplied
 in the list CALLBACK-ARGS. The result of applying the callback should
 be returned."))
+
+(defgeneric write-seq-datum (stream format datum)
+  (:documentation ""))
+
+(defgeneric filter-seq-datum (source format predicate sink)
+  (:documentation ""))

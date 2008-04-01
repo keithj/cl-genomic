@@ -59,6 +59,29 @@
               datum)))
       nil)))
 
+(defmethod write-seq-datum ((stream stream) (format (eql :fastq)) datum)
+  (let ((*print-pretty* nil))
+    (write-char #\@ stream)
+    (write-line (seq-datum-identity datum) stream)
+    (write-line (seq-datum-token-seq datum) stream)
+    (write-line "+" stream)
+    (write-line (seq-datum-quality datum) stream))
+  t)
+
+(defmethod filter-seq-datum ((stream line-input-stream)
+                             (format (eql :fastq)) pred out)
+  "Reads Fastq records from STREAM and writes only those for which
+PRED returns T to stream character stream OUT. PRED should be a
+function that accepts a single argument of a standard seq-datum and
+returns T if the read should be removed, or NIL otherwise."
+  (do ((fq (read-seq-datum stream :fastq :alphabet :dna)
+           (read-seq-datum stream :fastq :alphabet :dna))
+       (num-written 0))
+      ((null fq) num-written)
+    (when (not (funcall pred fq))
+      (write-seq-datum out :fastq fq)
+      (incf num-written))))
+
 (defmethod read-bio-sequence (stream (format (eql :fastq))
                               &key alphabet ambiguity virtualp metric)
   (read-seq-datum stream format :alphabet alphabet
@@ -92,17 +115,6 @@ dna-quality-sequence with quality METRIC."
                     :identity (seq-datum-identity datum)
                     :metric metric))
 
-(defun write-datum-fastq (datum &optional output-stream)
-  "Callback which accepts a DATUM and writes it to OUTPUT-STREAM as a
-Fastq format record. OUTPUT-STREAM defaults to *standard-output*."
-  (let ((*print-pretty* nil))
-    (write-char #\@ output-stream)
-    (write-line (seq-datum-identity datum) output-stream)
-    (write-line (seq-datum-token-seq datum) output-stream)
-    (write-line "+" output-stream)
-    (write-line (seq-datum-quality datum) output-stream))
-  t)
-
 (defun split-fastq-file (filespec chunk-size)
   "Splits Fastq file identified by FILESPEC into automatically named
 chunks, each, except the last file, containing up to CHUNK-SIZE
@@ -128,12 +140,10 @@ written, which may be 0 if the stream contained to further records."
                           :element-type 'base-char)
            (loop
               for count from 0 below n
-              for fq = (read-seq-datum stream :fastq
-                                       :alphabet :dna)
-              then (read-seq-datum stream :fastq
-                                   :alphabet :dna)
+              for fq = (read-seq-datum stream :fastq :alphabet :dna)
+              then (read-seq-datum stream :fastq :alphabet :dna)
               while fq
-              do (write-datum-fastq fq out)
+              do (write-seq-datum out :fastq fq)
               finally (return count)))))
     (when (zerop num-written)
       (delete-file chunk-pname))

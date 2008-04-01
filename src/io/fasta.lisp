@@ -75,6 +75,20 @@ becomes full of chunks of sequence tokens.")
               datum)))
       nil)))
 
+(defmethod write-seq-datum ((stream stream) (format (eql :fasta)) datum)
+  (let ((description (seq-datum-description datum))
+        (*print-pretty* nil))
+    (write-char #\> stream)
+    (if (zerop (length description))
+        (write-line (seq-datum-identity datum) stream)
+      (progn
+        (write-string (seq-datum-identity datum) stream)
+        (write-char #\Space stream)
+        (write-line description stream)))
+    (write-wrapped-string (seq-datum-token-seq datum)
+                          *fasta-line-width* stream))
+  t)
+
 (defmethod read-bio-sequence (stream (format (eql :fasta))
                               &key alphabet ambiguity virtualp)
   (read-seq-datum stream format :alphabet alphabet
@@ -113,22 +127,6 @@ stream is reached. The lines are concatenated using CONCAT-FN."
     (when (zerop (length seq-cache))
       (error 'malformed-record-error :text "Incomplete Fasta record."))
     (funcall concat-fn seq-cache)))
-
-(defun write-datum-fasta (datum &optional output-stream)
-  "A callback which writes sequence data that has been parsed into an
-ALIST to OUTPUT-STREAM in Fasta format."
-  (let ((description (seq-datum-description datum))
-        (*print-pretty* nil))
-    (write-char #\> output-stream)
-    (if (zerop (length description))
-        (write-line (seq-datum-identity datum) output-stream)
-      (progn
-        (write-string (seq-datum-identity datum) output-stream)
-        (write-char #\Space output-stream)
-        (write-line description output-stream)))
-    (write-wrapped-string (seq-datum-token-seq datum)
-                          *fasta-line-width* output-stream))
-  t)
 
 (defun byte-fasta-header-p (bytes)
   "Returns T if BYTES are a Fasta header (start with the character
