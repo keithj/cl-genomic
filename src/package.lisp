@@ -22,8 +22,6 @@
    ;; Specials
    #:*dna*
    #:*rna*
-   #:*iupac-dna*
-   #:*iupac-rna*
 
    #:*forward-strand*
    #:*reverse-strand*
@@ -39,8 +37,7 @@
    #:complement-rna
    #:find-alphabet
    #:read-bio-sequence
-   #:make-seq
-   #:make-quality-seq
+   #:make-quality-dna
    #:phred-quality
    #:encode-phred-quality
    #:decode-phred-quality
@@ -69,12 +66,7 @@
    #:nucleic-acid-sequence
    #:dna-sequence
    #:rna-sequence
-   #:simple-dna-sequence
-   #:simple-rna-sequence
-   #:iupac-dna-sequence
-   #:iupac-rna-sequence
-   #:simple-dna-quality-sequence
-   #:iupac-dna-quality-sequence
+   #:dna-quality-sequence
 
    #:knowledgebase
    #:reflexive-mixin

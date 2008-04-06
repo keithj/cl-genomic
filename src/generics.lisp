@@ -87,29 +87,33 @@ cumulative total lengths of RANGES."))
 
 ;;; bio-sequence io generics
 
-(defgeneric read-bio-sequence (stream format &key alphabet ambiguity
-                               virtualp &allow-other-keys)
+(defgeneric read-bio-sequence (stream format &key alphabet virtualp
+                               &allow-other-keys)
   (:documentation "Reads a sequence record from STREAM of FORMAT
 e.g. :fasta, :fastq. Keywords are used to specify the expected
-alphabet {:dna :rna} and ambiguity {:iupac nil}. The VIRTUALP
-keyword, if T, indicates that a virtual sequence should be created,
-having the correct length, but no concrete residues. If no sequence
-can be read, NIL should be returned. This is the high-level sequence
-reading interface which returns bio-sequence CLOS objects."))
+alphabet {:dna :rna}. The VIRTUALP keyword, if T, indicates that a
+virtual sequence should be created, having the correct length, but no
+concrete residues. If no sequence can be read, NIL should be
+returned. This is the high-level sequence reading interface which
+returns bio-sequence CLOS objects."))
 
-(defgeneric read-seq-datum (stream format &key alphabet ambiguity
-                            virtualp callback callback-args)
-  (:documentation "Reads a sequence record of ALPHABET with AMBIGUITY
-from STREAM in FORMAT, optionally applying function CALLBACK with
-additional CALLBACK-ARGS to the result. The VIRTUALP keyword, if T,
-indicates that a virtual sequence should be created, having the
-correct length, but no concrete residues. This is the low-level
-sequence reading interface which normally returns an alist.  If no
-sequence can be read, NIL should be returned. An optional CALLBACK may
-be supplied which should be a function accepting the alist as the
-first argument, plus any number of additional arguments to be supplied
-in the list CALLBACK-ARGS. The result of applying the callback should
-be returned."))
+(defgeneric write-bio-sequence (bio-sequence stream format)
+  (:documentation "Writes BIO-SEQUENCE to stream in FORMAT
+e.g. :fasta, :fastq."))
+
+(defgeneric read-seq-datum (stream format &key alphabet virtualp
+                            callback callback-args)
+  (:documentation "Reads a sequence record of ALPHABET from STREAM in
+FORMAT, optionally applying function CALLBACK with additional
+CALLBACK-ARGS to the result. The VIRTUALP keyword, if T, indicates
+that a virtual sequence should be created, having the correct length,
+but no concrete residues. This is the low-level sequence reading
+interface which normally returns an alist.  If no sequence can be
+read, NIL should be returned. An optional CALLBACK may be supplied
+which should be a function accepting the alist as the first argument,
+plus any number of additional arguments to be supplied in the list
+CALLBACK-ARGS. The result of applying the callback should be
+returned."))
 
 (defgeneric write-seq-datum (stream format datum)
   (:documentation ""))

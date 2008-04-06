@@ -57,26 +57,6 @@ character BASE."
     ((#\v #\V) #\b)
     ((#\n #\N) #\n)))
 
-(declaim (inline complement-dna-2bit))
-(defun complement-dna-2bit (encoded-base)
-  "Returns the complentary encoded DNA base to that represented by
-ENCODED-BASE."
-  (ecase encoded-base
-    (#b00 #b10)
-    (#b01 #b11)
-    (#b10 #b00)
-    (#b11 #b01)))
-
-(declaim (inline complement-rna-2bit))
-(defun complement-rna-2bit (encoded-base)
-  "Returns the complentary encoded RNA base to that represented by
-ENCODED-BASE."
-  (ecase encoded-base
-    (#b00 #b10)
-    (#b01 #b11)
-    (#b10 #b00)
-    (#b11 #b01)))
-
 (declaim (inline complement-dna-4bit))
 (defun complement-dna-4bit (encoded-base)
   "Returns the complentary encoded DNA base to that represented by
@@ -118,34 +98,6 @@ ENCODED-BASE."
     (#b0111 #b1101)
     (#b1110 #b1011)
     (#b1111 #b1111)))
-
-(declaim (inline encode-dna-2bit))
-(defun encode-dna-2bit (base)
-  "Encodes DNA standard-char BASE as a 2-bit byte, representing T as
-00, C as 01, A as 10 G and 11. The first base is in the most
-significant 2-bit byte and the last base is in the least significant
-2-bit byte."
-  (ecase base
-    ((#\t #\T) #b00)
-    ((#\c #\C) #b01)
-    ((#\a #\A) #b10)
-    ((#\g #\G) #b11)))
-
-(declaim (inline decode-dna-2bit))
-(defun decode-dna-2bit (encoded-base)
-  (ecase encoded-base
-    (#b00 #\t)
-    (#b01 #\c)
-    (#b10 #\a)
-    (#b11 #\g)))
-
-(declaim (inline encode-dna-comp-2bit))
-(defun encode-dna-comp-2bit (base)
-  (encode-dna-2bit (complement-dna base)))
-
-(declaim (inline decode-dna-comp-2bit))
-(defun decode-dna-comp-2bit (encoded-base)
-  (complement-dna (decode-dna-2bit encoded-base)))
 
 (declaim (inline encode-dna-4bit))
 (defun encode-dna-4bit (base)
@@ -197,34 +149,6 @@ combinations of these."
 (declaim (inline decode-dna-comp-4bit))
 (defun decode-dna-comp-4bit (encoded-base)
   (complement-dna (decode-dna-4bit encoded-base)))
-
-(declaim (inline encode-rna-2bit))
-(defun encode-rna-2bit (base)
-  "Encodes RNA standard-char BASE as a 2-bit byte, representing U as
-00, C as 01, A as 10 G and 11. The first base is in the most
-significant 2-bit byte and the last base is in the least significant
-two-bit byte."
-  (ecase base
-    ((#\u #\U) #b00)
-    ((#\c #\C) #b01)
-    ((#\a #\A) #b10)
-    ((#\g #\G) #b11)))
-
-(declaim (inline decode-rna-2bit))
-(defun decode-rna-2bit (encoded-base)
-  (ecase encoded-base
-    (#b00 #\u)
-    (#b01 #\c)
-    (#b10 #\a)
-    (#b11 #\g)))
-
-(declaim (inline encode-rna-comp-2bit))
-(defun encode-rna-comp-2bit (base)
-  (encode-rna-2bit (complement-rna base)))
-
-(declaim (inline decode-rna-comp-2bit))
-(defun decode-rna-comp-2bit (encoded-base)
-  (complement-rna (decode-rna-2bit encoded-base)))
 
 (declaim (inline encode-rna-4bit))
 (defun encode-rna-4bit (base)
@@ -307,32 +231,6 @@ combinations of these."
 ;;     (#\Y 24)
 ;;     (#\Z 25)))
 
-;; (declaim (inline encode-octet-2bit))
-;; (defun encode-octet-2bit (base)
-;;   (ecase base
-;;     ((116 84) #b00)
-;;     ((99 67) #b01)
-;;     ((97 65) #b10)
-;;     ((103 71) #b11)))
-
-;; (declaim (inline encode-octet-4bit))
-;; (defun encode-octet-4bit (base)
-;;   (ecase base
-;;     ((116 84) #b0001)
-;;     ((99 67) #b0010)
-;;     ((97 65) #b0100)
-;;     ((103 71) #b1000)
-;;     ((114 82) #b1100)
-;;     ((121 89) #b0011)
-;;     ((107 75) #b1001)
-;;     ((109 77) #b0110)
-;;     ((115 83) #b1010)
-;;     ((119 87) #b0101)
-;;     ((98 66) #b1011)
-;;     ((100 68) #b1101)
-;;     ((104 72) #b0111)
-;;     ((118 86) #b1110)
-;;     ((110 78) #b1111)))
 
 (defun phred-quality (p)
   "Returns the Phred score of a base where P is the error

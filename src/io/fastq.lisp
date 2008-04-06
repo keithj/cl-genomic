@@ -17,9 +17,29 @@
 
 (in-package :bio-sequence)
 
+(defmethod read-bio-sequence ((stream line-input-stream)
+                              (format (eql :fastq))
+                              &key alphabet virtualp metric)
+  (read-seq-datum stream format :alphabet alphabet
+                  :virtualp virtualp
+                  :callback #'make-quality-seq-from-datum
+                  :callback-args (list metric)))
+
+(defmethod write-bio-sequence ((seq dna-quality-sequence)
+                               stream (format (eql :fastq)))
+  (let ((*print-pretty* nil)
+        (encoder (ecase (metric-of seq)
+                   (:phred #'encode-phred-quality)
+                   (:illumina #'encode-illumina-quality))))
+    (write-char #\@ stream)
+    (write-line (identity-of seq) stream)
+    (write-line (to-string seq) stream)
+    (write-line "+" stream)
+    (write-line (encode-quality (quality-of seq) encoder) stream)))
+
 (defmethod read-seq-datum ((stream binary-line-input-stream)
                            (format (eql :fastq))
-                           &key alphabet ambiguity virtualp
+                           &key alphabet virtualp
                            (callback nil callback-supplied-p)
                            callback-args)
   (let ((seq-header (find-line stream #'byte-fastq-header-p)))
@@ -29,7 +49,7 @@
           (declare (ignore quality-header))
           (let ((datum (make-quality-datum
                         (make-sb-string seq-header 1)
-                        alphabet ambiguity
+                        alphabet
                         :token-seq (unless virtualp (make-sb-string seq))
                         :length (when virtualp (length seq))
                         :quality (make-sb-string quality))))
@@ -40,7 +60,7 @@
 
 (defmethod read-seq-datum ((stream character-line-input-stream)
                            (format (eql :fastq))
-                           &key alphabet ambiguity virtualp
+                           &key alphabet virtualp
                            (callback nil callback-supplied-p)
                            callback-args)
   (let ((seq-header (find-line stream #'char-fastq-header-p)))
@@ -50,7 +70,7 @@
           (declare (ignore quality-header))
           (let ((datum (make-quality-datum
                         (string-left-trim '(#\@) seq-header)
-                        alphabet ambiguity
+                        alphabet
                         :token-seq (unless virtualp seq)
                         :length (when virtualp (length seq))
                         :quality quality)))
@@ -82,14 +102,6 @@ returns T if the read should be removed, or NIL otherwise."
       (write-seq-datum out :fastq fq)
       (incf num-written))))
 
-(defmethod read-bio-sequence (stream (format (eql :fastq))
-                              &key alphabet ambiguity virtualp metric)
-  (read-seq-datum stream format :alphabet alphabet
-                  :ambiguity ambiguity :virtualp virtualp
-                  :callback #'make-quality-seq-fastq
-                  :callback-args (list metric)))
-
-
 (defun read-fastq-record (stream qual-header-validate-fn)
   "Reads the body of a Fastq record that follows the header from
 STREAM, validates the quality header with the predicate
@@ -105,15 +117,6 @@ the quality header and the quality."
              "Incomplete Fastq record."))
     (values seq quality-header quality)))
 
-(defun make-quality-seq-fastq (datum metric)
-  "Callback which accepts a DATUM and creates a new
-dna-quality-sequence with quality METRIC."
-  (make-quality-seq :alphabet (seq-datum-alphabet datum)
-                    :ambiguity (seq-datum-ambiguity datum)
-                    :token-seq (seq-datum-token-seq datum)
-                    :quality (seq-datum-quality datum)
-                    :identity (seq-datum-identity datum)
-                    :metric metric))
 
 (defun split-fastq-file (filespec chunk-size)
   "Splits Fastq file identified by FILESPEC into automatically named

@@ -39,38 +39,19 @@ alphabet."))
 (defvar *dna*
   (make-instance 'alphabet
                  :name :dna
-                 :encoder #'encode-dna-2bit
-                 :decoder #'decode-dna-2bit
-                 :tokens (make-array 4
-                                     :element-type 'base-char
-                                     :initial-contents "acgt")))
+                 :encoder #'encode-dna-4bit
+                 :decoder #'decode-dna-4bit
+                 :tokens (make-array 15
+                             :element-type 'base-char
+                             :initial-contents "acgtrykmswbdhvn")))
 (defvar *rna*
   (make-instance 'alphabet
                  :name :rna
-                 :encoder #'encode-rna-2bit
-                 :decoder #'decode-rna-2bit
-                 :tokens (make-array 4
-                                     :element-type 'base-char
-                                     :initial-contents "acgu")))
-(defvar *iupac-dna*
-  (make-instance 'alphabet
-                 :name :iupac-dna
-                 :encoder #'encode-dna-4bit
-                 :decoder #'decode-dna-4bit
-                 :tokens
-                 (make-array 15
-                             :element-type 'base-char
-                             :initial-contents "acgtrykmswbdhvn")))
-(defvar *iupac-rna*
-  (make-instance 'alphabet
-                 :name :iupac-rna
                  :encoder #'encode-rna-4bit
                  :decoder #'decode-rna-4bit
-                 :tokens
-                 (make-array 15
+                 :tokens (make-array 15
                              :element-type 'base-char
                              :initial-contents "acgurykmswbdhvn")))
-
 
 (defvar *alphabets* (make-hash-table))
 
@@ -84,8 +65,6 @@ alphabet."))
 
 (setf (gethash :dna *alphabets*) *dna*)
 (setf (gethash :rna *alphabets*) *rna*)
-(setf (gethash :iupac-dna *alphabets*) *iupac-dna*)
-(setf (gethash :iupac-rna *alphabets*) *iupac-rna*)
 
 
 (defclass sequence-strand ()
@@ -152,7 +131,7 @@ numeric quality value for each residue."))
 
 (defclass bio-sequence (identity-mixin)
   ((alphabet :initarg :alphabet
-             :accessor alphabet-of
+             :reader alphabet-of
              :documentation "The alphabet whose tokens comprise the
 sequence.")
    (token-seq :initform nil
@@ -175,39 +154,17 @@ sequences."))
   (:documentation "A logical nucleic acid sequence."))
 
 (defclass dna-sequence (nucleic-acid-sequence)
-  ()
-  (:documentation "A logical DNA sequence."))
-
-(defclass rna-sequence (nucleic-acid-sequence)
-  ()
-  (:documentation "A logical RNA sequence."))
-
-(defclass iupac-dna-sequence (dna-sequence)
-  ((alphabet :initform (find-alphabet :iupac-dna)
+  ((alphabet :initform (find-alphabet :dna)
              :allocation :class))
   (:documentation "A concrete DNA sequence comprising IUPAC ambiguity
 bases."))
 
-(defclass simple-dna-sequence (dna-sequence)
-  ((alphabet :initform (find-alphabet :dna)
-             :allocation :class))
-  (:documentation "A concrete DNA sequence comprising unambiguous
-bases T, C, A and G."))
-
-(defclass iupac-rna-sequence (rna-sequence)
-  ((alphabet :initform (find-alphabet :iupac-rna)
+(defclass rna-sequence (nucleic-acid-sequence)
+  ((alphabet :initform (find-alphabet :rna)
              :allocation :class))
   (:documentation "A concrete RNA sequence comprising IUPAC ambiguity
 bases."))
 
-(defclass simple-rna-sequence (rna-sequence)
-  ((alphabet :initform (find-alphabet :rna)
-             :allocation :class))
-  (:documentation "A concrete RNA sequence comprising unambiguous
-bases U, C, A and G."))
-
-(defclass simple-dna-quality-sequence (simple-dna-sequence quality-mixin)
+(defclass dna-quality-sequence (dna-sequence quality-mixin)
   ())
 
-(defclass iupac-dna-quality-sequence (iupac-dna-sequence quality-mixin)
-  ())

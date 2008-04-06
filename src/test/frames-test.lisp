@@ -163,7 +163,7 @@
     (is-true (contains-slot-p f "note"))
     (signals knowledgebase-error
       (add-slot f (make-instance 'single-valued-slot :name "note"
-                                 :domain 'simple-dna-sequence)))))
+                                 :domain 'dna-sequence)))))
 
 
 ;;; Adding a slot with a range

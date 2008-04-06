@@ -17,13 +17,10 @@
 
 (in-package :bio-sequence)
 
-(defmethod read-bio-sequence :before (stream format &key alphabet ambiguity
+(defmethod read-bio-sequence :before (stream format &key alphabet
                                              virtualp)
   (unless alphabet
     (error "An alphabet must be supplied."))
-  (unless (member ambiguity '(:iupac :auto nil))
-    (error "Invalid ambiguity ~a: expected one of ~a."
-           ambiguity '(:iupac :auto nil)))
   (unless (member virtualp '(t nil))
     (error "Invalid virtualp ~a: expected one of ~a."
            virtualp '(t nil))))

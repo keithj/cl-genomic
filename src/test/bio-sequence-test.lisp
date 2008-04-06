@@ -29,8 +29,6 @@
 (test find-alphabet/standard
   (is (eql *dna* (find-alphabet :dna)))
   (is (eql *rna* (find-alphabet :rna)))
-  (is (eql *iupac-dna* (find-alphabet :iupac-dna)))
-  (is (eql *iupac-rna* (find-alphabet :iupac-rna)))
   (signals error
     (find-alphabet :foo)))
 
@@ -54,25 +52,13 @@
             (is (eq (length tokens) (size-of alphabet)))
             (dolist (token tokens)
               (is-true (memberp alphabet token))))
-        (mapcar #'find-alphabet '(:dna :rna :iupac-dna :iupac-rna))
+        (mapcar #'find-alphabet '(:dna :rna))
         (mapcar #'(lambda (str)
                     (loop
                        for c across str collect c))
-                '("acgt" "acgu" "acgtrykmswbdhvn" "acgurykmswbdhvn"))))
+                '("acgtrykmswbdhvn" "acgurykmswbdhvn"))))
 
 ;;; Test encoding/decoding
-(test encode/decode-dna-2bit
-  (let ((tokens "tagc"))
-    (loop for tok across tokens
-         do (is (char= tok (bio-sequence::decode-dna-2bit
-                            (bio-sequence::encode-dna-2bit tok)))))))
-
-(test encode/decode-rna-2bit
-  (let ((tokens "uagc"))
-    (loop for tok across tokens
-       do (is (char= tok (bio-sequence::decode-rna-2bit
-                          (bio-sequence::encode-rna-2bit tok)))))))
-
 (test encode/decode-dna-4bit
   (let ((tokens "tagcrykmswbdhvn"))
     (loop for tok across tokens
@@ -85,97 +71,86 @@
        do (is (char= tok (bio-sequence::decode-rna-4bit
                           (bio-sequence::encode-rna-4bit tok)))))))
 
-(test encode-token
-  (let* ((residues "acgt")
-         (seq (make-instance 'simple-dna-sequence
-                             :token-seq residues)))
-    (loop for i from 0 below (length residues)
-       do (progn
-            (bio-sequence::encode-token (char residues i) seq i
-                                        (bio-sequence::encoded-tokens 2))
-            (is (char= (char residues i)
-                       (char (to-string seq) i)))))))
-
-(test dencode-token
-  (let* ((residues "acgt")
-         (seq (make-instance 'simple-dna-sequence
-                             :token-seq residues)))
-    (loop for i from 0 below (length residues)
-       do (progn
-            (is (char= (bio-sequence::decode-token
-                        seq i
-                        (bio-sequence::encoded-tokens 2))
-                       (char residues i)))))))
-
 ;;; Test constructors
 (test make-dna/rna
-  (let ((seqs (list (make-seq :token-seq "tagc")
-                    (make-seq :ambiguity :iupac :token-seq "nnnn")
-                    (make-seq :alphabet :rna :token-seq "uagc")
-                    (make-seq :alphabet :rna :ambiguity :iupac
-                              :token-seq"nnnn")))
-        (class-names (list 'simple-dna-sequence
-                           'iupac-dna-sequence
-                           'simple-rna-sequence
-                           'iupac-rna-sequence)))
-    (mapcar #'(lambda (seq class-name)
-                (is (eql class-name (class-name (class-of seq)))))
-            seqs class-names))
+  (let ((seqs (list (make-instance 'dna-sequence
+                                   :token-seq "tagc") ; unambiguous
+                    (make-instance 'dna-sequence
+                                   :token-seq "nnnn") ; ambiguous
+                    (make-instance 'rna-sequence
+                                   :token-seq "uagc") ; unambiguous
+                    (make-instance 'rna-sequence
+                                   :token-seq "nnnn"))) ; ambiguous
+        (class-names (list 'dna-sequence
+                           'dna-sequence
+                           'rna-sequence
+                           'rna-sequence))
+        (alphabets (list *dna*
+                         *dna*
+                         *rna*
+                         *rna*)))
+    (mapcar #'(lambda (seq class-name alphabet)
+                (is (eql class-name (class-name (class-of seq))))
+                (is (eql alphabet (alphabet-of seq))))
+            seqs class-names alphabets))
   (signals error
-    (make-seq))
+    (make-instance 'dna-sequence))
   (signals error
-    (make-seq :token-seq ""))
+    (make-instance 'dna-sequence :token-seq "u"))
   (signals error
-    (make-seq :token-seq '(#\t #\a #\g #\c)))
+    (make-instance 'rna-sequence :token-seq "t"))
   (signals error
-    (make-seq :alphabet :dna :length -1))
+    (make-instance 'dna-sequence :token-seq ""))
   (signals error
-    (make-seq :token-seq "tagc" :length 99)))
+    (make-instance 'dna-sequence :token-seq '(#\t #\a #\g #\c)))
+  (signals error
+    (make-instance 'dna-sequence :length -1))
+  (signals error
+    (make-instance 'dna-sequence :token-seq "tagc" :length 99)))
 
 (test make-quality-dna
-  (let ((seqs (list (make-quality-seq
+  (let ((seqs (list (make-instance 'dna-quality-sequence ; unambiguous
                      :token-seq "agaatattctgaccccagttactttcaaga"
                      :quality "<<<<<<<<<<<<<<<<<<<<<735513;3<"
                      :metric :phred)
-                    (make-quality-seq
-                     :ambiguity :iupac
+                    (make-instance 'dna-quality-sequence ; ambiguous
                      :token-seq "ntgccaaaaaatagaaaagtcancgatatt"
                      :quality "<<<<<<<<<<<<<<<<<8<<<<<<5<3.5:"
                      :metric :phred)))
-        (class-names (list 'simple-dna-quality-sequence
-                           'iupac-dna-quality-sequence)))
+        (class-names (list 'dna-quality-sequence
+                           'dna-quality-sequence)))
     (mapcar #'(lambda (seq class-name)
                 (is (eql class-name (class-name (class-of seq)))))
             seqs class-names))
   (signals error
-   (make-quality-seq
+   (make-instance 'dna-quality-sequence
     :token-seq "agaatattctgaccccagttactttcaaga"
     :quality "<<<<<<<"
     :metric :phred))
   (signals error
-    (make-quality-seq
+    (make-instance 'dna-quality-sequence
      :token-seq "agaatattctgaccccagttactttcaaga"
      :quality "<<<<<<<<<<<<<<<<<8<<<<<<5<3.5:"
      :metric :invalid-metric)))
 
 ;; Test bio-sequence methods
 (test simplep/string
-  (is-true (simplep "acgt" :dna))
-  (is-true (simplep "acgu" :rna)))
+  (is-true (simplep "acgt" (find-alphabet :dna)))
+  (is-true (simplep "acgu" (find-alphabet :rna))))
 
 (test length-of/bio-sequence
   (let ((len 10))
-    (is (= len (length-of (make-instance 'simple-dna-sequence
+    (is (= len (length-of (make-instance 'dna-sequence
                                          :token-seq "aaaaaaaaaa"))))
-    (is (= len (length-of (make-instance 'simple-dna-sequence
+    (is (= len (length-of (make-instance 'dna-sequence
                                          :token-seq "aaaaaaaaaa")))))
   (signals error
-    (setf (length-of (make-instance 'simple-dna-sequence
+    (setf (length-of (make-instance 'dna-sequence
                                     :token-seq "aaaaaaaaaa")) 99)))
 
 (test residue-of/dna-sequence
   (let ((residues "tttt")
-        (seq (make-instance 'simple-dna-sequence
+        (seq (make-instance 'dna-sequence
                             :token-seq "aaaa")))
     (dotimes (n (length residues))
       (setf (residue-of seq n) (aref residues n))
@@ -183,44 +158,28 @@
 
 (test residue-of/rna-sequence
   (let ((residues "uuuu")
-        (rna-seq (make-instance 'simple-rna-sequence
+        (rna-seq (make-instance 'rna-sequence
                                 :token-seq "aaaa")))
-    (dotimes (n (length residues))
-      (setf (residue-of rna-seq n) (aref residues n))
-      (is (char= (residue-of rna-seq n) (aref residues n))))))
-
-(test residue-of/iupac-dna-sequence
-  (let ((residues "tntt")
-        (seq (make-instance 'iupac-dna-sequence
-                            :token-seq "aana")))
-    (dotimes (n (length residues))
-      (setf (residue-of seq n) (aref residues n))
-      (is (char= (residue-of seq n) (aref residues n))))))
-
-(test residue-of/iupac-rna-sequence
-  (let ((residues "unuu")
-        (rna-seq (make-instance 'iupac-rna-sequence
-                                :token-seq "aana")))
     (dotimes (n (length residues))
       (setf (residue-of rna-seq n) (aref residues n))
       (is (char= (residue-of rna-seq n) (aref residues n))))))
 
 (test residue-of/virtual-sequence
   (signals error
-    (residue-of (make-instance 'simple-dna-sequence
+    (residue-of (make-instance 'dna-sequence
                                :length 10) 0))
   (signals error
-    (setf (residue-of (make-instance 'simple-dna-sequence
+    (setf (residue-of (make-instance 'dna-sequence
                                      :length 10) 0) #\a)))
 
 ;; (test copy-sequence/bio-sequence
-;;   (let ((seqs (list (make-instance 'simple-dna-sequence
+;;   (let ((seqs (list (make-instance 'dna-sequence
 ;;                                    :token-seq "tagc")
-;;                     (make-instance 'iupac-dna-sequence
+;;                     (make-instance 'dna-sequence
 ;;                                    :token-seq "nnnn")
-;;                     (make-instance 'simple-rna-sequence
+;;                     (make-instance 'rna-sequence
 ;;                                    :token-seq "uagc")
-;;                     (make-instance 'iupac-rna-sequence
+;;                     (make-instance 'rna-sequence
 ;;                                    :token-seq "nnnn"))))
 ;;     (mapcar #'(lambda (seq)
 ;;                 (let ((copy (copy-sequence seq)))
@@ -232,7 +191,7 @@
 
 (test to-string/dna-sequence
   (let* ((residues "acgt")
-         (seq (make-instance 'simple-dna-sequence
+         (seq (make-instance 'dna-sequence
                              :token-seq residues)))
     ;; no args
     (is (string= residues (to-string seq)))
@@ -244,7 +203,7 @@
 
 (test to-string/rna-sequence
   (let* ((residues "acgu")
-         (seq (make-instance 'simple-rna-sequence
+         (seq (make-instance 'rna-sequence
                              :token-seq residues)))
     ;; no args
     (is (string= residues (to-string seq)))
@@ -256,54 +215,63 @@
 
 (test subsequence/bio-sequence
   (let* ((residues "aaggccttaaggcctt")
-         (seq (make-seq :token-seq residues)))
+         (seq (make-instance 'dna-sequence
+                             :token-seq residues)))
     (is (string= (subseq residues 0 5) ; aaggc
                  (to-string (subsequence seq 0 5))))
     (is (string= residues
                  (to-string (subsequence seq 0))))))
 
-(test reverse-sequence/bio-sequence
+(test reverse-sequence/dna-sequence
   (let* ((residues "aaccggtt")
-         (seq (make-seq :token-seq residues)))
+         (seq (make-instance 'dna-sequence
+                             :token-seq residues)))
     (is (string= (to-string (reverse-sequence seq))
                  (reverse residues)))))
 
-(test nreverse-sequence/bio-sequence
+(test nreverse-sequence/dna-sequence
   (let* ((residues "aaccggtt")
-         (seq (make-seq :token-seq residues)))
+         (seq (make-instance 'dna-sequence
+                             :token-seq residues)))
     (is (string= (to-string (nreverse-sequence seq))
                  (reverse residues)))))
 
-(test complement-sequence/simple-dna-sequence
+(test complement-sequence/dna-sequence
   (let* ((residues "aaccggtt")
-         (seq (make-seq :token-seq residues)))
+         (seq (make-instance 'dna-sequence
+                             :token-seq residues)))
     (is (string= (to-string (complement-sequence seq))
                  "ttggccaa"))))
 
 (test complement-sequence/iupac-dna-sequence
   (let* ((residues "acgtrykmswbdhvn")
-         (seq (make-seq :token-seq residues :ambiguity :iupac)))
+         (seq (make-instance 'dna-sequence
+                             :token-seq residues)))
     (is (string= (to-string (complement-sequence seq))
                  "tgcayrmkswvhdbn"))))
 
 (test reverse-complement/simple-dna-sequence
   (let* ((residues "acccggttt")
-         (seq (make-seq :token-seq residues)))
+         (seq (make-instance 'dna-sequence
+                             :token-seq residues)))
     (is (string= (to-string (reverse-complement seq))
                  "aaaccgggt"))))
 
 (test reverse-complement/iupac-dna-sequence
   (let* ((residues "acgtrykmswbdhvn")
-         (seq (make-seq :token-seq residues :ambiguity :iupac)))
+         (seq (make-instance 'dna-sequence
+                             :token-seq residues)))
     (is (string= (to-string (reverse-complement seq))
                  "nbdhvwskmryacgt"))))
 
 (test residue-frequencies/bio-sequence
-  (let ((seq (make-seq :token-seq "aacccgggt")))
+  (let ((seq (make-instance 'dna-sequence
+                            :token-seq "aacccgggt")))
     (mapc #'(lambda (token freq)
               (is (eq (cdr (assoc token (residue-frequencies seq)
                                   :test #'char= )) freq)))
           '(#\a #\c #\g #\t)
           '(2 3 3 1)))
   (signals error
-    (residue-frequencies (make-seq :alphabet :dna :length 10))))
+    (residue-frequencies (make-instance 'dna-sequence
+                                        :length 10))))

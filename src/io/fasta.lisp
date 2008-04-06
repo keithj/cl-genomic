@@ -24,17 +24,35 @@
   "The number of elements by which the token cache is extended when it
 becomes full of chunks of sequence tokens.")
 
+(defmethod read-bio-sequence ((stream line-input-stream)
+                              (format (eql :fasta))
+                              &key alphabet virtualp)
+  (read-seq-datum stream format :alphabet alphabet
+                  :virtualp virtualp
+                  :callback #'make-seq-from-datum))
+
+(defmethod write-bio-sequence ((seq bio-sequence)
+                               stream (format (eql :fasta)))
+  (let ((*print-pretty* nil)
+        (len (length-of seq)))
+    (write-char #\> stream)
+    (write-line (identity-of seq))
+    (loop
+       for i from 0 below len by *fasta-line-width*
+       do (write-line
+           (to-string seq i (min len (+ i *fasta-line-width*)))
+           stream))))
 
 (defmethod read-seq-datum ((stream binary-line-input-stream)
                            (format (eql :fasta))
-                           &key alphabet ambiguity virtualp
+                           &key alphabet virtualp
                            (callback nil callback-supplied-p)
                            callback-args)
   (let ((seq-header (find-line stream #'byte-fasta-header-p)))
     (if (vectorp seq-header)
         (multiple-value-bind (identity description)
             (parse-fasta-header (make-sb-string seq-header))
-          (let ((datum (make-seq-datum identity alphabet ambiguity
+          (let ((datum (make-seq-datum identity alphabet
                                        :token-seq (unless virtualp
                                                     (concat-fasta-chunks
                                                      stream
@@ -52,14 +70,14 @@ becomes full of chunks of sequence tokens.")
 
 (defmethod read-seq-datum ((stream character-line-input-stream)
                            (format (eql :fasta))
-                           &key alphabet ambiguity virtualp
+                           &key alphabet virtualp
                            (callback nil callback-supplied-p)
                            callback-args)
   (let ((seq-header (find-line stream #'char-fasta-header-p)))
     (if (vectorp seq-header)
         (multiple-value-bind (identity description)
             (parse-fasta-header seq-header)
-          (let ((datum (make-seq-datum identity alphabet ambiguity
+          (let ((datum (make-seq-datum identity alphabet
                                       :token-seq (unless virtualp
                                                     (concat-fasta-chunks
                                                      stream
@@ -88,12 +106,6 @@ becomes full of chunks of sequence tokens.")
     (write-wrapped-string (seq-datum-token-seq datum)
                           *fasta-line-width* stream))
   t)
-
-(defmethod read-bio-sequence (stream (format (eql :fasta))
-                              &key alphabet ambiguity virtualp)
-  (read-seq-datum stream format :alphabet alphabet
-                  :ambiguity ambiguity :virtualp virtualp
-                  :callback #'make-seq-from-datum))
 
 (defun count-fasta-residues (stream header-p-fn)
   "Returns an integer which is the number of Fasta sequence residues
