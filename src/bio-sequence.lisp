@@ -24,10 +24,15 @@
   "Type for a sequence length."
   '(and fixnum (integer 1 *)))
 
+(deftype quality-score ()
+  '(signed-byte 8))
+
 (defvar *sequence-print-limit* 50
   "Maximum length of sequence to be pretty-printed.")
 
 (defun encode-quality (quality encoder)
+  "Encodes QUALITY, an array of bytes representing base quality
+scores, as a string using function ENCODER."
   (let ((quality-str (make-string (length quality)
                                   :element-type 'base-char)))
     (copy-array quality 0 (1- (length quality))
@@ -35,9 +40,10 @@
     quality-str))
 
 (defun decode-quality (quality decoder)
-  "Decodes the array QUALITY into a new array using function DECODER."
+  "Decodes the QUALITY, a string, as into a new array using function
+DECODER."
   (let ((quality-seq (make-array (length quality)
-                                 :element-type '(unsigned-byte 8))))
+                                 :element-type 'quality-score)))
     (copy-array quality 0 (1- (length quality))
                 quality-seq 0 decoder)
     quality-seq))
@@ -91,7 +97,7 @@
       (error (msg "Token-seq and quality must be the same length"
                   "but were ~a and ~a elements long, respectively.")
              (length token-seq) (length quality)))
-    (unless (equal '(unsigned-byte 8) (array-element-type quality))
+    (unless (subtypep 'quality-score (array-element-type quality))
       (let ((decoder (ecase metric
                        (:phred #'decode-phred-quality)
                        (:illumina #'decode-illumina-quality))))
@@ -243,22 +249,21 @@
   (make-instance (class-of seq)
                  :token-seq (reverse (token-seq-of seq))))
 
+(defmethod reverse-sequence ((seq dna-quality-sequence))
+  (make-instance 'dna-quality-sequence
+                 :token-seq (reverse (token-seq-of seq))
+                 :quality (reverse (quality-of seq))
+                 :metric (metric-of seq)))
+
 (defmethod nreverse-sequence ((seq bio-sequence))
   (make-instance (class-of seq)
                  :token-seq (nreverse (token-seq-of seq))))
 
-(defun complement-token-seq (token-seq comp-fn &optional (start 0) end)
-  "Returns a complemented copy of TOKEN-SEQ populated with elements
-from TOKEN-SEQ that have been transformed by COMP-FN, starting at the
-first element, or index START, nd continuing to the last residue, or
-index END."
-  (let* ((end (or end (length token-seq)))
-         (comp-seq (make-array (- end start)
-                               :element-type
-                               (array-element-type token-seq))))
-    (copy-array token-seq start (1- end)
-                comp-seq 0 comp-fn)
-    comp-seq))
+(defmethod nreverse-sequence ((seq dna-quality-sequence))
+  (make-instance 'dna-quality-sequence
+                 :token-seq (nreverse (token-seq-of seq))
+                 :quality (nreverse (quality-of seq))
+                 :metric (metric-of seq)))
 
 (defmethod complement-sequence ((seq dna-sequence)
                                 &optional (start 0) end)
@@ -392,3 +397,16 @@ unsigned-byte 4 using ENCODER."
     (copy-array token-seq start (1- end)
                 sub-seq 0)
     sub-seq))
+
+(defun complement-token-seq (token-seq comp-fn &optional (start 0) end)
+  "Returns a complemented copy of TOKEN-SEQ populated with elements
+from TOKEN-SEQ that have been transformed by COMP-FN, starting at the
+first element, or index START, and continuing to the last residue, or
+index END."
+  (let* ((end (or end (length token-seq)))
+         (comp-seq (make-array (- end start)
+                               :element-type
+                               (array-element-type token-seq))))
+    (copy-array token-seq start (1- end)
+                comp-seq 0 comp-fn)
+    comp-seq))

@@ -25,26 +25,12 @@
 
 (fiveam:in-suite cl-bio-system:testsuite)
 
-;;; Test alphabet finding
+;;; Alphahets
 (test find-alphabet/standard
   (is (eql *dna* (find-alphabet :dna)))
   (is (eql *rna* (find-alphabet :rna)))
   (signals error
     (find-alphabet :foo)))
-
-;;; Test alphabet
-(test name-of/alphabet
-  "Test alphabet."
-  (let ((name "test name"))
-    (is (string= name
-                 (name-of (make-instance 'alphabet
-                                         :name name))))))
-
-(test tokens-of/alphabet
-  (let ((tokens "abcd"))
-    (is (string= tokens
-                 (tokens-of (make-instance 'alphabet
-                                           :tokens tokens))))))
 
 (test standard-alphabets
   "Test presence of expected tokens in standard alphabets."
@@ -58,7 +44,20 @@
                        for c across str collect c))
                 '("acgtrykmswbdhvn" "acgurykmswbdhvn"))))
 
-;;; Test encoding/decoding
+(test name-of/alphabet
+  "Test alphabet."
+  (let ((name "test name"))
+    (is (string= name
+                 (name-of (make-instance 'alphabet
+                                         :name name))))))
+
+(test tokens-of/alphabet
+  (let ((tokens "abcd"))
+    (is (string= tokens
+                 (tokens-of (make-instance 'alphabet
+                                           :tokens tokens))))))
+
+;;; Encoding/decoding sequences
 (test encode/decode-dna-4bit
   (let ((tokens "tagcrykmswbdhvn"))
     (loop for tok across tokens
@@ -71,7 +70,7 @@
        do (is (char= tok (bio-sequence::decode-rna-4bit
                           (bio-sequence::encode-rna-4bit tok)))))))
 
-;;; Test constructors
+;;; Sequence constructors
 (test make-dna/rna
   (let ((seqs (list (make-instance 'dna-sequence
                                    :token-seq "tagc") ; unambiguous
@@ -133,11 +132,13 @@
      :quality "<<<<<<<<<<<<<<<<<8<<<<<<5<3.5:"
      :metric :invalid-metric)))
 
-;; Test bio-sequence methods
+;;; Utility methods
 (test simplep/string
   (is-true (simplep "acgt" (find-alphabet :dna)))
   (is-true (simplep "acgu" (find-alphabet :rna))))
 
+
+;;; Sequence accessors
 (test length-of/bio-sequence
   (let ((len 10))
     (is (= len (length-of (make-instance 'dna-sequence
@@ -189,6 +190,8 @@
 ;;                                (residue-of seq n))))))
 ;;             seqs)))
 
+
+;;; Sequence transformations
 (test to-string/dna-sequence
   (let* ((residues "acgt")
          (seq (make-instance 'dna-sequence
@@ -212,15 +215,6 @@
        (is (string= (subseq residues n) (to-string seq n))))
      (dotimes (n 4)
        (is (string= (subseq residues 0 n) (to-string seq 0 n))))))
-
-(test subsequence/bio-sequence
-  (let* ((residues "aaggccttaaggcctt")
-         (seq (make-instance 'dna-sequence
-                             :token-seq residues)))
-    (is (string= (subseq residues 0 5) ; aaggc
-                 (to-string (subsequence seq 0 5))))
-    (is (string= residues
-                 (to-string (subsequence seq 0))))))
 
 (test reverse-sequence/dna-sequence
   (let* ((residues "aaccggtt")
@@ -263,6 +257,34 @@
                              :token-seq residues)))
     (is (string= (to-string (reverse-complement seq))
                  "nbdhvwskmryacgt"))))
+
+
+(test subsequence/bio-sequence
+  (let* ((residues "aaggccttaaggcctt")
+         (seq (make-instance 'dna-sequence
+                             :token-seq residues)))
+    (is (string= (subseq residues 0 5) ; aaggc
+                 (to-string (subsequence seq 0 5))))
+    (is (string= residues
+                 (to-string (subsequence seq 0))))))
+
+(test subsequence/dna-quality-sequence
+  (let* ((residues "agaatattctgaccccagttactttcaaga")
+         (quality "<<<<<<<<<<<<<<<<<<<<<735513;3<")
+         (seq (make-instance 'dna-quality-sequence
+                             :token-seq residues
+                             :quality quality
+                             :metric :phred)))
+    (is (string= (subseq residues 0 5)
+                 (to-string (subsequence seq 0 5))))
+    (loop
+       for q across (quality-of (subsequence seq 0 5))
+       do (is (= 27 q)))))
+
+
+
+
+
 
 (test residue-frequencies/bio-sequence
   (let ((seq (make-instance 'dna-sequence
