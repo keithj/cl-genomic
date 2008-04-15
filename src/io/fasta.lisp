@@ -32,7 +32,7 @@ becomes full of chunks of sequence tokens.")
                   :callback #'make-seq-from-datum))
 
 (defmethod write-bio-sequence ((seq bio-sequence)
-                               stream (format (eql :fasta)))
+                               stream (format (eql :fasta)) &key token-case)
   (let ((*print-pretty* nil)
         (len (length-of seq)))
     (write-char #\> stream)
@@ -40,7 +40,9 @@ becomes full of chunks of sequence tokens.")
     (loop
        for i from 0 below len by *fasta-line-width*
        do (write-line
-           (to-string seq i (min len (+ i *fasta-line-width*)))
+           (to-string seq
+                      :start i :end (min len (+ i *fasta-line-width*))
+                      :token-case token-case)
            stream))))
 
 (defmethod read-seq-datum ((stream binary-line-input-stream)

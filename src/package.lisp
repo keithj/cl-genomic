@@ -37,6 +37,7 @@
    #:complement-rna
    #:find-alphabet
    #:read-bio-sequence
+   #:write-bio-sequence
    #:make-quality-dna
    #:phred-quality
    #:encode-phred-quality
@@ -101,7 +102,9 @@
    #:reverse-sequence
    #:nreverse-sequence
    #:complement-sequence
+   #:ncomplement-sequence
    #:reverse-complement
+   #:nreverse-complement
    #:residue-frequencies
    #:to-string
    #:metric-of

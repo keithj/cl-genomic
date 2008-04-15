@@ -38,10 +38,14 @@
                           ((:file "package")
                            (:file "bio-sequence-encoding"
                                   :depends-on ("package"))
+                           (:file "bio-alphabets"
+                                  :depends-on ("package"
+                                               "bio-sequence-encoding"))
                            (:file "bio-sequence-adt"
                                   :depends-on ("package"))
                            (:file "classes"
                                   :depends-on ("package"
+                                               "bio-alphabets"
                                                "bio-sequence-encoding"))
                            (:file "generics"
                                   :depends-on ("package"))
@@ -50,6 +54,7 @@
                            (:file "bio-sequence"
                                   :depends-on ("package"
                                                "generics"
+                                               "bio-alphabets"
                                                "bio-sequence-encoding"
                                                "classes"))
                            (:file "bio-sequence-io"

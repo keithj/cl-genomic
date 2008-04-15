@@ -26,14 +26,14 @@
                   :callback-args (list metric)))
 
 (defmethod write-bio-sequence ((seq dna-quality-sequence)
-                               stream (format (eql :fastq)))
+                               stream (format (eql :fastq))  &key token-case)
   (let ((*print-pretty* nil)
         (encoder (ecase (metric-of seq)
                    (:phred #'encode-phred-quality)
                    (:illumina #'encode-illumina-quality))))
     (write-char #\@ stream)
     (write-line (identity-of seq) stream)
-    (write-line (to-string seq) stream)
+    (write-line (to-string seq :token-case token-case) stream)
     (write-line "+" stream)
     (write-line (encode-quality (quality-of seq) encoder) stream)))
 

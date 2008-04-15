@@ -17,56 +17,6 @@
 
 (in-package :bio-sequence)
 
-(defclass alphabet ()
-  ((name :initarg :name
-         :reader name-of
-         :documentation "The alphabet name.")
-   (encoder :initarg :encoder
-            :reader encoder-of)
-   (decoder :initarg :decoder
-            :reader decoder-of)
-   (encoded-index :initarg :encoded-index
-                  :reader encoded-index-of)
-   (decoded-index :initarg :decoded-index
-                  :reader decoded-index-of)
-   (tokens :initform ""
-           :initarg :tokens
-           :reader tokens-of
-           :documentation "The set of member tokens of the
-alphabet."))
-  (:documentation "Alphabets are sets of tokens."))
-
-(defvar *dna*
-  (make-instance 'alphabet
-                 :name :dna
-                 :encoder #'encode-dna-4bit
-                 :decoder #'decode-dna-4bit
-                 :tokens (make-array 15
-                             :element-type 'base-char
-                             :initial-contents "acgtrykmswbdhvn")))
-(defvar *rna*
-  (make-instance 'alphabet
-                 :name :rna
-                 :encoder #'encode-rna-4bit
-                 :decoder #'decode-rna-4bit
-                 :tokens (make-array 15
-                             :element-type 'base-char
-                             :initial-contents "acgurykmswbdhvn")))
-
-(defvar *alphabets* (make-hash-table))
-
-(eval-when (:compile-toplevel :load-toplevel)
-  (defun find-alphabet (name)
-    (multiple-value-bind (alphabet presentp)
-        (gethash name *alphabets*)
-      (unless presentp
-        (error "Invalid alphabet ~a." name))
-      alphabet)))
-
-(setf (gethash :dna *alphabets*) *dna*)
-(setf (gethash :rna *alphabets*) *rna*)
-
-
 (defclass sequence-strand ()
   ((name :initarg :name
          :reader name-of
@@ -102,7 +52,6 @@ alphabet."))
                  :name :unknown
                  :token #\?
                  :number nil))
-
 
 (defclass identity-mixin ()
   ((identity :initform nil
@@ -154,17 +103,16 @@ sequences."))
   (:documentation "A logical nucleic acid sequence."))
 
 (defclass dna-sequence (nucleic-acid-sequence)
-  ((alphabet :initform (find-alphabet :dna)
-             :allocation :class))
+  ((alphabet :allocation :class
+             :initform *dna*))
   (:documentation "A concrete DNA sequence comprising IUPAC ambiguity
 bases."))
 
 (defclass rna-sequence (nucleic-acid-sequence)
-  ((alphabet :initform (find-alphabet :rna)
-             :allocation :class))
+  ((alphabet :allocation :class
+             :initform *rna*))
   (:documentation "A concrete RNA sequence comprising IUPAC ambiguity
 bases."))
 
 (defclass dna-quality-sequence (dna-sequence quality-mixin)
   ())
-

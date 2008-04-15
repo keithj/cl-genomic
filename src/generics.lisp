@@ -62,23 +62,34 @@ argument passed to the RESIDUE-OF method."))
   (:documentation "Sets the residue at INDEX of BIO-SEQUENCE to
 VALUE."))
 
-(defgeneric to-string (bio-sequence &optional start end)
+(defgeneric to-string (bio-sequence &key start end token-case)
   (:documentation "Returns the string representing BIO-SEQUENCE,
 starting at the first residue, or index START, and continuing to the
 last residue, or index END."))
 
 (defgeneric reverse-sequence (bio-sequence)
-  (:documentation "Returns a new sequence with a token-seq that is a
-reversed copy of that of BIO-SEQUENCE."))
+  (:documentation "Returns a new bio-sequence with a token-seq that is
+a reversed copy of that of BIO-SEQUENCE."))
 
 (defgeneric nreverse-sequence (bio-sequence)
-  (:documentation "Returns a new sequence with a token-seq that is a
-reversed copy of that of BIO-SEQUENCE, such that BIO-SEQUENCE may be
-modified."))
+  (:documentation "Returns BIO-SEQUENCE, destructively modified such
+that its token-seq is reversed."))
 
-(defgeneric complement-sequence (bio-sequence &optional start end)
-  (:documentation "Returns a new sequence with a token-seq that is a
-complemented copy of that of BIO-SEQUENCE."))
+(defgeneric complement-sequence (nucleic-acid-sequence)
+  (:documentation "Returns a new nucleic-acid-sequence with a
+token-seq that is a complemented copy of that of BIO-SEQUENCE."))
+
+(defgeneric ncomplement-sequence (nucleic-acid-sequence)
+  (:documentation "Returns NUCLEIC-ACID-SEQUENCE, destructively
+modified such that its token-seq is complemented."))
+
+(defgeneric reverse-complement (nucleic-acid-sequence)
+  (:documentation "Returns a new nucleic-acid-sequence that is the
+reverse-complement of NUCLEIC-ACID-SEQUENCE."))
+
+(defgeneric nreverse-complement (nucleic-acid-sequence)
+  (:documentation "Returns NUCLEIC-ACID-SEQUENCE, destructively
+modified such that its token-seq is reverse-complemented."))
 
 (defgeneric cumulative-lengths (ranges)
   (:documentation "Returns a list of integers which are the
@@ -97,9 +108,13 @@ concrete residues. If no sequence can be read, NIL should be
 returned. This is the high-level sequence reading interface which
 returns bio-sequence CLOS objects."))
 
-(defgeneric write-bio-sequence (bio-sequence stream format)
+(defgeneric write-bio-sequence (bio-sequence stream format
+                                &key token-case
+                                &allow-other-keys)
   (:documentation "Writes BIO-SEQUENCE to stream in FORMAT
-e.g. :fasta, :fastq."))
+e.g. :fasta, :fastq. The TOKEN-CASE keyword is used to override the
+default character case for printing sequence residues, which is
+lowercase for DNA or RNA and uppercase for amino acids."))
 
 (defgeneric read-seq-datum (stream format &key alphabet virtualp
                             callback callback-args)

@@ -25,6 +25,7 @@
   '(and fixnum (integer 1 *)))
 
 (deftype quality-score ()
+  "Type for sequence base quality score."
   '(signed-byte 8))
 
 (defvar *sequence-print-limit* 50
@@ -47,6 +48,16 @@ DECODER."
     (copy-array quality 0 (1- (length quality))
                 quality-seq 0 decoder)
     quality-seq))
+
+(defun find-alphabet (name)
+  (multiple-value-bind (alphabet presentp)
+      (gethash name *alphabets*)
+    (unless presentp
+      (error 'invalid-argument-error
+             :params 'name
+             :args name
+             :text "no such alphabet"))
+    alphabet))
 
 (defmethod anonymousp ((obj identity-mixin))
   (null (identity-of obj)))
@@ -94,9 +105,10 @@ DECODER."
   (with-slots (token-seq metric quality) seq
     (unless (= (length token-seq)
                (length quality))
-      (error (msg "Token-seq and quality must be the same length"
-                  "but were ~a and ~a elements long, respectively.")
-             (length token-seq) (length quality)))
+      (error 'invalid-argument-error
+             :params '(token-seq quality)
+             :args (list token-seq quality)
+             :text "the token-seq and quality vectors were not the same length"))
     (unless (subtypep 'quality-score (array-element-type quality))
       (let ((decoder (ecase metric
                        (:phred #'decode-phred-quality)
@@ -178,14 +190,15 @@ DECODER."
 ;;        (- source-position (start-of (elt source-ranges range-num))))))
 
 
-(defmethod to-string :around ((seq bio-sequence) &optional start end)
-  (declare (ignore start end))
+(defmethod to-string :around ((seq bio-sequence)
+                              &key start end token-case)
+  (declare (ignore start end token-case))
   (if (virtualp seq)
       "<virtual>"
     (call-next-method)))
 
-(defmethod to-string ((seq dna-sequence) &optional
-                      (start 0) (end (length-of seq)))
+(defmethod to-string ((seq dna-sequence) &key
+                      (start 0) (end (length-of seq)) token-case)
   (declare (optimize (speed 3) (safety 1)))
   (declare (type array-index start end))
   (let ((token-seq (token-seq-of seq))
@@ -198,10 +211,13 @@ DECODER."
     (when (< 0 (length str))
       (copy-array token-seq start seq-end
                   str str-start #'decode-dna-4bit))
-    str))
+    (ecase token-case
+      ((nil) str)
+      (:lowercase str)
+      (:uppercase (nstring-upcase str)))))
 
-(defmethod to-string ((seq rna-sequence) &optional
-                      (start 0) (end (length-of seq)))
+(defmethod to-string ((seq rna-sequence) &key
+                      (start 0) (end (length-of seq)) token-case)
   (declare (optimize (speed 3) (safety 1)))
   (declare (type array-index start end))
   (let ((token-seq (token-seq-of seq))
@@ -214,7 +230,10 @@ DECODER."
     (when (< 0 (length str))
       (copy-array token-seq start seq-end
                   str str-start #'decode-rna-4bit))
-    str))
+    (ecase token-case
+      ((nil) str)
+      (:lowercase str)
+      (:uppercase (nstring-upcase str)))))
 
 
 ;;; FIXME -- add a means of making a reversed and/or complemented view
@@ -256,27 +275,45 @@ DECODER."
                  :metric (metric-of seq)))
 
 (defmethod nreverse-sequence ((seq bio-sequence))
-  (make-instance (class-of seq)
-                 :token-seq (nreverse (token-seq-of seq))))
+  (setf (token-seq-of seq) (nreverse (token-seq-of seq)))
+  seq)
 
 (defmethod nreverse-sequence ((seq dna-quality-sequence))
-  (make-instance 'dna-quality-sequence
-                 :token-seq (nreverse (token-seq-of seq))
-                 :quality (nreverse (quality-of seq))
-                 :metric (metric-of seq)))
+  (setf (token-seq-of seq) (nreverse (token-seq-of seq))
+        (quality-of seq) (nreverse (quality-of seq)))
+  seq)
 
-(defmethod complement-sequence ((seq dna-sequence)
-                                &optional (start 0) end)
+(defmethod complement-sequence ((seq dna-sequence))
   (make-instance 'dna-sequence :token-seq
                  (complement-token-seq
-                  (token-seq-of seq) #'complement-dna-4bit start end)))
+                  (copy-seq (token-seq-of seq)) #'complement-dna-4bit)))
 
-(defmethod reverse-complement ((seq dna-sequence)
-                               &optional (start 0) end)
+(defmethod ncomplement-sequence ((seq dna-sequence))
+  (let ((token-seq (token-seq-of seq)))
+    (loop
+         for i from 0 below (length token-seq)
+         do (setf (aref token-seq i)
+                  (complement-dna-4bit (aref token-seq i)))))
+  seq)
+
+(defmethod reverse-complement ((seq dna-sequence))
   (make-instance 'dna-sequence :token-seq
                  (nreverse
                   (complement-token-seq
-                   (token-seq-of seq) #'complement-dna-4bit start end))))
+                   (token-seq-of seq) #'complement-dna-4bit))))
+
+(defmethod reverse-complement ((seq dna-quality-sequence))
+  (let ((s (make-instance 'dna-quality-sequence
+                          :token-seq (copy-seq (token-seq-of seq))
+                          :quality (copy-seq (quality-of seq))
+                          :metric (metric-of seq))))
+    (nreverse-complement s)))
+
+(defmethod nreverse-complement ((seq dna-sequence))
+  (nreverse-sequence (ncomplement-sequence seq)))
+
+(defmethod nreverse-complement ((seq dna-quality-sequence))
+  (nreverse-sequence (ncomplement-sequence seq)))
 
 (defmethod residue-frequencies :before ((seq bio-sequence))
   (when (virtualp seq)
@@ -324,10 +361,18 @@ DECODER."
   (let ((len (length-of obj)))
     (if (and len (<= len *sequence-print-limit*)
              (not (virtualp obj)))
-        (format stream "<~a ~a quality, \"~a\">"
-                name (metric-of obj) (to-string obj))
+        (format stream "<~a \"~a\" ~a quality \"~a\">"
+                name (to-string obj) (metric-of obj)
+                (quality-string (quality-of obj) (metric-of obj)))
       (format stream "<~a ~a quality, length ~d>"
               name (metric-of obj) len))))
+
+(defun quality-string (quality metric)
+  (let ((encoder (ecase metric
+                   (:phred #'encode-phred-quality)
+                   (:illumina #'encode-illumina-quality)))
+        (str (make-string (length quality) :element-type 'base-char)))
+    (map-into str encoder quality)))
 
 (defun process-token-seq-args (token-seq length)
   "Returns its arguments, having checked their consistency for use

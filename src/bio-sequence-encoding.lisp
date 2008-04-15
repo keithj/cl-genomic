@@ -102,7 +102,7 @@ ENCODED-BASE."
 (declaim (inline encode-dna-4bit))
 (defun encode-dna-4bit (base)
   "Encodes DNA standard-char BASE as a 4-bit byte, representing T as
-0001, C as 0010, A as 0100 and G as 1000.  The first base is in the
+0001, C as 0010, A as 0100 and G as 1000. The first base is in the
 most significant 4-bit byte and the last base is in the least
 significant 4-bit byte. Ambiguous bases are represented by bitwise AND
 combinations of these."
@@ -125,6 +125,7 @@ combinations of these."
 
 (declaim (inline decode-dna-4bit))
 (defun decode-dna-4bit (encoded-base)
+  "Decodes 4-bit byte ENCODED-BASE, returning a lower case character."
   (ecase encoded-base
     (#b0001 #\t)
     (#b0010 #\c)
@@ -144,10 +145,17 @@ combinations of these."
 
 (declaim (inline encode-dna-comp-4bit))
 (defun encode-dna-comp-4bit (base)
+  "Encodes the complement of DNA standard-char BASE as a 4-bit byte,
+representing T as 0001, C as 0010, A as 0100 and G as 1000. The first
+base is in the most significant 4-bit byte and the last base is in the
+least significant 4-bit byte. Ambiguous bases are represented by
+bitwise AND combinations of these."
   (encode-dna-4bit (complement-dna base)))
 
 (declaim (inline decode-dna-comp-4bit))
 (defun decode-dna-comp-4bit (encoded-base)
+   "Decodes 4-bit byte ENCODED-BASE, returning its complement as a
+lower case character."
   (complement-dna (decode-dna-4bit encoded-base)))
 
 (declaim (inline encode-rna-4bit))
@@ -176,6 +184,7 @@ combinations of these."
 
 (declaim (inline decode-rna-4bit))
 (defun decode-rna-4bit (encoded-base)
+  "Decodes 4-bit byte ENCODED-BASE, returning a lower case character."
   (ecase encoded-base
     (#b0001 #\u)
     (#b0010 #\c)
@@ -195,10 +204,17 @@ combinations of these."
 
 (declaim (inline encode-rna-comp-4bit))
 (defun encode-rna-comp-4bit (base)
+  "Encodes the complement of RNA standard-char BASE as a 4-bit byte,
+representing U as 0001, C as 0010, A as 0100 and G as 1000.  The first
+base is in the most significant 4-bit byte and the last base is in the
+least significant 4-bit byte. Ambiguous bases are represented by
+bitwise AND combinations of these."
   (encode-rna-4bit (complement-rna base)))
 
 (declaim (inline decode-rna-comp-4bit))
 (defun decode-rna-comp-4bit (encoded-base)
+  "Decodes 4-bit byte ENCODED-BASE, returning its complement as a
+lower case character."
   (complement-rna (decode-rna-4bit encoded-base)))
 
 ;; (declaim (inline encode-aa-8bit))
