@@ -36,8 +36,6 @@
    #:complement-dna
    #:complement-rna
    #:find-alphabet
-   #:read-bio-sequence
-   #:write-bio-sequence
    #:make-quality-dna
    #:phred-quality
    #:encode-phred-quality
@@ -60,7 +58,7 @@
    #:seq-datum-description
    #:seq-datum-quality
    #:make-seq-from-datum
-   
+
    ;; Classes
    #:alphabet
    #:bio-sequence
@@ -97,6 +95,7 @@
    #:decoded-index-of
    #:alphabet-of
    #:residue-of
+   #:token-seq-of
    #:length-of
    #:subsequence
    #:reverse-sequence
@@ -105,11 +104,18 @@
    #:ncomplement-sequence
    #:reverse-complement
    #:nreverse-complement
+   #:search-sequence
    #:residue-frequencies
    #:to-string
    #:metric-of
    #:quality-of
+   #:bio-sequence-io
+   #:bio-sequence-handler
+   #:simple-sequence-handler
+   #:virtual-sequence-handler
+   #:quality-sequence-handler
    #:read-bio-sequence
+   #:write-bio-sequence
 
    #:contains-frame-p
    #:find-frame

@@ -109,7 +109,7 @@ DECODER."
              :params '(token-seq quality)
              :args (list token-seq quality)
              :text "the token-seq and quality vectors were not the same length"))
-    (unless (subtypep 'quality-score (array-element-type quality))
+    (when (eql 'character (array-element-type quality))
       (let ((decoder (ecase metric
                        (:phred #'decode-phred-quality)
                        (:illumina #'decode-illumina-quality))))
@@ -320,6 +320,20 @@ DECODER."
     (error 'invalid-operation-error
            :text (msg "cannot determine residue frequencies"
                       "of a virtual sequence"))))
+
+(defmethod search-sequence ((seq1 bio-sequence) (seq2 bio-sequence)
+                            &key from-end start1 start2 end1 end2)
+  (if (subtypep (class-of (alphabet-of seq1))
+                (class-of (alphabet-of seq2)))
+      (let ((token-seq1 (token-seq-of seq1))
+            (token-seq2 (token-seq-of seq2))
+            (start1 (or start1 0))
+            (start2 (or start2 0)))
+        (search token-seq1 token-seq2 :from-end from-end
+                :start1 start1 :start2 start2 :end1 end1 :end2 end2 :test #'eq))
+    nil))
+
+
 
 (defmethod residue-frequencies ((seq bio-sequence))
   (let ((index-fn (encoded-index-of (alphabet-of seq)))

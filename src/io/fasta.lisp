@@ -24,6 +24,63 @@
   "The number of elements by which the token cache is extended when it
 becomes full of chunks of sequence tokens.")
 
+(defmethod bio-sequence-io ((format (eql :fasta)) alphabet
+                            &optional (handler 'simple-sequence-handler)
+                            &rest handler-initargs)
+  (lambda (stream)
+    (let ((h (apply #'make-instance handler handler-initargs)))
+      (read-fasta-sequence stream alphabet h))))
+
+(defmethod read-fasta-sequence ((stream binary-line-input-stream)
+                                (alphabet symbol)
+                                (handler bio-sequence-handler))
+  (let ((seq-header (find-line stream #'byte-fasta-header-p)))
+    (if (vectorp seq-header)
+        (multiple-value-bind (identity description)
+            (parse-fasta-header (make-sb-string seq-header))
+          (begin-object handler)
+          (atomic-property handler :alphabet alphabet)
+          (atomic-property handler :identity identity)
+          (atomic-property handler :description description)
+          (loop
+             as line = (stream-read-line stream)
+             with offset = 0
+             while (vectorp line)
+             until (byte-fasta-header-p line)
+             do (progn
+                  (sequence-property handler :token-seq offset line)
+                  (incf offset (length line)))
+             finally (when (vectorp line) ; push back the new header
+                       (push-line stream line)))
+          (end-object handler)
+          (make-bio-sequence handler))
+      nil)))
+
+(defmethod read-fasta-sequence ((stream character-line-input-stream)
+                                (alphabet symbol)
+                                (handler bio-sequence-handler))
+  (let ((seq-header (find-line stream #'char-fasta-header-p)))
+    (if (vectorp seq-header)
+        (multiple-value-bind (identity description)
+            (parse-fasta-header seq-header)
+          (begin-object handler)
+          (atomic-property handler :alphabet alphabet)
+          (atomic-property handler :identity identity)
+          (atomic-property handler :description description)
+          (loop
+             as line = (stream-read-line stream)
+             with offset = 0
+             while (vectorp line)
+             until (char-fasta-header-p line)
+             do (progn
+                  (sequence-property handler :token-seq offset line)
+                  (incf offset (length line)))
+             finally (when (vectorp line) ; push back the new header
+                       (push-line stream line)))
+          (end-object handler)
+          (make-bio-sequence handler))
+      nil)))
+
 (defmethod read-bio-sequence ((stream line-input-stream)
                               (format (eql :fasta))
                               &key alphabet virtualp)
@@ -32,7 +89,8 @@ becomes full of chunks of sequence tokens.")
                   :callback #'make-seq-from-datum))
 
 (defmethod write-bio-sequence ((seq bio-sequence)
-                               stream (format (eql :fasta)) &key token-case)
+                               stream (format (eql :fasta))
+                               &key token-case)
   (let ((*print-pretty* nil)
         (len (length-of seq)))
     (write-char #\> stream)
@@ -44,6 +102,7 @@ becomes full of chunks of sequence tokens.")
                       :start i :end (min len (+ i *fasta-line-width*))
                       :token-case token-case)
            stream))))
+
 
 (defmethod read-seq-datum ((stream binary-line-input-stream)
                            (format (eql :fasta))

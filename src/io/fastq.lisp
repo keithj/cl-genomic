@@ -25,8 +25,34 @@
                   :callback #'make-quality-seq-from-datum
                   :callback-args (list metric)))
 
+(defmethod bio-sequence-io ((format (eql :fastq)) alphabet
+                            &optional (handler 'quality-sequence-handler)
+                            &rest handler-initargs)
+  (let ((handler-initargs (or handler-initargs (list :metric :phred))))
+    (lambda (stream)
+      (let ((h (apply #'make-instance handler handler-initargs)))
+        (read-fastq-sequence stream alphabet h)))))
+
+(defmethod read-fastq-sequence ((stream binary-line-input-stream)
+                                (alphabet symbol)
+                                (handler bio-sequence-handler))
+  (let ((seq-header (find-line stream #'byte-fastq-header-p)))
+    (if (vectorp seq-header)
+        (multiple-value-bind (token-seq quality-header quality)
+            (read-fastq-record stream #'byte-fastq-quality-header-p)
+          (declare (ignore quality-header))
+          (begin-object handler)
+          (atomic-property handler :alphabet alphabet)
+          (atomic-property handler :identity (make-sb-string seq-header 1))
+          (sequence-property handler :token-seq 0 token-seq)
+          (sequence-property handler :quality 0 quality)
+          (end-object handler)
+          (make-bio-sequence handler))
+      nil)))
+
 (defmethod write-bio-sequence ((seq dna-quality-sequence)
-                               stream (format (eql :fastq))  &key token-case)
+                               stream (format (eql :fastq))
+                               &key token-case)
   (let ((*print-pretty* nil)
         (encoder (ecase (metric-of seq)
                    (:phred #'encode-phred-quality)
@@ -79,7 +105,8 @@
               datum)))
       nil)))
 
-(defmethod write-seq-datum ((stream stream) (format (eql :fastq)) datum)
+(defmethod write-seq-datum ((stream stream)
+                            (format (eql :fastq)) datum)
   (let ((*print-pretty* nil))
     (write-char #\@ stream)
     (write-line (seq-datum-identity datum) stream)
@@ -107,15 +134,15 @@ returns T if the read should be removed, or NIL otherwise."
 STREAM, validates the quality header with the predicate
 QUAL-HEADER-VALIDATE-FN and returns three vector values: the sequence,
 the quality header and the quality."
-  (let ((seq (stream-read-line stream))
+  (let ((token-seq (stream-read-line stream))
         (quality-header (stream-read-line stream))
         (quality (stream-read-line stream)))
-    (unless (and (vectorp seq)
+    (unless (and (vectorp token-seq)
                  (funcall qual-header-validate-fn quality-header)
                  (vectorp quality))
       (error 'malformed-record-error :text
              "Incomplete Fastq record."))
-    (values seq quality-header quality)))
+    (values token-seq quality-header quality)))
 
 
 (defun split-fastq-file (filespec chunk-size)
