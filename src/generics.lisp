@@ -46,10 +46,6 @@ representation, merely a length, or NIL otherwise."))
 (defgeneric length-of (bio-sequence)
   (:documentation "Returns the length of BIO-SEQUENCE."))
 
-(defgeneric token-seq-of (bio-sequence)
-  (:documentation "Returns the token sequence representing the
-residues of BIO-SEQUENCE."))
-
 (defgeneric residue-of (bio-sequence index)
   (:documentation "Returns the residue at INDEX of BIO-SEQUENCE. As
 these are interbase coordinates, a residue actually occupies a range
@@ -91,6 +87,15 @@ reverse-complement of NUCLEIC-ACID-SEQUENCE."))
   (:documentation "Returns NUCLEIC-ACID-SEQUENCE, destructively
 modified such that its token-seq is reverse-complemented."))
 
+(defgeneric subsequence (bio-sequence start &optional end)
+  (:documentation "Subsequence creates a bio-sequence that is a copy
+of the subsequence of BIO-SEQUENCE bounded by START and END."))
+
+(defgeneric search-sequence (bio-sequence-1 bio-sequence-2
+                             &key from-end start1 start2 end1 end2)
+  (:documentation "Searches bio-sequence-2 for a subsequence that
+matches bio-sequence-1."))
+
 (defgeneric cumulative-lengths (ranges)
   (:documentation "Returns a list of integers which are the
 cumulative total lengths of RANGES."))
@@ -98,40 +103,77 @@ cumulative total lengths of RANGES."))
 
 ;;; bio-sequence io generics
 
-(defgeneric read-bio-sequence (stream format &key alphabet virtualp
-                               &allow-other-keys)
-  (:documentation "Reads a sequence record from STREAM of FORMAT
-e.g. :fasta, :fastq. Keywords are used to specify the expected
-alphabet {:dna :rna}. The VIRTUALP keyword, if T, indicates that a
-virtual sequence should be created, having the correct length, but no
-concrete residues. If no sequence can be read, NIL should be
-returned. This is the high-level sequence reading interface which
-returns bio-sequence CLOS objects."))
+(defgeneric begin-object (parser)
+  (:documentation "Signals to PARSER the beginning of a new
+object. The parser may use this information to discard accumulated
+state from the previous object."))
 
-(defgeneric write-bio-sequence (bio-sequence stream format
-                                &key token-case
-                                &allow-other-keys)
-  (:documentation "Writes BIO-SEQUENCE to stream in FORMAT
-e.g. :fasta, :fastq. The TOKEN-CASE keyword is used to override the
-default character case for printing sequence residues, which is
-lowercase for DNA or RNA and uppercase for amino acids."))
+(defgeneric object-relation (parser relation value)
+  (:documentation "Signals to PARSER that RELATION exits between the
+current object and some VALUE."))
 
-(defgeneric read-seq-datum (stream format &key alphabet virtualp
-                            callback callback-args)
-  (:documentation "Reads a sequence record of ALPHABET from STREAM in
-FORMAT, optionally applying function CALLBACK with additional
-CALLBACK-ARGS to the result. The VIRTUALP keyword, if T, indicates
-that a virtual sequence should be created, having the correct length,
-but no concrete residues. This is the low-level sequence reading
-interface which normally returns an alist.  If no sequence can be
-read, NIL should be returned. An optional CALLBACK may be supplied
-which should be a function accepting the alist as the first argument,
-plus any number of additional arguments to be supplied in the list
-CALLBACK-ARGS. The result of applying the callback should be
-returned."))
+(defgeneric object-identity (parser identity)
+  (:documentation "Signals to PARSER that the current object has
+IDENTITY."))
 
-(defgeneric write-seq-datum (stream format datum)
-  (:documentation ""))
+(defgeneric object-description (parser description)
+  (:documentation "Signals to PARSER that the current object has
+DESCRIPTION."))
 
-(defgeneric filter-seq-datum (source format predicate sink)
-  (:documentation ""))
+(defgeneric object-alphabet (parser alphabet)
+  (:documentation "Signals to PARSER that the current object has
+residues of ALPHABET."))
+
+(defgeneric object-residues (parser residues)
+  (:documentation "Signals to PARSER that the current object has
+bio-sequence RESIDUES. Multiple calls to this method may be used to
+accumulate sequence residues."))
+
+(defgeneric object-quality (parser quality)
+  (:documentation "Signals to parser that the current object has
+bio-sequence residue QUALITY. Multiple calls to this method may be
+used to accumulate quality information."))
+
+(defgeneric end-object (parser)
+  (:documentation "Signals to PARSER the end of the current
+object. The method must return T if the accumulated state of the
+current object is valid, or NIL otherwise. If PARSER is constructing a
+CLOS object, the object must be returned by this method."))
+
+(defgeneric make-input-fn (stream format &key alphabet parser
+                           &allow-other-keys)
+  (:documentation "Returns a function of zero arity that uses PARSER
+to read a single bio-sequence of ALPHABET, in FORMAT, from STREAM. The
+function must return T on success, ot NIL otherwise."))
+
+(defgeneric make-output-fn (stream format &key token-case
+                            &allow-other-keys)
+  (:documentation "Returns a function of arity 1 that accepts a
+bio-sequence and writes a representation in FORMAT to STREAM. The
+TOKEN-CASE keyword is used to override the default character case for
+printing sequence residues, which is lowercase for DNA or RNA and
+uppercase for amino acids."))
+
+(defgeneric make-bio-sequence (parser)
+  (:documentation "Returns a new bio-sequence created from the state
+accumulated by PARSER."))
+
+(defgeneric read-fasta-sequence (stream alphabet parser)
+  (:documentation "Reads a single Fasta format record of ALPHABET from
+STREAM using PARSER."))
+
+(defgeneric write-fasta-sequence (bio-sequence stream &key token-case)
+  (:documentation "Writes BIO-SEQUENCE to STREAM in Fasta format. The
+TOKEN-CASE keyword is used to override the default character case for
+printing sequence residues, which is lowercase for DNA or RNA and
+uppercase for amino acids."))
+
+(defgeneric read-fastq-sequence (stream alphabet parser)
+  (:documentation "Reads a single Fastq format record of ALPHABET from
+STREAM using PARSER."))
+
+(defgeneric write-fastq-sequence (bio-sequence stream &key token-case)
+  (:documentation "Writes BIO-SEQUENCE to STREAM in Fastq format. The
+TOKEN-CASE keyword is used to override the default character case for
+printing sequence residues, which is lowercase for DNA or RNA and
+uppercase for amino acids."))

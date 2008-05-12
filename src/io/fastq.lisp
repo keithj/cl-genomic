@@ -17,42 +17,54 @@
 
 (in-package :bio-sequence)
 
-(defmethod read-bio-sequence ((stream line-input-stream)
-                              (format (eql :fastq))
-                              &key alphabet virtualp metric)
-  (read-seq-datum stream format :alphabet alphabet
-                  :virtualp virtualp
-                  :callback #'make-quality-seq-from-datum
-                  :callback-args (list metric)))
+(defmethod make-input-fn ((stream line-input-stream)
+                          (format (eql :fastq))
+                          &key (alphabet :dna) (metric :phred) parser)
+  (let ((parser (or parser
+                    (make-instance 'quality-sequence-parser
+                                   :metric metric))))
+    (lambda ()
+      (read-fastq-sequence stream alphabet parser))))
 
-(defmethod bio-sequence-io ((format (eql :fastq)) alphabet
-                            &optional (handler 'quality-sequence-handler)
-                            &rest handler-initargs)
-  (let ((handler-initargs (or handler-initargs (list :metric :phred))))
-    (lambda (stream)
-      (let ((h (apply #'make-instance handler handler-initargs)))
-        (read-fastq-sequence stream alphabet h)))))
+(defmethod make-output-fn ((stream stream) (format (eql :fastq))
+                           &key token-case)
+  (lambda (bio-sequence)
+    (write-fastq-sequence bio-sequence stream :token-case token-case)))
 
 (defmethod read-fastq-sequence ((stream binary-line-input-stream)
                                 (alphabet symbol)
-                                (handler bio-sequence-handler))
+                                (parser quality-parser-mixin))
   (let ((seq-header (find-line stream #'byte-fastq-header-p)))
     (if (vectorp seq-header)
-        (multiple-value-bind (token-seq quality-header quality)
-            (read-fastq-record stream #'byte-fastq-quality-header-p)
+        (multiple-value-bind (residues quality-header quality)
+            (parse-fastq-record stream #'byte-fastq-quality-header-p)
           (declare (ignore quality-header))
-          (begin-object handler)
-          (atomic-property handler :alphabet alphabet)
-          (atomic-property handler :identity (make-sb-string seq-header 1))
-          (sequence-property handler :token-seq 0 token-seq)
-          (sequence-property handler :quality 0 quality)
-          (end-object handler)
-          (make-bio-sequence handler))
+          (begin-object parser)
+          (object-alphabet parser alphabet)
+          (object-identity parser (make-sb-string seq-header 1))
+          (object-residues parser (make-sb-string residues))
+          (object-quality parser (make-sb-string quality))
+          (end-object parser))
       nil)))
 
-(defmethod write-bio-sequence ((seq dna-quality-sequence)
-                               stream (format (eql :fastq))
-                               &key token-case)
+(defmethod read-fastq-sequence ((stream character-line-input-stream)
+                                (alphabet symbol)
+                                (parser quality-parser-mixin))
+  (let ((seq-header (find-line stream #'char-fastq-header-p)))
+    (if (vectorp seq-header)
+        (multiple-value-bind (residues quality-header quality)
+            (parse-fastq-record stream #'char-fastq-quality-header-p)
+          (declare (ignore quality-header))
+          (begin-object parser)
+          (object-alphabet parser alphabet)
+          (object-identity parser (string-left-trim '(#\@) seq-header))
+          (object-residues parser residues)
+          (object-quality parser quality)
+          (end-object parser))
+      nil)))
+
+(defmethod write-fastq-sequence ((seq dna-quality-sequence) stream
+                                 &key token-case)
   (let ((*print-pretty* nil)
         (encoder (ecase (metric-of seq)
                    (:phred #'encode-phred-quality)
@@ -63,121 +75,69 @@
     (write-line "+" stream)
     (write-line (encode-quality (quality-of seq) encoder) stream)))
 
-(defmethod read-seq-datum ((stream binary-line-input-stream)
-                           (format (eql :fastq))
-                           &key alphabet virtualp
-                           (callback nil callback-supplied-p)
-                           callback-args)
-  (let ((seq-header (find-line stream #'byte-fastq-header-p)))
-    (if (vectorp seq-header)
-        (multiple-value-bind (seq quality-header quality)
-            (read-fastq-record stream #'byte-fastq-quality-header-p)
-          (declare (ignore quality-header))
-          (let ((datum (make-quality-datum
-                        (make-sb-string seq-header 1)
-                        alphabet
-                        :token-seq (unless virtualp (make-sb-string seq))
-                        :length (when virtualp (length seq))
-                        :quality (make-sb-string quality))))
-            (if callback-supplied-p
-                (apply callback datum callback-args)
-              datum)))
-      nil)))
+;; (defmethod filter-seq-datum ((stream line-input-stream)
+;;                              (format (eql :fastq)) pred out)
+;;   "Reads Fastq records from STREAM and writes only those for which
+;; PRED returns T to stream character stream OUT. PRED should be a
+;; function that accepts a single argument of a standard seq-datum and
+;; returns T if the read should be removed, or NIL otherwise."
+;;   (do ((fq (read-seq-datum stream :fastq :alphabet :dna)
+;;            (read-seq-datum stream :fastq :alphabet :dna))
+;;        (num-written 0))
+;;       ((null fq) num-written)
+;;     (when (not (funcall pred fq))
+;;       (write-seq-datum out :fastq fq)
+;;       (incf num-written))))
 
-(defmethod read-seq-datum ((stream character-line-input-stream)
-                           (format (eql :fastq))
-                           &key alphabet virtualp
-                           (callback nil callback-supplied-p)
-                           callback-args)
-  (let ((seq-header (find-line stream #'char-fastq-header-p)))
-    (if (vectorp seq-header)
-        (multiple-value-bind (seq quality-header quality)
-            (read-fastq-record stream #'char-fastq-quality-header-p)
-          (declare (ignore quality-header))
-          (let ((datum (make-quality-datum
-                        (string-left-trim '(#\@) seq-header)
-                        alphabet
-                        :token-seq (unless virtualp seq)
-                        :length (when virtualp (length seq))
-                        :quality quality)))
-            (if callback-supplied-p
-                (apply callback datum callback-args)
-              datum)))
-      nil)))
-
-(defmethod write-seq-datum ((stream stream)
-                            (format (eql :fastq)) datum)
-  (let ((*print-pretty* nil))
-    (write-char #\@ stream)
-    (write-line (seq-datum-identity datum) stream)
-    (write-line (seq-datum-token-seq datum) stream)
-    (write-line "+" stream)
-    (write-line (seq-datum-quality datum) stream))
-  t)
-
-(defmethod filter-seq-datum ((stream line-input-stream)
-                             (format (eql :fastq)) pred out)
-  "Reads Fastq records from STREAM and writes only those for which
-PRED returns T to stream character stream OUT. PRED should be a
-function that accepts a single argument of a standard seq-datum and
-returns T if the read should be removed, or NIL otherwise."
-  (do ((fq (read-seq-datum stream :fastq :alphabet :dna)
-           (read-seq-datum stream :fastq :alphabet :dna))
-       (num-written 0))
-      ((null fq) num-written)
-    (when (not (funcall pred fq))
-      (write-seq-datum out :fastq fq)
-      (incf num-written))))
-
-(defun read-fastq-record (stream qual-header-validate-fn)
+(defun parse-fastq-record (stream qual-header-validate-fn)
   "Reads the body of a Fastq record that follows the header from
 STREAM, validates the quality header with the predicate
 QUAL-HEADER-VALIDATE-FN and returns three vector values: the sequence,
 the quality header and the quality."
-  (let ((token-seq (stream-read-line stream))
+  (let ((residues (stream-read-line stream))
         (quality-header (stream-read-line stream))
         (quality (stream-read-line stream)))
-    (unless (and (vectorp token-seq)
+    (unless (and (vectorp residues)
                  (funcall qual-header-validate-fn quality-header)
                  (vectorp quality))
       (error 'malformed-record-error :text
              "Incomplete Fastq record."))
-    (values token-seq quality-header quality)))
+    (values residues quality-header quality)))
 
 
-(defun split-fastq-file (filespec chunk-size)
-  "Splits Fastq file identified by FILESPEC into automatically named
-chunks, each, except the last file, containing up to CHUNK-SIZE
-records."
-  (let ((file-pname (pathname filespec)))
-    (with-open-file (in file-pname :direction :input
-                     :element-type '(unsigned-byte 8))
-      (do* ((stream (make-line-input-stream in))
-            (chunk-count 0 (1+ chunk-count))
-            (chunk-pname (make-chunk-pname file-pname chunk-count)
-                         (make-chunk-pname file-pname chunk-count))
-            (n (write-n-fastq stream chunk-size chunk-pname)
-               (write-n-fastq stream chunk-size chunk-pname)))
-           ((zerop n))))))
+;; (defun split-fastq-file (filespec chunk-size)
+;;   "Splits Fastq file identified by FILESPEC into automatically named
+;; chunks, each, except the last file, containing up to CHUNK-SIZE
+;; records."
+;;   (let ((file-pname (pathname filespec)))
+;;     (with-open-file (in file-pname :direction :input
+;;                      :element-type '(unsigned-byte 8))
+;;       (do* ((stream (make-line-input-stream in))
+;;             (chunk-count 0 (1+ chunk-count))
+;;             (chunk-pname (make-chunk-pname file-pname chunk-count)
+;;                          (make-chunk-pname file-pname chunk-count))
+;;             (n (write-n-fastq stream chunk-size chunk-pname)
+;;                (write-n-fastq stream chunk-size chunk-pname)))
+;;            ((zerop n))))))
 
-(defun write-n-fastq (stream n chunk-pname)
-  "Reads up to N Fastq records from STREAM and writes them into a new
-file of pathname CHUNK-PNAME. Returns the number of records actually
-written, which may be 0 if the stream contained to further records."
-  (let ((num-written 
-         (with-open-file (out chunk-pname :direction :output
-                          :if-exists :supersede
-                          :element-type 'base-char)
-           (loop
-              for count from 0 below n
-              for fq = (read-seq-datum stream :fastq :alphabet :dna)
-              then (read-seq-datum stream :fastq :alphabet :dna)
-              while fq
-              do (write-seq-datum out :fastq fq)
-              finally (return count)))))
-    (when (zerop num-written)
-      (delete-file chunk-pname))
-    num-written))
+;; (defun write-n-fastq (stream n chunk-pname)
+;;   "Reads up to N Fastq records from STREAM and writes them into a new
+;; file of pathname CHUNK-PNAME. Returns the number of records actually
+;; written, which may be 0 if the stream contained to further records."
+;;   (let ((num-written 
+;;          (with-open-file (out chunk-pname :direction :output
+;;                           :if-exists :supersede
+;;                           :element-type 'base-char)
+;;            (loop
+;;               for count from 0 below n
+;;               for fq = (read-seq-datum stream :fastq :alphabet :dna)
+;;               then (read-seq-datum stream :fastq :alphabet :dna)
+;;               while fq
+;;               do (write-seq-datum out :fastq fq)
+;;               finally (return count)))))
+;;     (when (zerop num-written)
+;;       (delete-file chunk-pname))
+;;     num-written))
 
 (defun byte-fastq-header-p (bytes)
   "Returns T if BYTES are a Fastq header (start with the character

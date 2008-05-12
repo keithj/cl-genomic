@@ -390,4 +390,3 @@ include duplicates where DAG contains diamonds."
                                           dag traversal-fn filter-fn)
                       (graph-traverse-aux (cdr sub-graph)
                                           dag traversal-fn filter-fn)))))
-

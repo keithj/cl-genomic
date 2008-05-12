@@ -74,7 +74,7 @@ enumeration.")
             :initarg :quality
             :accessor quality-of
             :documentation "The array of quality values which should
-be the same length as the array of residue tokens."))
+be the same length as the array of residues."))
   (:documentation "A mixin with support for bio-sequences that have a
 numeric quality value for each residue."))
 
@@ -83,11 +83,11 @@ numeric quality value for each residue."))
              :reader alphabet-of
              :documentation "The alphabet whose tokens comprise the
 sequence.")
-   (token-seq :initform nil
-              :initarg :token-seq
-              :accessor token-seq-of
-              :documentation "The residue tokens of the sequence or
-NIL if no sequence data are available.")
+   (residues :initform nil
+             :initarg :residues
+             :accessor residues-of
+             :documentation "The residues of the sequence or NIL if no
+sequence data are available.")
    (length :initform nil
            :initarg :length
            :documentation "The logical length of the sequence in

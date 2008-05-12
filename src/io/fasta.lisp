@@ -24,73 +24,74 @@
   "The number of elements by which the token cache is extended when it
 becomes full of chunks of sequence tokens.")
 
-(defmethod bio-sequence-io ((format (eql :fasta)) alphabet
-                            &optional (handler 'simple-sequence-handler)
-                            &rest handler-initargs)
-  (lambda (stream)
-    (let ((h (apply #'make-instance handler handler-initargs)))
-      (read-fasta-sequence stream alphabet h))))
+
+(defmethod make-input-fn ((stream line-input-stream)
+                          (format (eql :fasta))
+                          &key (alphabet :dna) parser virtual)
+  (let ((parser (or parser
+                    (cond (virtual
+                           (make-instance 'virtual-sequence-parser))
+                          (t
+                           (make-instance 'simple-sequence-parser))))))
+    (lambda ()
+      (read-fasta-sequence stream alphabet parser))))
+
+
+(defmethod make-output-fn ((stream stream) (format (eql :fasta))
+                           &key token-case)
+  (lambda (bio-sequence)
+    (write-fasta-sequence bio-sequence stream :token-case token-case)))
 
 (defmethod read-fasta-sequence ((stream binary-line-input-stream)
                                 (alphabet symbol)
-                                (handler bio-sequence-handler))
+                                (parser bio-sequence-parser))
   (let ((seq-header (find-line stream #'byte-fasta-header-p)))
     (if (vectorp seq-header)
         (multiple-value-bind (identity description)
             (parse-fasta-header (make-sb-string seq-header))
-          (begin-object handler)
-          (atomic-property handler :alphabet alphabet)
-          (atomic-property handler :identity identity)
-          (atomic-property handler :description description)
+          (begin-object parser)
+          (object-alphabet parser alphabet)
+          (object-identity parser identity)
+          (object-description parser description)
           (loop
              as line = (stream-read-line stream)
              with offset = 0
              while (vectorp line)
              until (byte-fasta-header-p line)
              do (progn
-                  (sequence-property handler :token-seq offset line)
+                  (object-residues parser (make-sb-string line))
                   (incf offset (length line)))
              finally (when (vectorp line) ; push back the new header
                        (push-line stream line)))
-          (end-object handler)
-          (make-bio-sequence handler))
+          (end-object parser))
       nil)))
 
 (defmethod read-fasta-sequence ((stream character-line-input-stream)
                                 (alphabet symbol)
-                                (handler bio-sequence-handler))
+                                (parser bio-sequence-parser))
   (let ((seq-header (find-line stream #'char-fasta-header-p)))
     (if (vectorp seq-header)
         (multiple-value-bind (identity description)
             (parse-fasta-header seq-header)
-          (begin-object handler)
-          (atomic-property handler :alphabet alphabet)
-          (atomic-property handler :identity identity)
-          (atomic-property handler :description description)
+          (begin-object parser)
+          (object-alphabet parser alphabet)
+          (object-identity parser identity)
+          (object-description parser description)
           (loop
              as line = (stream-read-line stream)
              with offset = 0
              while (vectorp line)
              until (char-fasta-header-p line)
              do (progn
-                  (sequence-property handler :token-seq offset line)
+                  (object-residues parser line)
                   (incf offset (length line)))
              finally (when (vectorp line) ; push back the new header
                        (push-line stream line)))
-          (end-object handler)
-          (make-bio-sequence handler))
+          (end-object parser))
       nil)))
 
-(defmethod read-bio-sequence ((stream line-input-stream)
-                              (format (eql :fasta))
-                              &key alphabet virtualp)
-  (read-seq-datum stream format :alphabet alphabet
-                  :virtualp virtualp
-                  :callback #'make-seq-from-datum))
-
-(defmethod write-bio-sequence ((seq bio-sequence)
-                               stream (format (eql :fasta))
-                               &key token-case)
+(defmethod write-fasta-sequence ((seq bio-sequence) stream
+                                 &key token-case) 
   (let ((*print-pretty* nil)
         (len (length-of seq)))
     (write-char #\> stream)
@@ -102,104 +103,6 @@ becomes full of chunks of sequence tokens.")
                       :start i :end (min len (+ i *fasta-line-width*))
                       :token-case token-case)
            stream))))
-
-
-(defmethod read-seq-datum ((stream binary-line-input-stream)
-                           (format (eql :fasta))
-                           &key alphabet virtualp
-                           (callback nil callback-supplied-p)
-                           callback-args)
-  (let ((seq-header (find-line stream #'byte-fasta-header-p)))
-    (if (vectorp seq-header)
-        (multiple-value-bind (identity description)
-            (parse-fasta-header (make-sb-string seq-header))
-          (let ((datum (make-seq-datum identity alphabet
-                                       :token-seq (unless virtualp
-                                                    (concat-fasta-chunks
-                                                     stream
-                                                     #'byte-fasta-header-p
-                                                     #'concat-into-sb-string))
-                                       :length (when virtualp
-                                                 (count-fasta-residues
-                                                  stream
-                                                  #'byte-fasta-header-p))
-                                       :description description)))
-            (if callback-supplied-p
-                (apply callback datum callback-args)
-              datum)))
-      nil)))
-
-(defmethod read-seq-datum ((stream character-line-input-stream)
-                           (format (eql :fasta))
-                           &key alphabet virtualp
-                           (callback nil callback-supplied-p)
-                           callback-args)
-  (let ((seq-header (find-line stream #'char-fasta-header-p)))
-    (if (vectorp seq-header)
-        (multiple-value-bind (identity description)
-            (parse-fasta-header seq-header)
-          (let ((datum (make-seq-datum identity alphabet
-                                      :token-seq (unless virtualp
-                                                    (concat-fasta-chunks
-                                                     stream
-                                                     #'char-fasta-header-p
-                                                     #'concat-strings))
-                                       :length (when virtualp
-                                                 (count-fasta-residues
-                                                  stream
-                                                  #'char-fasta-header-p))
-                                       :description description)))
-            (if callback-supplied-p
-                (apply callback datum callback-args)
-              datum)))
-      nil)))
-
-(defmethod write-seq-datum ((stream stream) (format (eql :fasta)) datum)
-  (let ((description (seq-datum-description datum))
-        (*print-pretty* nil))
-    (write-char #\> stream)
-    (if (zerop (length description))
-        (write-line (seq-datum-identity datum) stream)
-      (progn
-        (write-string (seq-datum-identity datum) stream)
-        (write-char #\Space stream)
-        (write-line description stream)))
-    (write-wrapped-string (seq-datum-token-seq datum)
-                          *fasta-line-width* stream))
-  t)
-
-(defun count-fasta-residues (stream header-p-fn)
-  "Returns an integer which is the number of Fasta sequence residues
-read from line-input-stream STREAM. Lines are read until the next
-Fasta header is encountered (detected by HEADER-P-FN) or until the end
-of the stream is reached."
-  (let ((num-residues 0))
-    (loop
-       as line = (stream-read-line stream)
-       while (vectorp line)
-       until (funcall header-p-fn line)
-       do (incf num-residues (length line))
-       finally (when (vectorp line)
-                 (push-line stream line))) ; push back the new header
-    num-residues))
-
-(defun concat-fasta-chunks (stream header-p-fn concat-fn)
-  "Returns a string of concatenated Fasta sequence chunks read from
-line-input-stream STREAM. Lines are read until the next Fasta header
-is encountered (detected by HEADER-P-FN) or until the end of the
-stream is reached. The lines are concatenated using CONCAT-FN."
-  (let ((seq-cache (make-array 0 :adjustable t :fill-pointer t)))
-    (loop
-       as line = (stream-read-line stream)
-       and cache-extend = (max 256 (floor (/ (length seq-cache) 2)))
-       while (vectorp line)
-       until (funcall header-p-fn line)
-       do (vector-push-extend line seq-cache cache-extend)
-       finally (when (vectorp line)
-                 (push-line stream line))) ; push back the new header
-    (when (zerop (length seq-cache))
-      (error 'malformed-record-error :text "Incomplete Fasta record."))
-    (funcall concat-fn seq-cache)))
 
 (defun byte-fasta-header-p (bytes)
   "Returns T if BYTES are a Fasta header (start with the character

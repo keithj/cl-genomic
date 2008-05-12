@@ -20,206 +20,110 @@
 (fiveam:in-suite cl-bio-system:testsuite)
 
 ;;; Test reading unambiguous/IUPAC Fasta DNA/RNA
-(test read-bio-sequence/interface
-  (with-open-file (fs (merge-pathnames "data/simple-dna1.fa")
-                   :direction :input
-                   :element-type '(unsigned-byte 8))
-    (let ((stream (make-line-input-stream fs)))
-      (signals error
-        (read-bio-sequence stream :fasta :alphabet nil))
-      (signals error
-        (read-bio-sequence stream :fasta :alphabet :invalid-alphabet))
-      (signals error
-        (read-bio-sequence stream :fasta :alphabet :dna
-                           :virtualp :invalid-virtualp)))))
-
-(test bio-sequence-io/interface
-  (signals error
-    (bio-sequence-io :fasta nil)))
-
-(test read-bio-sequence/fasta/dna-simple
-  (with-open-file (fs (merge-pathnames "data/simple-dna1.fa")
-                   :direction :input
-                   :element-type '(unsigned-byte 8))
-    (let* ((stream (make-line-input-stream fs))
-           (s (read-bio-sequence stream :fasta :alphabet :dna)))
-      (is (eql 'dna-sequence (type-of s)))
-      (is (eql (find-alphabet :dna) (alphabet-of s)))
-      (is-false (virtualp s))
-      (is (= 210 (length-of s)))
-      (is (string= "Test1" (identity-of s))))))
+;; (test read-bio-sequence/interface
+;;   (with-open-file (fs (merge-pathnames "data/simple-dna1.fa")
+;;                    :direction :input
+;;                    :element-type '(unsigned-byte 8))
+;;     (let ((stream (make-line-input-stream fs)))
+;;       (signals error
+;;         (read-bio-sequence stream :fasta :alphabet nil))
+;;       (signals error
+;;         (read-bio-sequence stream :fasta :alphabet :invalid-alphabet))
+;;       (signals error
+;;         (read-bio-sequence stream :fasta :alphabet :dna
+;;                            :virtualp :invalid-virtualp)))))
 
 (test bio-sequence-io/fasta/dna-simple
   (with-open-file (fs (merge-pathnames "data/simple-dna1.fa")
                    :direction :input
                    :element-type '(unsigned-byte 8))
     (let* ((stream (make-line-input-stream fs))
-           (f (bio-sequence-io :fasta :dna))
-           (s (funcall f stream)))
-      (is (eql 'dna-sequence (type-of s)))
-      (is (eql (find-alphabet :dna) (alphabet-of s)))
-      (is-false (virtualp s))
-      (is (= 210 (length-of s)))
-      (is (string= "Test1" (identity-of s))))))
-
-(test read-bio-sequence/fasta/dna-simple/virtual
-  (with-open-file (fs (merge-pathnames "data/simple-dna1.fa")
-                   :direction :input
-                   :element-type '(unsigned-byte 8))
-    (let* ((stream (make-line-input-stream fs))
-           (s (read-bio-sequence stream :fasta :alphabet :dna
-                                 :virtualp t)))
-      (is (eql 'dna-sequence (type-of s)))
-      (is (eql (find-alphabet :dna) (alphabet-of s)))
-      (is-true (virtualp s))
-      (is (= 210 (length-of s)))
-      (is (string= "Test1" (identity-of s))))))
+           (fn (make-input-fn stream :fasta :alphabet :dna))
+           (seq (funcall fn)))
+      (is (eql 'dna-sequence (type-of seq)))
+      (is (eql (find-alphabet :dna) (alphabet-of seq)))
+      (is-false (virtualp seq))
+      (is (= 210 (length-of seq)))
+      (is (string= "Test1" (identity-of seq))))))
 
 (test bio-sequence-io/fasta/dna-simple/virtual
   (with-open-file (fs (merge-pathnames "data/simple-dna1.fa")
                    :direction :input
                    :element-type '(unsigned-byte 8))
     (let* ((stream (make-line-input-stream fs))
-           (f (bio-sequence-io :fasta :dna 'virtual-sequence-handler))
-           (s (funcall f stream)))
-      (is (eql 'dna-sequence (type-of s)))
-      (is (eql (find-alphabet :dna) (alphabet-of s)))
-      (is-true (virtualp s))
-      (is (= 210 (length-of s)))
-      (is (string= "Test1" (identity-of s))))))
-
-(test read-bio-sequence/fasta/dna-iupac
-  (with-open-file (fs (merge-pathnames "data/iupac-dna1.fa")
-                   :direction :input
-                   :element-type '(unsigned-byte 8))
-    (let* ((stream (make-line-input-stream fs))
-           (s (read-bio-sequence stream :fasta :alphabet :dna)))
-      (is (eql 'dna-sequence (type-of s)))
-      (is (eql (find-alphabet :dna) (alphabet-of s)))
-      (is (= 210 (length-of s)))
-      (is (string= "Test1" (identity-of s))))))
+           (fn (make-input-fn stream :fasta :alphabet :dna :virtual t))
+           (seq (funcall fn)))
+      (is (eql 'dna-sequence (type-of seq)))
+      (is (eql (find-alphabet :dna) (alphabet-of seq)))
+      (is-true (virtualp seq))
+      (is (= 210 (length-of seq)))
+      (is (string= "Test1" (identity-of seq))))))
 
 (test bio-sequence-io/fasta/dna-iupac
   (with-open-file (fs (merge-pathnames "data/iupac-dna1.fa")
                    :direction :input
                    :element-type '(unsigned-byte 8))
     (let* ((stream (make-line-input-stream fs))
-           (f (bio-sequence-io :fasta :dna))
-           (s (funcall f stream)))
-      (is (eql 'dna-sequence (type-of s)))
-      (is (eql (find-alphabet :dna) (alphabet-of s)))
-      (is (= 210 (length-of s)))
-      (is (string= "Test1" (identity-of s))))))
-
-(test read-bio-sequence/multifasta/dna-simple
-  (with-open-file (fs (merge-pathnames "data/simple-dna2.fa")
-                   :direction :input
-                   :element-type '(unsigned-byte 8))
-    (let ((stream (make-line-input-stream fs)))
-      (dotimes (n 2)
-        (let ((s (read-bio-sequence stream :fasta :alphabet :dna)))
-          (is (eql 'dna-sequence (type-of s)))
-          (is (eql (find-alphabet :dna) (alphabet-of s)))
-          (is (= 280 (length-of s)))
-          (is (string= (format nil "Test~a" (1+ n)) (identity-of s)))))
-      (is (null (read-bio-sequence stream :fasta :alphabet :dna))))))
+           (fn (make-input-fn stream :fasta :alphabet :dna))
+           (seq (funcall fn)))
+      (is (eql 'dna-sequence (type-of seq)))
+      (is (eql (find-alphabet :dna) (alphabet-of seq)))
+      (is (= 210 (length-of seq)))
+      (is (string= "Test1" (identity-of seq))))))
 
 (test bio-sequence-io/multifasta/dna-simple
   (with-open-file (fs (merge-pathnames "data/simple-dna2.fa")
                    :direction :input
                    :element-type '(unsigned-byte 8))
-    (let ((stream (make-line-input-stream fs))
-          (f (bio-sequence-io :fasta :dna)))
+    (let* ((stream (make-line-input-stream fs))
+           (fn (make-input-fn stream :fasta :alphabet :dna)))
       (dotimes (n 2)
-        (let ((s (funcall f stream)))
-          (is (eql 'dna-sequence (type-of s)))
-          (is (eql (find-alphabet :dna) (alphabet-of s)))
-          (is (= 280 (length-of s)))
-          (is (string= (format nil "Test~a" (1+ n)) (identity-of s)))))
-      (is (null (funcall f stream))))))
-
-(test read-bio-sequence/multifasta/dna-simple/virtual
-  (with-open-file (fs (merge-pathnames "data/simple-dna2.fa")
-                   :direction :input
-                   :element-type '(unsigned-byte 8))
-    (let ((stream (make-line-input-stream fs)))
-      (dotimes (n 2)
-        (let ((s (read-bio-sequence stream :fasta :alphabet :dna
-                                    :virtualp t)))
-          (is (eql 'dna-sequence (type-of s)))
-          (is (eql (find-alphabet :dna) (alphabet-of s)))
-          (is-true (virtualp s))
-          (is (= 280 (length-of s)))
-          (is (string= (format nil "Test~a" (1+ n)) (identity-of s)))))
-      (is (null (read-bio-sequence stream :fasta :alphabet :dna))))))
+        (let ((seq (funcall fn)))
+          (is (eql 'dna-sequence (type-of seq)))
+          (is (eql (find-alphabet :dna) (alphabet-of seq)))
+          (is (= 280 (length-of seq)))
+          (is (string= (format nil "Test~a" (1+ n)) (identity-of seq)))))
+      (is (null (funcall fn))))))
 
 (test bio-sequence-io/multifasta/dna-simple/virtual
   (with-open-file (fs (merge-pathnames "data/simple-dna2.fa")
                    :direction :input
                    :element-type '(unsigned-byte 8))
-    (let ((stream (make-line-input-stream fs))
-          (f (bio-sequence-io :fasta :dna 'virtual-sequence-handler)))
+    (let* ((stream (make-line-input-stream fs))
+           (fn (make-input-fn stream :fasta :alphabet :dna :virtual t)))
       (dotimes (n 2)
-        (let ((s (funcall f stream)))
-          (is (eql 'dna-sequence (type-of s)))
-          (is (eql (find-alphabet :dna) (alphabet-of s)))
-          (is-true (virtualp s))
-          (is (= 280 (length-of s)))
-          (is (string= (format nil "Test~a" (1+ n)) (identity-of s)))))
-      (is (null (funcall f stream))))))
-
-(test read-bio-sequence/multifasta/dna-iupac
-  (with-open-file (fs (merge-pathnames "data/iupac-dna2.fa")
-                   :direction :input
-                   :element-type '(unsigned-byte 8))
-    (let ((stream (make-line-input-stream fs)))
-      (dotimes (n 2)
-        (let ((s (read-bio-sequence stream :fasta :alphabet :dna)))
-          (is (eql 'dna-sequence (type-of s)))
-          (is (eql (find-alphabet :dna) (alphabet-of s)))
-          (is (= 280 (length-of s)))
-          (is (string= (format nil "Test~a" (1+ n)) (identity-of s)))))
-      (is (null (read-bio-sequence stream :fasta :alphabet :dna))))))
+        (let ((seq (funcall fn)))
+          (is (eql 'dna-sequence (type-of seq)))
+          (is (eql (find-alphabet :dna) (alphabet-of seq)))
+          (is-true (virtualp seq))
+          (is (= 280 (length-of seq)))
+          (is (string= (format nil "Test~a" (1+ n)) (identity-of seq)))))
+      (is (null (funcall fn))))))
 
 (test bio-sequence-io/multifasta/dna-iupac
   (with-open-file (fs (merge-pathnames "data/iupac-dna2.fa")
                    :direction :input
                    :element-type '(unsigned-byte 8))
-    (let ((stream (make-line-input-stream fs))
-          (f (bio-sequence-io :fasta :dna)))
+    (let* ((stream (make-line-input-stream fs))
+           (fn (make-input-fn stream :fasta :alphabet :dna)))
       (dotimes (n 2)
-        (let ((s (funcall f stream)))
-          (is (eql 'dna-sequence (type-of s)))
-          (is (eql (find-alphabet :dna) (alphabet-of s)))
-          (is (= 280 (length-of s)))
-          (is (string= (format nil "Test~a" (1+ n)) (identity-of s)))))
-      (is (null (funcall f stream))))))
-
-(test read-bio-sequence/fastq/simple
-  (with-open-file (fs (merge-pathnames "data/phred.fq")
-                   :direction :input
-                   :element-type '(unsigned-byte 8))
-    (let ((stream (make-line-input-stream fs)))
-      (do ((s (read-bio-sequence stream :fastq :alphabet :dna
-                                 :metric :phred)
-              (read-bio-sequence stream :fastq :alphabet :dna
-                                 :metric :phred)))
-          ((null s) t)
-        (is (eql 'dna-quality-sequence (type-of s)))
-        (is (eql (find-alphabet :dna) (alphabet-of s)))
-        (is (= 35 (length-of s)))
-        (is (string= "IL13" (identity-of s) :start2 0 :end2 4))))))
+        (let ((seq (funcall fn)))
+          (is (eql 'dna-sequence (type-of seq)))
+          (is (eql (find-alphabet :dna) (alphabet-of seq)))
+          (is (= 280 (length-of seq)))
+          (is (string= (format nil "Test~a" (1+ n)) (identity-of seq)))))
+      (is (null (funcall fn))))))
 
 (test bio-sequence-io/fastq/simple
   (with-open-file (fs (merge-pathnames "data/phred.fq")
                    :direction :input
                    :element-type '(unsigned-byte 8))
-    (let ((stream (make-line-input-stream fs))
-          (f (bio-sequence-io :fastq :dna)))
-      (do ((s (funcall f stream) (funcall f stream)))
-          ((null s) t)
-        (is (eql 'dna-quality-sequence (type-of s)))
-        (is (eql (find-alphabet :dna) (alphabet-of s)))
-        (is (= 35 (length-of s)))
-        (is (string= "IL13" (identity-of s) :start2 0 :end2 4))))))
+    (let* ((stream (make-line-input-stream fs))
+           (fn (make-input-fn stream :fastq :alphabet :dna)))
+      (do ((seq (funcall fn) (funcall fn)))
+          ((null seq) t)
+        (is (eql 'dna-quality-sequence (type-of seq)))
+        (is (eql (find-alphabet :dna) (alphabet-of seq)))
+        (is (= 35 (length-of seq)))
+        (is (string= "IL13" (identity-of seq) :start2 0 :end2 4))))))
 

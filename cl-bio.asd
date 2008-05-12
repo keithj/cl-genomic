@@ -41,9 +41,7 @@
                            (:file "bio-alphabets"
                                   :depends-on ("package"
                                                "bio-sequence-encoding"))
-                           (:file "bio-sequence-adt"
-                                  :depends-on ("package"))
-                           (:file "classes"
+                           (:file "bio-sequence-classes"
                                   :depends-on ("package"
                                                "bio-alphabets"
                                                "bio-sequence-encoding"))
@@ -56,15 +54,18 @@
                                                "generics"
                                                "bio-alphabets"
                                                "bio-sequence-encoding"
-                                               "classes"))
-                           (:file "bio-sequence-io"
-                                  :depends-on ("package"
-                                               "bio-sequence-adt"))))
+                                               "bio-sequence-classes"))
+                           ))
                  (:module :io
                           :pathname "src/io/"
                           :components
-                          ((:file "fasta")
-                           (:file "fastq")
+                          ((:file "io-classes")
+                           (:file "bio-sequence-io"
+                                  :depends-on ("io-classes"))
+                           (:file "fasta"
+                                  :depends-on ("bio-sequence-io"))
+                           (:file "fastq"
+                                  :depends-on ("bio-sequence-io"))
                            (:file "gff3"))
                           :depends-on (:core))))
 

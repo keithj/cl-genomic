@@ -18,6 +18,7 @@
 (defpackage bio-sequence
   (:use #:common-lisp #:cl-io-utilities #:cl-gp-utilities
         #:trivial-gray-streams #:split-sequence)
+  (:nicknames #:bseq)
   (:export
    ;; Specials
    #:*dna*
@@ -45,20 +46,6 @@
    #:decode-illumina-quality
    #:illumina-to-phred-quality
 
-   #:read-seq-datum
-   #:write-seq-datum
-   #:filter-seq-datum
-   #:make-seq-datum
-   #:make-quality-datum
-   #:seq-datum-identity
-   #:seq-datum-alphabet
-   #:seq-datum-ambiguity
-   #:seq-datum-token-seq
-   #:seq-datum-length
-   #:seq-datum-description
-   #:seq-datum-quality
-   #:make-seq-from-datum
-
    ;; Classes
    #:alphabet
    #:bio-sequence
@@ -67,6 +54,12 @@
    #:rna-sequence
    #:dna-quality-sequence
 
+   #:bio-sequence-parser
+   #:raw-sequence-parser
+   #:simple-sequence-parser
+   #:quality-sequence-parser
+   #:virtual-sequence-parser
+   
    #:knowledgebase
    #:reflexive-mixin
    #:transitive-mixin
@@ -95,7 +88,7 @@
    #:decoded-index-of
    #:alphabet-of
    #:residue-of
-   #:token-seq-of
+   #:residues-of
    #:length-of
    #:subsequence
    #:reverse-sequence
@@ -109,13 +102,26 @@
    #:to-string
    #:metric-of
    #:quality-of
-   #:bio-sequence-io
-   #:bio-sequence-handler
-   #:simple-sequence-handler
-   #:virtual-sequence-handler
-   #:quality-sequence-handler
-   #:read-bio-sequence
-   #:write-bio-sequence
+
+   #:make-input-fn
+   #:make-output-fn
+   #:begin-object
+   #:object-alphabet
+   #:object-relation
+   #:object-identity
+   #:object-description
+   #:object-residues
+   #:object-quality
+   #:end-object
+
+   #:parsed-alphabet
+   #:parsed-identity
+   #:parsed-description
+   #:parsed-residues
+   #:parsed-metric
+   #:parsed-quality
+   #:parsed-length
+   #:parsed-raw
 
    #:contains-frame-p
    #:find-frame
