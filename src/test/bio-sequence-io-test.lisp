@@ -33,10 +33,11 @@
 ;;         (read-bio-sequence stream :fasta :alphabet :dna
 ;;                            :virtualp :invalid-virtualp)))))
 
-(test bio-sequence-io/fasta/dna-simple
+(test bio-sequence-io/fasta/dna-simple/byte
   (with-open-file (fs (merge-pathnames "data/simple-dna1.fa")
                    :direction :input
-                   :element-type '(unsigned-byte 8))
+                   :element-type 'base-char
+                   :external-format :ascii)
     (let* ((stream (make-line-input-stream fs))
            (fn (make-input-fn stream :fasta :alphabet :dna))
            (seq (funcall fn)))
@@ -49,7 +50,8 @@
 (test bio-sequence-io/fasta/dna-simple/virtual
   (with-open-file (fs (merge-pathnames "data/simple-dna1.fa")
                    :direction :input
-                   :element-type '(unsigned-byte 8))
+                   :element-type 'base-char
+                   :external-format :ascii)
     (let* ((stream (make-line-input-stream fs))
            (fn (make-input-fn stream :fasta :alphabet :dna :virtual t))
            (seq (funcall fn)))
@@ -62,7 +64,8 @@
 (test bio-sequence-io/fasta/dna-iupac
   (with-open-file (fs (merge-pathnames "data/iupac-dna1.fa")
                    :direction :input
-                   :element-type '(unsigned-byte 8))
+                   :element-type 'base-char
+                   :external-format :ascii)
     (let* ((stream (make-line-input-stream fs))
            (fn (make-input-fn stream :fasta :alphabet :dna))
            (seq (funcall fn)))
@@ -74,7 +77,8 @@
 (test bio-sequence-io/multifasta/dna-simple
   (with-open-file (fs (merge-pathnames "data/simple-dna2.fa")
                    :direction :input
-                   :element-type '(unsigned-byte 8))
+                   :element-type 'base-char
+                   :external-format :ascii)
     (let* ((stream (make-line-input-stream fs))
            (fn (make-input-fn stream :fasta :alphabet :dna)))
       (dotimes (n 2)
@@ -88,7 +92,8 @@
 (test bio-sequence-io/multifasta/dna-simple/virtual
   (with-open-file (fs (merge-pathnames "data/simple-dna2.fa")
                    :direction :input
-                   :element-type '(unsigned-byte 8))
+                   :element-type 'base-char
+                   :external-format :ascii)
     (let* ((stream (make-line-input-stream fs))
            (fn (make-input-fn stream :fasta :alphabet :dna :virtual t)))
       (dotimes (n 2)
@@ -103,7 +108,8 @@
 (test bio-sequence-io/multifasta/dna-iupac
   (with-open-file (fs (merge-pathnames "data/iupac-dna2.fa")
                    :direction :input
-                   :element-type '(unsigned-byte 8))
+                   :element-type 'base-char
+                   :external-format :ascii)
     (let* ((stream (make-line-input-stream fs))
            (fn (make-input-fn stream :fasta :alphabet :dna)))
       (dotimes (n 2)
@@ -114,10 +120,29 @@
           (is (string= (format nil "Test~a" (1+ n)) (identity-of seq)))))
       (is (null (funcall fn))))))
 
+(test bio-sequence-io/multifasta/raw
+  (with-open-file (fs (merge-pathnames "data/iupac-dna2.fa")
+                   :direction :input
+                   :element-type 'base-char
+                   :external-format :ascii)
+    (let* ((stream (make-line-input-stream fs))
+           (parser (make-instance 'raw-sequence-parser))
+           (fn (make-input-fn stream :fasta :alphabet :dna
+                              :parser parser)))
+      (dotimes (n 2)
+        (let ((seq (funcall fn)))
+          (listp seq)
+          (is (eql :dna (gpu:assocdr :alphabet seq)))
+          (is (= 280 (length (gpu:assocdr :residues seq))))
+          (is (string= (format nil "Test~a" (1+ n))
+                       (gpu:assocdr :identity seq)))))
+      (is (null (funcall fn))))))
+
 (test bio-sequence-io/fastq/simple
   (with-open-file (fs (merge-pathnames "data/phred.fq")
                    :direction :input
-                   :element-type '(unsigned-byte 8))
+                   :element-type 'base-char
+                   :external-format :ascii)
     (let* ((stream (make-line-input-stream fs))
            (fn (make-input-fn stream :fastq :alphabet :dna)))
       (do ((seq (funcall fn) (funcall fn)))
@@ -126,4 +151,22 @@
         (is (eql (find-alphabet :dna) (alphabet-of seq)))
         (is (= 35 (length-of seq)))
         (is (string= "IL13" (identity-of seq) :start2 0 :end2 4))))))
+
+(test bio-sequence-io/fastq/raw
+  (with-open-file (fs (merge-pathnames "data/phred.fq")
+                   :direction :input
+                   :element-type 'base-char
+                   :external-format :ascii)
+    (let* ((stream (make-line-input-stream fs))
+           (parser (make-instance 'raw-sequence-parser))
+           (fn (make-input-fn stream :fastq :alphabet :dna
+                              :parser parser)))
+       (do ((seq (funcall fn) (funcall fn)))
+           ((null seq) t)
+         (listp seq)
+         (is (eql :dna (gpu:assocdr :alphabet seq)))
+         (is (= 35 (length (gpu:assocdr :residues seq))))
+         (is (= 35 (length (gpu:assocdr :quality seq))))
+         (is (string= "IL13" (gpu:assocdr :identity seq)
+                       :start2 0 :end2 4))))))
 

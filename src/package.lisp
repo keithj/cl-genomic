@@ -18,8 +18,11 @@
 (defpackage bio-sequence
   (:use #:common-lisp #:cl-io-utilities #:cl-gp-utilities
         #:trivial-gray-streams #:split-sequence)
-  (:nicknames #:bseq)
+  (:nicknames #:bs)
   (:export
+   ;; Types
+   #:quality-score
+   
    ;; Specials
    #:*dna*
    #:*rna*
@@ -30,6 +33,7 @@
    #:*unknown-strand*
 
    #:*default-knowledgebase*
+   
    ;; Conditions
    #:knowledgebase-error
 
@@ -45,6 +49,10 @@
    #:encode-illumina-quality
    #:decode-illumina-quality
    #:illumina-to-phred-quality
+
+   #:split-fastq-file
+   #:write-raw-fastq
+   #:write-n-fastq
 
    ;; Classes
    #:alphabet
@@ -135,7 +143,16 @@
    #:domain-of
    #:range-of
    #:value-of
-   #:slot-value-of))
+   #:slot-value-of)
+  (:documentation "The BIO-SEQUENCE package provides basic support for
+representing biological sequences. Concepts such as alphabets of
+sequence residues (nucleic acid bases and amino acids), sequences of
+residues (nucleic acids and polypeptides) and sequence strands are
+represented as CLOS classes.
+
+An event-based parsing interface enables reading of some common,
+simple biological sequence file formats into primitive Lisp data
+structures or CLOS instances."))
 
 (defpackage bio-sequence-user
   (:use #:common-lisp #:bio-sequence

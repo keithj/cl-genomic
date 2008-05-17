@@ -17,25 +17,38 @@
 
 (in-package :bio-sequence)
 
-(defun make-chunk-pname (file-pname chunk-number)
-  "Returns a new pathname for a file chunk based on a file pathname
-FILE-PNAME and an integer CHUNK-NUMBER."
-  (make-pathname
-   :directory (pathname-directory file-pname)
-   :name (concatenate 'string (pathname-name file-pname) "."
-                      (princ-to-string chunk-number))
-   :type (pathname-type file-pname)))
+;;; Default methods which ignore all data from the parser
+(defmethod begin-object ((parser bio-sequence-parser))
+  nil)
 
+(defmethod object-alphabet ((parser bio-sequence-parser)
+                            alphabet)
+  nil)
 
-(defmethod begin-object ((parser bio-sequence-parser)))
-(defmethod object-alphabet ((parser bio-sequence-parser) alphabet))
-(defmethod object-relation ((parser bio-sequence-parser) relation value))
-(defmethod object-identity ((parser bio-sequence-parser) identity))
-(defmethod object-description ((parser bio-sequence-parser) description))
-(defmethod object-residues ((parser bio-sequence-parser) residues))
-(defmethod object-quality ((parser bio-sequence-parser) quality))
-(defmethod end-object ((parser bio-sequence-parser)))
+(defmethod object-relation ((parser bio-sequence-parser)
+                            relation value)
+  nil)
 
+(defmethod object-identity ((parser bio-sequence-parser)
+                            identity)
+  nil)
+
+(defmethod object-description ((parser bio-sequence-parser)
+                               description)
+  nil)
+
+(defmethod object-residues ((parser bio-sequence-parser)
+                            residues)
+  nil)
+
+(defmethod object-quality ((parser bio-sequence-parser)
+                           quality)
+  nil)
+
+(defmethod end-object ((parser bio-sequence-parser))
+  nil)
+
+;;; Collecting raw data into Lisp objects
 (defmethod begin-object ((parser raw-sequence-parser))
   (with-slots (raw) parser
     (setf raw '())))
@@ -84,6 +97,7 @@ FILE-PNAME and an integer CHUNK-NUMBER."
     raw))
 
 
+;;; Collecting data into CLOS instances
 (defmethod begin-object ((parser simple-sequence-parser))
   (with-slots (identity description residues) parser
       (setf identity nil
@@ -109,7 +123,7 @@ FILE-PNAME and an integer CHUNK-NUMBER."
 (defmethod end-object ((parser simple-sequence-parser))
   (make-bio-sequence parser))
 
-
+;;; Collecting data into CLOS instances with quality
 (defmethod begin-object ((parser quality-sequence-parser))
   (with-slots (quality) parser
       (setf quality (make-array 0 :adjustable t :fill-pointer 0)))
@@ -120,6 +134,7 @@ FILE-PNAME and an integer CHUNK-NUMBER."
   (vector-push-extend quality (parsed-quality parser)))
 
 
+;;; Collecting data into CLOS instances without explicit residues
 (defmethod begin-object ((parser virtual-sequence-parser))
   (with-slots (length) parser
       (setf length 0))
@@ -129,7 +144,7 @@ FILE-PNAME and an integer CHUNK-NUMBER."
                             (residues vector))
   (incf (parsed-length parser) (length residues)))
 
-
+;;; CLOS instance constructors
 (defmethod make-bio-sequence ((parser simple-sequence-parser))
   (let ((class (ecase (parsed-alphabet parser)
                  (:dna 'dna-sequence)

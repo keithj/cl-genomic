@@ -59,8 +59,8 @@ DECODER."
              :text "no such alphabet"))
     alphabet))
 
-(defmethod anonymousp ((obj identity-mixin))
-  (null (identity-of obj)))
+(defmethod anonymousp ((seq identity-mixin))
+  (null (identity-of seq)))
 
 (defmethod size-of ((alphabet alphabet))
   (length (tokens-of alphabet)))
@@ -74,24 +74,26 @@ DECODER."
        for residue across residues
        always (find (char-downcase residue) simple))))
 
-(defmethod slot-unbound (class (obj alphabet) (slot (eql 'encoded-index)))
+(defmethod slot-unbound (class (alphabet alphabet)
+                         (slot (eql 'encoded-index)))
   (let ((index-table (make-hash-table))
-        (encoder (encoder-of obj))
-        (tokens (tokens-of obj)))
+        (encoder (encoder-of alphabet))
+        (tokens (tokens-of alphabet)))
     (loop
        for i from 0 below (length tokens)
        do (setf (gethash (funcall encoder (aref tokens i)) index-table) i))
-    (setf (slot-value obj 'encoded-index)
+    (setf (slot-value alphabet 'encoded-index)
           (lambda (element)
             (gethash element index-table)))))
 
-(defmethod slot-unbound (class (obj alphabet) (slot (eql 'decoded-index)))
+(defmethod slot-unbound (class (alphabet alphabet)
+                         (slot (eql 'decoded-index)))
   (let ((index-table (make-hash-table))
-        (tokens (tokens-of obj)))
+        (tokens (tokens-of alphabet)))
     (loop
        for i from 0 below (length tokens)
        do (setf (gethash (aref tokens i) index-table) i))
-    (setf (slot-value obj 'decoded-index)
+    (setf (slot-value alphabet 'decoded-index)
           (lambda (element)
             (gethash element index-table)))))
 
@@ -334,8 +336,6 @@ DECODER."
                 :end1 end1 :end2 end2 :test #'eq))
     nil))
 
-
-
 (defmethod residue-frequencies ((seq bio-sequence))
   (let ((index-fn (encoded-index-of (alphabet-of seq)))
         (frequencies (make-array (length (tokens-of (alphabet-of seq)))
@@ -347,40 +347,40 @@ DECODER."
     (pairlis (coerce (copy-seq (tokens-of (alphabet-of seq))) 'list)
              (coerce frequencies 'list))))
 
-(defmethod print-object ((obj alphabet) stream)
-  (format stream "<ALPHABET ~a>" (slot-value obj 'name)))
+(defmethod print-object ((alphabet alphabet) stream)
+  (format stream "<ALPHABET ~a>" (slot-value alphabet 'name)))
 
-(defmethod print-object ((obj sequence-strand) stream)
-  (with-slots (name token number) obj
+(defmethod print-object ((strand sequence-strand) stream)
+  (with-slots (name token number) strand
       (format stream "<SEQUENCE-STRAND ~a/~a/~a>" name token number)))
 
-(defmethod print-object ((obj dna-sequence) stream)
-  (print-seq-aux "DNA-SEQUENCE" obj stream))
+(defmethod print-object ((seq dna-sequence) stream)
+  (print-seq-aux "DNA-SEQUENCE" seq stream))
 
-(defmethod print-object ((obj rna-sequence) stream)
-  (print-seq-aux "RNA-SEQUENCE" obj stream))
+(defmethod print-object ((seq rna-sequence) stream)
+  (print-seq-aux "RNA-SEQUENCE" seq stream))
 
-(defmethod print-object ((obj dna-quality-sequence) stream)
-  (print-quality-seq-aux "DNA-QUALITY-SEQUENCE" obj stream))
+(defmethod print-object ((seq dna-quality-sequence) stream)
+  (print-quality-seq-aux "DNA-QUALITY-SEQUENCE" seq stream))
 
-(defun print-seq-aux (name obj stream)
+(defun print-seq-aux (name seq stream)
   "Helper function for printing bio-sequence objects."
-  (let ((len (length-of obj)))
+  (let ((len (length-of seq)))
     (if (and len (<= len *sequence-print-limit*)
-             (not (virtualp obj)))
-        (format stream "<~a \"~a\">" name (to-string obj))
+             (not (virtualp seq)))
+        (format stream "<~a \"~a\">" name (to-string seq))
       (format stream "<~a length ~d>" name len))))
 
-(defun print-quality-seq-aux (name obj stream)
+(defun print-quality-seq-aux (name seq stream)
   "Helper function for printing bio-sequence objects."
-  (let ((len (length-of obj)))
+  (let ((len (length-of seq)))
     (if (and len (<= len *sequence-print-limit*)
-             (not (virtualp obj)))
+             (not (virtualp seq)))
         (format stream "<~a \"~a\" ~a quality \"~a\">"
-                name (to-string obj) (metric-of obj)
-                (quality-string (quality-of obj) (metric-of obj)))
+                name (to-string seq) (metric-of seq)
+                (quality-string (quality-of seq) (metric-of seq)))
       (format stream "<~a ~a quality, length ~d>"
-              name (metric-of obj) len))))
+              name (metric-of seq) len))))
 
 (defun quality-string (quality metric)
   (let ((encoder (ecase metric
@@ -421,23 +421,23 @@ when making bio-sequence instances."
                 :args (list residues length)
                 :text "expected one to be NIL"))))
 
-(defun initialize-seq (bio-seq ensure-encoded-fn encoder)
-  "Initializes bio-sequence BIO-SEQ by checking using
-ENSURE-ENCODED-FN that its residues are encoded."
-  (with-slots (residues length) bio-seq
+(defun initialize-seq (seq ensure-encoded-fn encoder)
+  "Initializes bio-sequence SEQ by checking using ENSURE-ENCODED-FN
+that its residues are encoded."
+  (with-slots (residues length) seq
     (multiple-value-bind (valid-residues valid-length)
         (process-residues-args residues length)
       (if valid-residues
-          (funcall ensure-encoded-fn bio-seq encoder)
-        (setf (length-of bio-seq) valid-length))))
-  bio-seq)
+          (funcall ensure-encoded-fn seq encoder)
+        (setf (length-of seq) valid-length))))
+  seq)
 
-(defun ensure-encoded-4bit (bio-seq encoder)
-  "Returns BIO-SEQ after ensuring that its residues are encoded as
+(defun ensure-encoded-4bit (seq encoder)
+  "Returns SEQ after ensuring that its residues are encoded as
 unsigned-byte 4 using ENCODER."
-  (let ((current-residues (residues-of bio-seq)))
+  (let ((current-residues (residues-of seq)))
     (if (equal '(unsigned-byte 4) (array-element-type current-residues))
-        bio-seq
+        seq
       (let ((residues (make-array (length current-residues)
                                   :element-type '(unsigned-byte 4))))
         (declare (type (simple-array (unsigned-byte 4) *) residues)
@@ -445,8 +445,8 @@ unsigned-byte 4 using ENCODER."
         (when (< 0 (length residues))
           (copy-array current-residues 0 (1- (length residues))
                       residues 0 encoder))
-        (setf (residues-of bio-seq) residues)
-        bio-seq))))
+        (setf (residues-of seq) residues)
+        seq))))
 
 (defun residue-subsequence (residues start end)
   "Returns a subsequence of RESIDUES between indices START and END."

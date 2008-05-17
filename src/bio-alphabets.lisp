@@ -43,7 +43,8 @@ alphabet."))
                  :decoder #'decode-dna-4bit
                  :tokens (make-array 15
                                      :element-type 'base-char
-                                     :initial-contents "acgtrykmswbdhvn")))
+                                     :initial-contents "acgtrykmswbdhvn"))
+  "The IUPAC DNA alphabet.")
 (defvar *rna*
   (make-instance 'alphabet
                  :name :rna
@@ -51,7 +52,8 @@ alphabet."))
                  :decoder #'decode-rna-4bit
                  :tokens (make-array 15
                                      :element-type 'base-char
-                                     :initial-contents "acgurykmswbdhvn")))
+                                     :initial-contents "acgurykmswbdhvn"))
+  "The IUPAC RNA alphabet.")
 
 (defvar *alphabets* (make-hash-table)
   "The standard biological alphabets.")

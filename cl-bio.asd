@@ -29,9 +29,12 @@
     :author "Keith James"
     :version "0.1.1"
     :licence "GPL v3"
-    :depends-on (:cl-gp-utilities :cl-io-utilities
-                                  :trivial-gray-streams :split-sequence
-                                  :cl-ppcre :puri)
+    :depends-on (:trivial-gray-streams
+                 :split-sequence
+                 :cl-ppcre
+                 :puri
+                 :cl-gp-utilities
+                 :cl-io-utilities)
     :components ((:module :core
                           :pathname "src/"
                           :components
@@ -73,7 +76,7 @@
 (in-package #:asdf)
 
 (defmethod perform ((op test-op) (c (eql (find-system
-                                          'cl-bio))))
+                                          :cl-bio))))
   (operate 'load-op :cl-bio-test)
 
   (let ((*default-pathname-defaults* (component-pathname c)))
@@ -81,5 +84,11 @@
              'cl-bio-system:testsuite)))
 
 (defmethod operation-done-p ((op test-op) (c (eql (find-system
-                                                   'cl-bio))))
+                                                   :cl-bio))))
   nil)
+
+(defmethod perform ((op cldoc-op) (c (eql (find-system
+                                           :cl-bio))))
+  (unless (find-package :bio-sequence)
+    (operate 'load-op :cl-bio))
+  (cldoc:extract-documentation 'cldoc:html "./doc/html" c))

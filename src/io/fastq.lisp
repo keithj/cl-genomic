@@ -75,19 +75,15 @@
     (write-line "+" stream)
     (write-line (encode-quality (quality-of seq) encoder) stream)))
 
-;; (defmethod filter-seq-datum ((stream line-input-stream)
-;;                              (format (eql :fastq)) pred out)
-;;   "Reads Fastq records from STREAM and writes only those for which
-;; PRED returns T to stream character stream OUT. PRED should be a
-;; function that accepts a single argument of a standard seq-datum and
-;; returns T if the read should be removed, or NIL otherwise."
-;;   (do ((fq (read-seq-datum stream :fastq :alphabet :dna)
-;;            (read-seq-datum stream :fastq :alphabet :dna))
-;;        (num-written 0))
-;;       ((null fq) num-written)
-;;     (when (not (funcall pred fq))
-;;       (write-seq-datum out :fastq fq)
-;;       (incf num-written))))
+(defun write-raw-fastq (raw stream)
+  "Writes sequence data RAW to STREAM in Fastq format. The alist RAW
+must contain keys and values as created by {defclass raw-sequence-parser} ."
+  (let ((*print-pretty* nil))
+    (write-char #\@ stream)
+    (write-line (assocdr :identity raw) stream)
+    (write-line (assocdr :residues raw) stream)
+    (write-line "+" stream)
+    (write-line (assocdr :quality raw) stream)))
 
 (defun parse-fastq-record (stream qual-header-validate-fn)
   "Reads the body of a Fastq record that follows the header from
@@ -104,40 +100,40 @@ the quality header and the quality."
              "Incomplete Fastq record."))
     (values residues quality-header quality)))
 
+(defun split-fastq-file (namestring chunk-size generator)
+  "Splits Fastq file identified by NAMESTRING into automatically named
+files, each except the last, containing up to CHUNK-SIZE records. See
+also iou:pathname-generator and iou:pathname-extender."
+  (let ((file-pathname (pathname namestring)))
+    (with-open-file (in file-pathname :direction :input
+                     :element-type '(unsigned-byte 8))
+      (do* ((stream (make-line-input-stream in))
+            (chunk-pathname (funcall generator namestring)
+                            (funcall generator namestring))
+            (n (write-n-fastq stream chunk-size chunk-pathname)
+             (write-n-fastq stream chunk-size chunk-pathname)))
+           ((zerop n))))))
 
-;; (defun split-fastq-file (filespec chunk-size)
-;;   "Splits Fastq file identified by FILESPEC into automatically named
-;; chunks, each, except the last file, containing up to CHUNK-SIZE
-;; records."
-;;   (let ((file-pname (pathname filespec)))
-;;     (with-open-file (in file-pname :direction :input
-;;                      :element-type '(unsigned-byte 8))
-;;       (do* ((stream (make-line-input-stream in))
-;;             (chunk-count 0 (1+ chunk-count))
-;;             (chunk-pname (make-chunk-pname file-pname chunk-count)
-;;                          (make-chunk-pname file-pname chunk-count))
-;;             (n (write-n-fastq stream chunk-size chunk-pname)
-;;                (write-n-fastq stream chunk-size chunk-pname)))
-;;            ((zerop n))))))
-
-;; (defun write-n-fastq (stream n chunk-pname)
-;;   "Reads up to N Fastq records from STREAM and writes them into a new
-;; file of pathname CHUNK-PNAME. Returns the number of records actually
-;; written, which may be 0 if the stream contained to further records."
-;;   (let ((num-written 
-;;          (with-open-file (out chunk-pname :direction :output
-;;                           :if-exists :supersede
-;;                           :element-type 'base-char)
-;;            (loop
-;;               for count from 0 below n
-;;               for fq = (read-seq-datum stream :fastq :alphabet :dna)
-;;               then (read-seq-datum stream :fastq :alphabet :dna)
-;;               while fq
-;;               do (write-seq-datum out :fastq fq)
-;;               finally (return count)))))
-;;     (when (zerop num-written)
-;;       (delete-file chunk-pname))
-;;     num-written))
+(defun write-n-fastq (stream n pathname)
+  "Reads up to N Fastq records from STREAM and writes them into a new
+file of PATHNAME. Returns the number of records actually written,
+which may be 0 if STREAM contained no further records."
+  (let ((num-written
+         (with-open-file (out pathname :direction :output
+                          :if-exists :supersede
+                          :element-type 'base-char)
+           (loop
+              with fn = (make-input-fn stream :fastq :alphabet :dna
+                                       :parser (make-instance
+                                                'raw-sequence-parser))
+              for count from 0 below n
+                for raw = (funcall fn) then (funcall fn)
+              while raw
+              do (write-raw-fastq raw out)
+              finally (return count)))))
+  (when (zerop num-written)
+    (delete-file pathname))
+  num-written))
 
 (defun byte-fastq-header-p (bytes)
   "Returns T if BYTES are a Fastq header (start with the character
