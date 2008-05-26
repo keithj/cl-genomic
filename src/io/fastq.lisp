@@ -17,17 +17,24 @@
 
 (in-package :bio-sequence)
 
-(defmethod make-input-fn ((stream line-input-stream)
-                          (format (eql :fastq))
-                          &key (alphabet :dna) (metric :phred) parser)
-  (let ((parser (or parser
+(defmethod make-input-gen ((stream line-input-stream)
+                           (format (eql :fastq))
+                           &key (alphabet :dna) (metric :phred) parser)
+  (let* ((parser (or parser
                     (make-instance 'quality-sequence-parser
-                                   :metric metric))))
-    (lambda ()
-      (read-fastq-sequence stream alphabet parser))))
+                                   :metric metric)))
+         (current (read-fastq-sequence stream alphabet parser)))
+    (lambda (op)
+      (ecase op
+        (:current current)
+        (:next (prog1
+                   current
+                 (setf current
+                       (read-fastq-sequence stream alphabet parser))))
+        (:more (not (null current)))))))
 
-(defmethod make-output-fn ((stream stream) (format (eql :fastq))
-                           &key token-case)
+(defmethod make-output-con ((stream stream) (format (eql :fastq))
+                            &key token-case)
   (lambda (bio-sequence)
     (write-fastq-sequence bio-sequence stream :token-case token-case)))
 
@@ -100,16 +107,17 @@ the quality header and the quality."
              "Incomplete Fastq record."))
     (values residues quality-header quality)))
 
-(defun split-fastq-file (namestring chunk-size generator)
-  "Splits Fastq file identified by NAMESTRING into automatically named
+(defun split-fastq-file (filespec chunk-size generator)
+  "Splits Fastq file identified by FILESPEC into automatically named
 files, each except the last, containing up to CHUNK-SIZE records. See
-also iou:pathname-generator and iou:pathname-extender."
-  (let ((file-pathname (pathname namestring)))
+also iou:pathname-generator and iou:pathname-extender ."
+  (let ((file-pathname (pathname filespec)))
     (with-open-file (in file-pathname :direction :input
-                     :element-type '(unsigned-byte 8))
+                     :element-type 'base-char
+                     :external-format :ascii)
       (do* ((stream (make-line-input-stream in))
-            (chunk-pathname (funcall generator namestring)
-                            (funcall generator namestring))
+            (chunk-pathname (funcall generator filespec)
+                            (funcall generator filespec))
             (n (write-n-fastq stream chunk-size chunk-pathname)
              (write-n-fastq stream chunk-size chunk-pathname)))
            ((zerop n))))))
@@ -118,16 +126,18 @@ also iou:pathname-generator and iou:pathname-extender."
   "Reads up to N Fastq records from STREAM and writes them into a new
 file of PATHNAME. Returns the number of records actually written,
 which may be 0 if STREAM contained no further records."
+  (declare (optimize (speed 3)))
   (let ((num-written
          (with-open-file (out pathname :direction :output
                           :if-exists :supersede
-                          :element-type 'base-char)
+                          :element-type 'base-char
+                          :external-format :ascii)
            (loop
-              with fn = (make-input-fn stream :fastq :alphabet :dna
-                                       :parser (make-instance
-                                                'raw-sequence-parser))
+              with gen = (make-input-gen stream :fastq :alphabet :dna
+                                         :parser (make-instance
+                                                  'raw-sequence-parser))
               for count from 0 below n
-                for raw = (funcall fn) then (funcall fn)
+              for raw = (next gen) then (next gen)
               while raw
               do (write-raw-fastq raw out)
               finally (return count)))))

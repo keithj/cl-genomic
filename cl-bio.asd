@@ -57,8 +57,7 @@
                                                "generics"
                                                "bio-alphabets"
                                                "bio-sequence-encoding"
-                                               "bio-sequence-classes"))
-                           ))
+                                               "bio-sequence-classes"))))
                  (:module :io
                           :pathname "src/io/"
                           :components

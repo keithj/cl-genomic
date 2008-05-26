@@ -65,6 +65,9 @@ DECODER."
 (defmethod size-of ((alphabet alphabet))
   (length (tokens-of alphabet)))
 
+(defmethod token-index ((alphabet alphabet) encoded-token)
+  (gethash encoded-token (index-of alphabet)))
+
 (defmethod memberp ((alphabet alphabet) (char character))
   (contains-char-p (tokens-of alphabet) char))
 
@@ -73,29 +76,6 @@ DECODER."
     (loop
        for residue across residues
        always (find (char-downcase residue) simple))))
-
-(defmethod slot-unbound (class (alphabet alphabet)
-                         (slot (eql 'encoded-index)))
-  (let ((index-table (make-hash-table))
-        (encoder (encoder-of alphabet))
-        (tokens (tokens-of alphabet)))
-    (loop
-       for i from 0 below (length tokens)
-       do (setf (gethash (funcall encoder (aref tokens i)) index-table) i))
-    (setf (slot-value alphabet 'encoded-index)
-          (lambda (element)
-            (gethash element index-table)))))
-
-(defmethod slot-unbound (class (alphabet alphabet)
-                         (slot (eql 'decoded-index)))
-  (let ((index-table (make-hash-table))
-        (tokens (tokens-of alphabet)))
-    (loop
-       for i from 0 below (length tokens)
-       do (setf (gethash (aref tokens i) index-table) i))
-    (setf (slot-value alphabet 'decoded-index)
-          (lambda (element)
-            (gethash element index-table)))))
 
 (defmethod initialize-instance :after ((seq dna-sequence) &key)
   (initialize-seq seq #'ensure-encoded-4bit #'encode-dna-4bit))
@@ -317,12 +297,6 @@ DECODER."
 (defmethod nreverse-complement ((seq dna-quality-sequence))
   (nreverse-sequence (ncomplement-sequence seq)))
 
-(defmethod residue-frequencies :before ((seq bio-sequence))
-  (when (virtualp seq)
-    (error 'invalid-operation-error
-           :text (msg "cannot determine residue frequencies"
-                      "of a virtual sequence"))))
-
 (defmethod search-sequence ((seq1 bio-sequence) (seq2 bio-sequence)
                             &key from-end start1 start2 end1 end2)
   (if (subtypep (class-of (alphabet-of seq1))
@@ -336,16 +310,23 @@ DECODER."
                 :end1 end1 :end2 end2 :test #'eq))
     nil))
 
+(defmethod residue-frequencies :before ((seq bio-sequence))
+  (when (virtualp seq)
+    (error 'invalid-operation-error
+           :text (msg "cannot determine residue frequencies"
+                      "of a virtual sequence"))))
+
 (defmethod residue-frequencies ((seq bio-sequence))
-  (let ((index-fn (encoded-index-of (alphabet-of seq)))
-        (frequencies (make-array (length (tokens-of (alphabet-of seq)))
+  (let ((frequencies (make-array (length (tokens-of (alphabet-of seq)))
                                  :element-type 'fixnum :initial-element 0))
-        (residues (residues-of seq)))
+        (residues (residues-of seq))
+        (alphabet (alphabet-of seq)))
     (loop
        for residue across residues
-       do (incf (aref frequencies (funcall index-fn residue))))
-    (pairlis (coerce (copy-seq (tokens-of (alphabet-of seq))) 'list)
+       do (incf (aref frequencies (token-index alphabet residue))))
+    (pairlis (coerce (copy-seq (tokens-of alphabet)) 'list)
              (coerce frequencies 'list))))
+
 
 (defmethod print-object ((alphabet alphabet) stream)
   (format stream "<ALPHABET ~a>" (slot-value alphabet 'name)))

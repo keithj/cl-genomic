@@ -21,38 +21,46 @@
   ((name :initarg :name
          :reader name-of
          :documentation "The alphabet name.")
-   (encoder :initarg :encoder
-            :reader encoder-of)
-   (decoder :initarg :decoder
-            :reader decoder-of)
-   (encoded-index :initarg :encoded-index
-                  :reader encoded-index-of)
-   (decoded-index :initarg :decoded-index
-                  :reader decoded-index-of)
    (tokens :initform ""
            :initarg :tokens
            :reader tokens-of
            :documentation "The set of member tokens of the
-alphabet."))
+alphabet.")
+   (index :initarg :index
+          :reader index-of
+          :documentation "An index of the residues in the alphabet."))
   (:documentation "Alphabets are sets of tokens."))
 
 (defvar *dna*
-  (make-instance 'alphabet
-                 :name :dna
-                 :encoder #'encode-dna-4bit
-                 :decoder #'decode-dna-4bit
-                 :tokens (make-array 15
-                                     :element-type 'base-char
-                                     :initial-contents "acgtrykmswbdhvn"))
+  (let ((tokens (make-array 15
+                            :element-type 'base-char
+                            :initial-contents "acgtrykmswbdhvn")))
+    (make-instance 'alphabet
+                   :name :dna
+                   :tokens tokens
+                   :index (loop
+                             with index = (make-hash-table)
+                             for i from 0 below (length tokens)
+                             do (setf (gethash
+                                       (encode-dna-4bit (aref tokens i)) index)
+                                      i)
+                             finally (return index))))
   "The IUPAC DNA alphabet.")
+
 (defvar *rna*
-  (make-instance 'alphabet
-                 :name :rna
-                 :encoder #'encode-rna-4bit
-                 :decoder #'decode-rna-4bit
-                 :tokens (make-array 15
-                                     :element-type 'base-char
-                                     :initial-contents "acgurykmswbdhvn"))
+  (let ((tokens (make-array 15
+                            :element-type 'base-char
+                            :initial-contents "acgurykmswbdhvn")))
+    (make-instance 'alphabet
+                   :name :rna
+                   :tokens tokens
+                   :index (loop
+                             with index = (make-hash-table)
+                             for i from 0 below (length tokens)
+                             do (setf (gethash
+                                       (encode-rna-4bit (aref tokens i)) index)
+                                      i)
+                             finally (return index))))
   "The IUPAC RNA alphabet.")
 
 (defvar *alphabets* (make-hash-table)

@@ -111,7 +111,7 @@
    #:metric-of
    #:quality-of
 
-   #:make-input-fn
+   #:make-input-gen
    #:make-output-fn
    #:begin-object
    #:object-alphabet

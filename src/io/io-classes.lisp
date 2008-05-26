@@ -78,3 +78,4 @@ stream."))
   (:documentation "A parser specialised for processing biological
 sequence data to build CLOS instances that do not contain explicit
 residue data."))
+

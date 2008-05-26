@@ -25,20 +25,26 @@
 becomes full of chunks of sequence tokens.")
 
 
-(defmethod make-input-fn ((stream line-input-stream)
-                          (format (eql :fasta))
-                          &key (alphabet :dna) parser virtual)
-  (let ((parser (or parser
-                    (cond (virtual
-                           (make-instance 'virtual-sequence-parser))
-                          (t
-                           (make-instance 'simple-sequence-parser))))))
-    (lambda ()
-      (read-fasta-sequence stream alphabet parser))))
+(defmethod make-input-gen ((stream line-input-stream)
+                           (format (eql :fasta))
+                           &key (alphabet :dna) parser virtual)
+  (let* ((parser (or parser
+                     (cond (virtual
+                            (make-instance 'virtual-sequence-parser))
+                           (t
+                            (make-instance 'simple-sequence-parser)))))
+         (current (read-fasta-sequence stream alphabet parser)))
+    (lambda (op)
+        (ecase op
+          (:current current)
+          (:next (prog1
+                     current
+                   (setf current
+                         (read-fasta-sequence stream alphabet parser))))
+          (:more (not (null current)))))))
 
-
-(defmethod make-output-fn ((stream stream) (format (eql :fasta))
-                           &key token-case)
+(defmethod make-output-con ((stream stream) (format (eql :fasta))
+                            &key token-case)
   (lambda (bio-sequence)
     (write-fasta-sequence bio-sequence stream :token-case token-case)))
 

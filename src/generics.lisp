@@ -18,14 +18,12 @@
 (in-package :bio-sequence)
 
 ;;; identity-mixin generics
-
 (defgeneric anonymousp (object)
   (:documentation "Returns T if OBJECT is anonymous, that is, has an
 identifier of NIL."))
 
 
 ;;; bio-sequence generics
-
 (defgeneric simplep (bio-sequence alphabet-designator)
   (:documentation "Returns T if BIO-SEQUENCE contains no ambiguous
 residues according to the alphabets specified by ALPHABET-DESIGNATOR,
@@ -102,7 +100,6 @@ cumulative total lengths of RANGES."))
 
 
 ;;; bio-sequence io generics
-
 (defgeneric begin-object (parser)
   (:documentation "Signals to PARSER the beginning of a new
 object. The parser may use this information to discard accumulated
@@ -140,19 +137,21 @@ object. The method must return T if the accumulated state of the
 current object is valid, or NIL otherwise. If PARSER is constructing a
 CLOS object, the object must be returned by this method."))
 
-(defgeneric make-input-fn (stream format &key alphabet parser
-                           &allow-other-keys)
-  (:documentation "Returns a function of zero arity that uses PARSER
-to read a single bio-sequence of ALPHABET, in FORMAT, from STREAM. The
-function must return T on success, ot NIL otherwise."))
-
-(defgeneric make-output-fn (stream format &key token-case
+(defgeneric make-input-gen (stream format &key alphabet parser
                             &allow-other-keys)
-  (:documentation "Returns a function of arity 1 that accepts a
-bio-sequence and writes a representation in FORMAT to STREAM. The
+  (:documentation "Returns a generator function of arity 1 that uses
+PARSER to read a single bio-sequence of ALPHABET, in FORMAT, from
+STREAM. The standard generator interface functions, CURRENT, NEXT and
+HAS-MORE-P may be used in operations on the returned generator."))
+
+(defgeneric make-output-con (stream format &key token-case
+                             &allow-other-keys)
+  (:documentation "Returns a consumer function of arity 1 that accepts
+a bio-sequence and writes a representation in FORMAT to STREAM. The
 TOKEN-CASE keyword is used to override the default character case for
 printing sequence residues, which is lowercase for DNA or RNA and
-uppercase for amino acids."))
+uppercase for amino acids. The standard consumer interface function
+CONSUME may be used in operations on the returned consumer."))
 
 (defgeneric make-bio-sequence (parser)
   (:documentation "Returns a new bio-sequence created from the state

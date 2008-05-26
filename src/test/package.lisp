@@ -16,5 +16,6 @@
 ;;;
 
 (defpackage :cl-bio-test
-  (:use #:common-lisp #:bio-sequence #:cl-io-utilities #:fiveam)
+  (:use #:common-lisp #:cl-gp-utilities #:cl-io-utilities
+         #:bio-sequence #:fiveam)
   (:documentation "bio-sequence tests."))
