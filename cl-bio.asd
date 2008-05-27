@@ -90,4 +90,7 @@
                                            :cl-bio))))
   (unless (find-package :bio-sequence)
     (operate 'load-op :cl-bio))
-  (cldoc:extract-documentation 'cldoc:html "./doc/html" c))
+  (let ((*default-pathname-defaults* (component-pathname c))
+        (fn-sym (intern (string ":extract-documentation") (string ":cldoc")))
+        (op-sym (intern (string ":html") (string ":cldoc"))))
+    (funcall fn-sym op-sym "./doc/html" c)))
