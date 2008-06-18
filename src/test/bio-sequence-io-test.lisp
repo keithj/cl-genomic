@@ -33,14 +33,16 @@
 ;;         (read-bio-sequence stream :fasta :alphabet :dna
 ;;                            :virtualp :invalid-virtualp)))))
 
-(test bio-sequence-io/fasta/dna-simple/byte
+(test bio-sequence-io/fasta/dna-simple
   (with-open-file (fs (merge-pathnames "data/simple-dna1.fa")
                    :direction :input
                    :element-type 'base-char
                    :external-format :ascii)
     (let* ((stream (make-line-input-stream fs))
            (gen (make-input-gen stream :fasta :alphabet :dna))
+           (cur (current gen))
            (seq (next gen)))
+      (is (eql cur seq))
       (is (eql 'dna-sequence (type-of seq)))
       (is (eql (find-alphabet :dna) (alphabet-of seq)))
       (is-false (virtualp seq))
@@ -54,7 +56,9 @@
                    :external-format :ascii)
     (let* ((stream (make-line-input-stream fs))
            (gen (make-input-gen stream :fasta :alphabet :dna :virtual t))
+           (cur (current gen))
            (seq (next gen)))
+      (is (eql cur seq))
       (is (eql 'dna-sequence (type-of seq)))
       (is (eql (find-alphabet :dna) (alphabet-of seq)))
       (is-true (virtualp seq))
@@ -82,7 +86,9 @@
     (let* ((stream (make-line-input-stream fs))
            (gen (make-input-gen stream :fasta :alphabet :dna)))
       (dotimes (n 2)
-        (let ((seq (next gen)))
+        (let ((cur (current gen))
+              (seq (next gen)))
+          (is (eql cur seq))
           (is (eql 'dna-sequence (type-of seq)))
           (is (eql (find-alphabet :dna) (alphabet-of seq)))
           (is (= 280 (length-of seq)))
@@ -97,7 +103,9 @@
     (let* ((stream (make-line-input-stream fs))
            (gen (make-input-gen stream :fasta :alphabet :dna :virtual t)))
       (dotimes (n 2)
-        (let ((seq (next gen)))
+        (let ((cur (current gen))
+              (seq (next gen)))
+          (is (eql cur seq))
           (is (eql 'dna-sequence (type-of seq)))
           (is (eql (find-alphabet :dna) (alphabet-of seq)))
           (is-true (virtualp seq))
@@ -113,7 +121,25 @@
     (let* ((stream (make-line-input-stream fs))
            (gen (make-input-gen stream :fasta :alphabet :dna)))
       (dotimes (n 2)
-        (let ((seq (next gen)))
+        (let ((cur (current gen))
+              (seq (next gen)))
+          (is (eql cur seq))
+          (is (eql 'dna-sequence (type-of seq)))
+          (is (eql (find-alphabet :dna) (alphabet-of seq)))
+          (is (= 280 (length-of seq)))
+          (is (string= (format nil "Test~a" (1+ n)) (identity-of seq)))))
+      (is (null (next gen))))))
+
+(test bio-sequence-io/multifasta/byte
+  (with-open-file (fs (merge-pathnames "data/iupac-dna2.fa")
+                   :direction :input
+                   :element-type '(unsigned-byte 8))
+    (let* ((stream (make-line-input-stream fs))
+           (gen (make-input-gen stream :fasta :alphabet :dna)))
+      (dotimes (n 2)
+        (let ((cur (current gen))
+              (seq (next gen)))
+          (is (eql cur seq))
           (is (eql 'dna-sequence (type-of seq)))
           (is (eql (find-alphabet :dna) (alphabet-of seq)))
           (is (= 280 (length-of seq)))
@@ -131,7 +157,6 @@
                                 :parser parser)))
       (dotimes (n 2)
         (let ((seq (next gen)))
-          (listp seq)
           (is (eql :dna (gpu:assocdr :alphabet seq)))
           (is (= 280 (length (gpu:assocdr :residues seq))))
           (is (string= (format nil "Test~a" (1+ n))
@@ -145,8 +170,10 @@
                    :external-format :ascii)
     (let* ((stream (make-line-input-stream fs))
            (gen (make-input-gen stream :fastq :alphabet :dna)))
-      (do ((seq (next gen) (next gen)))
+      (do ((cur (current gen) (current gen))
+           (seq (next gen) (next gen)))
           ((null seq) t)
+        (is (eql cur seq))
         (is (eql 'dna-quality-sequence (type-of seq)))
         (is (eql (find-alphabet :dna) (alphabet-of seq)))
         (is (= 35 (length-of seq)))
@@ -161,12 +188,93 @@
            (parser (make-instance 'raw-sequence-parser))
            (gen (make-input-gen stream :fastq :alphabet :dna
                                 :parser parser)))
-       (do ((seq (next gen) (next gen)))
+       (do ((cur (current gen) (current gen))
+            (seq (next gen) (next gen)))
            ((null seq) t)
-         (listp seq)
+         (is (eql cur seq))
          (is (eql :dna (gpu:assocdr :alphabet seq)))
          (is (= 35 (length (gpu:assocdr :residues seq))))
          (is (= 35 (length (gpu:assocdr :quality seq))))
          (is (string= "IL13" (gpu:assocdr :identity seq)
                        :start2 0 :end2 4))))))
 
+(test bio-sequence-io/fastq/simple/byte
+  (with-open-file (fs (merge-pathnames "data/phred.fq")
+                   :direction :input
+                   :element-type '(unsigned-byte 8))
+    (let* ((stream (make-line-input-stream fs))
+           (gen (make-input-gen stream :fastq :alphabet :dna)))
+      (do ((cur (current gen) (current gen))
+           (seq (next gen) (next gen)))
+          ((null seq) t)
+        (is (eql cur seq))
+        (is (eql 'dna-quality-sequence (type-of seq)))
+        (is (eql (find-alphabet :dna) (alphabet-of seq)))
+        (is (= 35 (length-of seq)))
+        (is (string= "IL13" (identity-of seq) :start2 0 :end2 4))))))
+
+(test write-fasta-sequence
+  (let ((seq (make-instance 'dna-sequence :residues "acgtn"
+                            :identity "foo"))
+        (tmp-filespec (iou:make-tmp-pathname
+                       :tmpdir (merge-pathnames "data")
+                       :type "fa")))
+    (dolist (args '((nil "acgtn") ( :lowercase "acgtn") (:uppercase "ACGTN")))
+      (with-open-file (stream tmp-filespec :direction :io
+                       :element-type 'base-char
+                       :external-format :ascii)
+        (bio-sequence::write-fasta-sequence seq stream
+                                            :token-case (first args))
+        (finish-output stream)
+        (file-position stream 0)
+        (is (string= ">foo" (read-line stream)))
+        (is (string= (second args) (read-line stream))))
+      (delete-file tmp-filespec))))
+
+(test write-fastq-sequence
+  (let ((seq (make-instance 'dna-quality-sequence :residues "acgtn"
+                            :quality "<<<<<"
+                            :identity "foo"
+                            :metric :phred))
+        (tmp-filespec (iou:make-tmp-pathname
+                       :tmpdir (merge-pathnames "data")
+                       :type "fq")))
+    (dolist (args '((nil "acgtn") ( :lowercase "acgtn") (:uppercase "ACGTN")))
+      (with-open-file (stream tmp-filespec :direction :io
+                       :element-type 'base-char
+                       :external-format :ascii)
+        (bio-sequence::write-fastq-sequence seq stream
+                                            :token-case (first args))
+        (finish-output stream)
+        (file-position stream 0)
+        (is (string= "@foo" (read-line stream)))
+        (is (string= (second args) (read-line stream)))
+        (is (string= "+" (read-line stream)))
+        (is (string= "<<<<<" (read-line stream))))
+      (delete-file tmp-filespec))))
+
+(defun count-fastq-record (filespec)
+  (with-open-file (stream filespec :direction :input
+                   :element-type 'base-char
+                   :external-format :ascii)
+    (let ((gen (make-input-gen (make-line-input-stream stream) :fastq
+                               :alphabet :dna
+                               :metric :phred)))
+      (loop
+         as seq = (next gen)
+         count 1 into total
+         while (has-more-p gen)
+         finally (return total)))))
+
+(test split-fastq-file
+  (bio-sequence::split-fastq-file
+   (namestring
+    (merge-pathnames "data/phred.fq")) 2 (make-pathname-ext :type "fq"
+                                                            :separator #\.))
+
+  (dolist (args '(("data/phred.0.fq" 2)
+                  ("data/phred.1.fq" 2)
+                  ("data/phred.2.fq" 1)))
+    (let ((filespec (merge-pathnames (first args))))
+      (is (= (second args) (count-fastq-record filespec)))
+      (delete-file filespec))))

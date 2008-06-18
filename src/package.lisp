@@ -87,11 +87,13 @@
    #:anonymousp
    #:identity-of
    #:name-of
+   #:ambiguousp
    #:simplep
    #:virtualp
    #:size-of
    #:memberp
    #:tokens-of
+   #:explode-ambiguity
    #:encoded-index-of
    #:decoded-index-of
    #:alphabet-of

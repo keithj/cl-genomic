@@ -71,11 +71,19 @@ DECODER."
 (defmethod memberp ((alphabet alphabet) (char character))
   (contains-char-p (tokens-of alphabet) char))
 
+(defmethod explode-ambiguity ((alphabet (eql *dna*)) (char character))
+  (explode-ambiguity-aux char #'encode-dna-4bit #'decode-dna-4bit))
+
+(defmethod explode-ambiguity ((alphabet (eql *rna*)) (char character))
+  (explode-ambiguity-aux char #'encode-rna-4bit #'decode-rna-4bit))
+
+(defmethod ambiguousp ((alphabet alphabet) (char character))
+  (> (length (explode-ambiguity alphabet char)) 1))
+
 (defmethod simplep ((residues string) (alphabet alphabet))
-  (let ((simple (tokens-of alphabet)))
-    (loop
-       for residue across residues
-       always (find (char-downcase residue) simple))))
+  (loop
+     for residue across residues
+     never (ambiguousp alphabet residue)))
 
 (defmethod initialize-instance :after ((seq dna-sequence) &key)
   (initialize-seq seq #'ensure-encoded-4bit #'encode-dna-4bit))
@@ -451,3 +459,12 @@ index END."
     (copy-array residues start (1- end)
                 comp-seq 0 comp-fn)
     comp-seq))
+
+(defun explode-ambiguity-aux (char encoder decoder)
+  "Returns a list of the ambiguity characters represented by CHAR."
+  (let ((encoded (funcall encoder char)))
+   (loop
+      for b from 0 below (integer-length encoded)
+      when (logbitp b encoded)
+      collect (funcall decoder (ash 1 b)) into exploded
+      finally (return (sort exploded #'char<=)))))

@@ -28,6 +28,9 @@
                            (:file "bio-sequence-io-test"
                                   :depends-on ("package"
                                                "bio-sequence-test"))
+                           (:file "bio-sequence-encoding-test"
+                                  :depends-on ("package"
+                                               "bio-sequence-test"))
                            (:file "frames-test"
                                   :depends-on ("package"
                                                "bio-sequence-test"))))))

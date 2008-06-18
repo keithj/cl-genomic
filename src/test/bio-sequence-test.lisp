@@ -57,19 +57,6 @@
                  (tokens-of (make-instance 'alphabet
                                            :tokens tokens))))))
 
-;;; Encoding/decoding sequences
-(test encode/decode-dna-4bit
-  (let ((residues "tagcrykmswbdhvn"))
-    (loop for res across residues
-       do (is (char= res (bio-sequence::decode-dna-4bit
-                          (bio-sequence::encode-dna-4bit res)))))))
-
-(test encode/decode-rna-4bit
-  (let ((residues "uagcrykmswbdhvn"))
-    (loop for res across residues
-       do (is (char= res (bio-sequence::decode-rna-4bit
-                          (bio-sequence::encode-rna-4bit res)))))))
-
 ;;; Sequence constructors
 (test make-dna/rna
   (let ((seqs (list (make-instance 'dna-sequence
@@ -107,6 +94,14 @@
   (signals error
     (make-instance 'dna-sequence :residues "tagc" :length 99)))
 
+(test phred-quality
+  (let ((pvals '(0.1 0.01 0.001 0.0001 0.00001))
+        (quals '(10 20 30 40 50)))
+    (loop
+       for pval in pvals
+       for qual in quals
+       do (is (eql qual (phred-quality pval))))))
+
 (test make-quality-dna
   (let ((seqs (list (make-instance 'dna-quality-sequence ; unambiguous
                      :residues "agaatattctgaccccagttactttcaaga"
@@ -135,8 +130,16 @@
 ;;; Utility methods
 (test simplep/string
   (is-true (simplep "acgt" (find-alphabet :dna)))
-  (is-true (simplep "acgu" (find-alphabet :rna))))
+  (is-false (simplep "acgn" (find-alphabet :dna)))
+  (is-true (simplep "acgu" (find-alphabet :rna)))
+  (is-false (simplep "acgn" (find-alphabet :rna))))
 
+(test anonymousp
+  (is-true (anonymousp (make-instance 'dna-sequence
+                                      :residues "tagc")))
+  (is-false (anonymousp (make-instance 'dna-sequence
+                                      :residues "tagc"
+                                      :identity "test"))))
 
 ;;; Sequence accessors
 (test length-of/bio-sequence
@@ -330,6 +333,9 @@
        for q across (quality-of (subsequence seq 0 5))
        do (is (= 27 q)))))
 
+(test subsequence/virtual-sequence
+  (signals invalid-operation-error
+      (subsequence (make-instance 'dna-sequence :length 10) 1)))
 
 (test residue-frequencies/bio-sequence
   (let ((seq (make-instance 'dna-sequence
@@ -342,3 +348,14 @@
   (signals error
     (residue-frequencies (make-instance 'dna-sequence
                                         :length 10))))
+
+(test search-sequence
+  (let ((seq (make-instance 'dna-sequence
+                            :residues "tacgagtcgttttagcgcgattatataa"))
+        (sub (make-instance 'dna-sequence
+                            :residues "gtttt")))
+    (is (= 8 (search-sequence sub seq)))
+    (is (= 9 (search-sequence sub seq :start1 1)))
+    (is (= 8 (search-sequence sub seq :start2 1)))
+    (is (= 3 (search-sequence sub seq :end1 1)))
+    (is (null (search-sequence sub seq :end2 1)))))
