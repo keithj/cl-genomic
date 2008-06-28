@@ -17,6 +17,19 @@
 
 (in-package :cl-bio-test)
 
+(defun count-seq-records (filespec format)
+  (with-open-file (stream filespec :direction :input
+                   :element-type 'base-char
+                   :external-format :ascii)
+    (let ((gen (make-input-gen (make-line-input-stream stream) format
+                               :alphabet :dna
+                               :metric :phred)))
+      (loop
+         as seq = (next gen)
+         count 1 into total
+         while (has-more-p gen)
+         finally (return total)))))
+
 (fiveam:in-suite cl-bio-system:testsuite)
 
 ;;; Test reading unambiguous/IUPAC Fasta DNA/RNA
@@ -253,28 +266,40 @@
         (is (string= "<<<<<" (read-line stream))))
       (delete-file tmp-filespec))))
 
-(defun count-fastq-record (filespec)
-  (with-open-file (stream filespec :direction :input
-                   :element-type 'base-char
-                   :external-format :ascii)
-    (let ((gen (make-input-gen (make-line-input-stream stream) :fastq
-                               :alphabet :dna
-                               :metric :phred)))
-      (loop
-         as seq = (next gen)
-         count 1 into total
-         while (has-more-p gen)
-         finally (return total)))))
-
 (test split-fastq-file
-  (bio-sequence::split-fastq-file
-   (namestring
-    (merge-pathnames "data/phred.fq")) 2 (make-pathname-ext :type "fq"
-                                                            :separator #\.))
-
+  (let ((filespec (namestring (merge-pathnames "data/phred.fq"))))
+    (bio-sequence::split-fastq-file
+     filespec 2
+     (make-pathname-ext filespec :type "fq" :separator #\.)))
   (dolist (args '(("data/phred.0.fq" 2)
                   ("data/phred.1.fq" 2)
                   ("data/phred.2.fq" 1)))
-    (let ((filespec (merge-pathnames (first args))))
-      (is (= (second args) (count-fastq-record filespec)))
-      (delete-file filespec))))
+    (let ((chunk (merge-pathnames (first args))))
+      (is (= (second args) (count-seq-records chunk :fastq)))
+      (delete-file chunk))))
+
+(test split-sequence-file/fastq
+  (let ((filespec (namestring (merge-pathnames "data/phred.fq"))))
+    (split-sequence-file filespec :fastq
+                         (make-pathname-ext filespec
+                                            :type "fq" :separator #\.)
+                         :chunk-size 2))
+  (dolist (args '(("data/phred.0.fq" 2)
+                  ("data/phred.1.fq" 2)
+                  ("data/phred.2.fq" 1)))
+    (let ((chunk (merge-pathnames (first args))))
+      (is (= (second args) (count-seq-records chunk :fastq)))
+      (delete-file chunk))))
+
+(test split-sequence-file/fasta
+  (let ((filespec (namestring (merge-pathnames "data/split-test-dna1.fa"))))
+    (split-sequence-file filespec :fasta
+                         (make-pathname-ext filespec
+                                            :type "fa" :separator #\.)
+                         :chunk-size 2))
+  (dolist (args '(("data/split-test-dna1.0.fa" 2)
+                  ("data/split-test-dna1.1.fa" 2)
+                  ("data/split-test-dna1.2.fa" 1)))
+    (let ((chunk (merge-pathnames (first args))))
+      (is (= (second args) (count-seq-records chunk :fasta)))
+      (delete-file chunk))))

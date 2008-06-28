@@ -38,6 +38,15 @@
   (lambda (bio-sequence)
     (write-fastq-sequence bio-sequence stream :token-case token-case)))
 
+
+(defmethod split-sequence-file (filespec (format (eql :fastq))
+                                generator &key (chunk-size 1))
+  (let ((file-pathname (pathname filespec)))
+    (with-open-file (stream file-pathname :direction :input
+                     :element-type 'base-char
+                     :external-format :ascii)
+      (split-sequence-stream stream #'write-n-fastq chunk-size generator))))
+
 (defmethod read-fastq-sequence ((stream binary-line-input-stream)
                                 (alphabet symbol)
                                 (parser quality-parser-mixin))
@@ -108,42 +117,16 @@ the quality header and the quality."
     (values residues quality-header quality)))
 
 (defun split-fastq-file (filespec chunk-size generator)
-  "Splits Fastq file identified by FILESPEC into automatically named
-files, each except the last, containing up to CHUNK-SIZE records. See
-also iou:pathname-generator and iou:pathname-extender ."
-  (let ((file-pathname (pathname filespec)))
-    (with-open-file (in file-pathname :direction :input
-                     :element-type 'base-char
-                     :external-format :ascii)
-      (do* ((stream (make-line-input-stream in))
-            (chunk-pathname (funcall generator filespec)
-                            (funcall generator filespec))
-            (n (write-n-fastq stream chunk-size chunk-pathname)
-             (write-n-fastq stream chunk-size chunk-pathname)))
-           ((zerop n))))))
+  (split-sequence-file filespec :fastq generator :chunk-size chunk-size))
 
 (defun write-n-fastq (stream n pathname)
   "Reads up to N Fastq records from STREAM and writes them into a new
 file of PATHNAME. Returns the number of records actually written,
 which may be 0 if STREAM contained no further records."
-  (declare (optimize (speed 3)))
-  (let ((num-written
-         (with-open-file (out pathname :direction :output
-                          :if-exists :supersede
-                          :element-type 'base-char
-                          :external-format :ascii)
-           (loop
-              with gen = (make-input-gen stream :fastq :alphabet :dna
-                                         :parser (make-instance
-                                                  'raw-sequence-parser))
-              for count from 0 below n
-              for raw = (next gen) then (next gen)
-              while raw
-              do (write-raw-fastq raw out)
-              finally (return count)))))
-  (when (zerop num-written)
-    (delete-file pathname))
-  num-written))
+  (let ((gen (make-input-gen stream :fastq :alphabet :dna
+                             :parser (make-instance
+                                      'raw-sequence-parser))))
+    (write-n-raw-sequences gen #'write-raw-fastq n pathname)))
 
 (defun byte-fastq-header-p (bytes)
   "Returns T if BYTES are a Fastq header (start with the character
@@ -164,3 +147,16 @@ character code for '+'), or NIL otherwise."
  "Returns T if STR is a Fastq header (starts with the character '@'),
 or NIL otherwise."
   (starts-with-char-p str #\+))
+
+(defun concat-quality-arrays (quality-arrays)
+  (let ((new-quality (make-array (reduce #'+ quality-arrays :key #'length)
+                                 :element-type 'quality-score))
+        (num-arrays (length quality-arrays)))
+    (do ((i 0 (1+ i))
+         (offset 0))
+        ((= i num-arrays) new-quality)
+      (let ((quality-array (aref quality-arrays i)))
+        (unless (zerop (length quality-array))
+          (copy-array quality-array 0 (1- (length quality-array))
+                      new-quality offset)
+          (incf offset (length quality-array)))))))

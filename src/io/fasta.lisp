@@ -48,6 +48,14 @@ becomes full of chunks of sequence tokens.")
   (lambda (bio-sequence)
     (write-fasta-sequence bio-sequence stream :token-case token-case)))
 
+(defmethod split-sequence-file (filespec (format (eql :fasta))
+                                generator &key (chunk-size 1))
+  (let ((file-pathname (pathname filespec)))
+    (with-open-file (stream file-pathname :direction :input
+                     :element-type 'base-char
+                     :external-format :ascii)
+      (split-sequence-stream stream #'write-n-fasta chunk-size generator))))
+
 (defmethod read-fasta-sequence ((stream binary-line-input-stream)
                                 (alphabet symbol)
                                 (parser bio-sequence-parser))
@@ -110,15 +118,19 @@ becomes full of chunks of sequence tokens.")
                       :token-case token-case)
            stream))))
 
-(defun byte-fasta-header-p (bytes)
-  "Returns T if BYTES are a Fasta header (start with the character
-code for '>'), or NIL otherwise."
-  (starts-with-byte-p bytes (char-code #\>)))
-
-(defun char-fasta-header-p (str)
-  "Returns T if STR is a Fasta header (starts with the character
-'>'), or NIL otherwise."
-  (starts-with-char-p str #\>))
+(defun write-raw-fasta (raw stream)
+  "Writes sequence data RAW to STREAM in Fasta format. The alist RAW
+must contain keys and values as created by {defclass raw-sequence-parser} ."
+  (let* ((*print-pretty* nil)
+         (residues (assocdr :residues raw))
+         (len (length residues)))
+    (write-char #\> stream)
+    (write-line (assocdr :identity raw) stream)
+    (loop
+       for i from 0 below len by *fasta-line-width*
+       do (write-line residues stream
+                      :start i
+                      :end (min len (+ i *fasta-line-width*))))))
 
 (defun parse-fasta-header (str)
   "Performs a basic parse of a Fasta header string STR by removing the
@@ -141,3 +153,24 @@ cases where the identity, description, or both are empty strings."
                          :displaced-to str
                          :displaced-index-offset index)
          (make-string 0 :element-type str-elt-type))))))
+
+(defun write-n-fasta (stream n pathname)
+  "Reads up to N Fasta records from STREAM and writes them into a new
+file of PATHNAME. Returns the number of records actually written,
+which may be 0 if STREAM contained no further records."
+  (let ((gen (make-input-gen stream :fasta :alphabet :dna
+                             :parser (make-instance
+                                      'raw-sequence-parser))))
+    (write-n-raw-sequences gen #'write-raw-fasta n pathname)))
+
+(defun byte-fasta-header-p (bytes)
+  "Returns T if BYTES are a Fasta header (start with the character
+code for '>'), or NIL otherwise."
+  (starts-with-byte-p bytes (char-code #\>)))
+
+(defun char-fasta-header-p (str)
+  "Returns T if STR is a Fasta header (starts with the character
+'>'), or NIL otherwise."
+  (starts-with-char-p str #\>))
+
+

@@ -159,7 +159,7 @@
                        (concat-into-sb-string chunks)))))
       (make-instance class
                      :identity (parsed-identity parser)
-                     ;; :description
+                     ;; FIXME -- :description
                      :residues residues))))
 
 (defmethod make-bio-sequence ((parser virtual-sequence-parser))
@@ -168,7 +168,7 @@
                  (:rna 'rna-sequence))))
     (make-instance class
                    :identity (parsed-identity parser)
-                   ;; :description
+                   ;; FIXME -- :description
                    :length (parsed-length parser))))
 
 (defmethod make-bio-sequence ((parser quality-sequence-parser))
@@ -182,6 +182,9 @@
     (when (zerop (length quality-chunks))
       (error 'invalid-operation-error
              :text "no quality data provided"))
+    ;; FIXME -- On sbcl with-output-to-string is apparently very fast
+    ;; for this sort of operation. Maybe faster than pre-allocating a
+    ;; string and copying into it?
     (let ((residues (etypecase (aref residue-chunks 0)
                       (string (concat-strings residue-chunks))
                       ((array (unsigned-byte 8))
@@ -191,20 +194,42 @@
                      (concat-quality-arrays quality-chunks))))
       (make-instance class
                      :identity (parsed-identity parser)
-                     ;; :description
+                     ;; FIXME -- :description
                      :residues residues
                      :quality quality
                      :metric (parsed-metric parser)))))
 
-(defun concat-quality-arrays (quality-arrays)
-  (let ((new-quality (make-array (reduce #'+ quality-arrays :key #'length)
-                                 :element-type 'quality-score))
-        (num-arrays (length quality-arrays)))
-    (do ((i 0 (1+ i))
-         (offset 0))
-        ((= i num-arrays) new-quality)
-      (let ((quality-array (aref quality-arrays i)))
-        (unless (zerop (length quality-array))
-          (copy-array quality-array 0 (1- (length quality-array))
-                      new-quality offset)
-          (incf offset (length quality-array)))))))
+(defun split-sequence-stream (stream writer n generator)
+  "Reads sequence records from STREAM and uses function WRITER to
+write N records each to new files whose pathnames are created by
+function GENERATOR."
+  (loop
+     with in = (make-line-input-stream stream)
+     as num-written = (funcall writer in n (funcall generator))
+     until (zerop num-written)))
+
+(defun write-n-raw-sequences (generator writer n pathname)
+  "Reads up to N raw sequence records by calling closure GENERATOR and
+writes them into a new file of PATHNAME. Returns the number of records
+actually written, which may be 0 if STREAM contained no further
+records. WRITER is a function capable of writing an alist of raw data
+contain keys and values as created by {defclass raw-sequence-parser} ,
+for example, {defun write-raw-fasta} and {defun write-raw-fastq} ."
+  (declare (optimize (speed 3)))
+  (declare (type function writer))
+  (let ((num-written
+         (with-open-file (out pathname :direction :output
+                          :if-exists :supersede
+                          :element-type 'base-char
+                          :external-format :ascii)
+           (loop
+              for count of-type fixnum from 0 below n
+              ;; for raw = (next generator) then (next generator)
+              as raw = (next generator)
+              while raw
+              do (funcall writer raw out)
+              finally (return count)))))
+  (when (zerop num-written)
+    (delete-file pathname))
+  num-written))
+

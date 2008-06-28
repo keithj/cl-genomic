@@ -124,6 +124,8 @@
    #:object-quality
    #:end-object
 
+   #:split-sequence-file
+   
    #:parsed-alphabet
    #:parsed-identity
    #:parsed-description
