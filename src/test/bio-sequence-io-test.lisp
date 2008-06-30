@@ -266,18 +266,6 @@
         (is (string= "<<<<<" (read-line stream))))
       (delete-file tmp-filespec))))
 
-(test split-fastq-file
-  (let ((filespec (namestring (merge-pathnames "data/phred.fq"))))
-    (bio-sequence::split-fastq-file
-     filespec 2
-     (make-pathname-ext filespec :type "fq" :separator #\.)))
-  (dolist (args '(("data/phred.0.fq" 2)
-                  ("data/phred.1.fq" 2)
-                  ("data/phred.2.fq" 1)))
-    (let ((chunk (merge-pathnames (first args))))
-      (is (= (second args) (count-seq-records chunk :fastq)))
-      (delete-file chunk))))
-
 (test split-sequence-file/fastq
   (let ((filespec (namestring (merge-pathnames "data/phred.fq"))))
     (split-sequence-file filespec :fastq
@@ -286,7 +274,8 @@
                          :chunk-size 2))
   (dolist (args '(("data/phred.0.fq" 2)
                   ("data/phred.1.fq" 2)
-                  ("data/phred.2.fq" 1)))
+                  ("data/phred.2.fq" 2)
+                  ("data/phred.3.fq" 1)))
     (let ((chunk (merge-pathnames (first args))))
       (is (= (second args) (count-seq-records chunk :fastq)))
       (delete-file chunk))))
@@ -299,7 +288,8 @@
                          :chunk-size 2))
   (dolist (args '(("data/split-test-dna1.0.fa" 2)
                   ("data/split-test-dna1.1.fa" 2)
-                  ("data/split-test-dna1.2.fa" 1)))
+                  ("data/split-test-dna1.2.fa" 2)
+                  ("data/split-test-dna1.3.fa" 1)))
     (let ((chunk (merge-pathnames (first args))))
       (is (= (second args) (count-seq-records chunk :fasta)))
       (delete-file chunk))))

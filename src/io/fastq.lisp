@@ -29,8 +29,7 @@
         (:current current)
         (:next (prog1
                    current
-                 (setf current
-                       (read-fastq-sequence stream alphabet parser))))
+                 (setf current (read-fastq-sequence stream alphabet parser))))
         (:more (not (null current)))))))
 
 (defmethod make-output-con ((stream stream) (format (eql :fastq))
@@ -40,12 +39,16 @@
 
 
 (defmethod split-sequence-file (filespec (format (eql :fastq))
-                                generator &key (chunk-size 1))
+                                pathname-gen &key (chunk-size 1))
   (let ((file-pathname (pathname filespec)))
     (with-open-file (stream file-pathname :direction :input
                      :element-type 'base-char
                      :external-format :ascii)
-      (split-sequence-stream stream #'write-n-fastq chunk-size generator))))
+      (split-from-generator
+       (make-input-gen (make-line-input-stream stream) :fastq
+                       :parser (make-instance 'raw-sequence-parser))
+       #'write-raw-fastq
+       chunk-size pathname-gen))))
 
 (defmethod read-fastq-sequence ((stream binary-line-input-stream)
                                 (alphabet symbol)
@@ -115,18 +118,6 @@ the quality header and the quality."
       (error 'malformed-record-error :text
              "Incomplete Fastq record."))
     (values residues quality-header quality)))
-
-(defun split-fastq-file (filespec chunk-size generator)
-  (split-sequence-file filespec :fastq generator :chunk-size chunk-size))
-
-(defun write-n-fastq (stream n pathname)
-  "Reads up to N Fastq records from STREAM and writes them into a new
-file of PATHNAME. Returns the number of records actually written,
-which may be 0 if STREAM contained no further records."
-  (let ((gen (make-input-gen stream :fastq :alphabet :dna
-                             :parser (make-instance
-                                      'raw-sequence-parser))))
-    (write-n-raw-sequences gen #'write-raw-fastq n pathname)))
 
 (defun byte-fastq-header-p (bytes)
   "Returns T if BYTES are a Fastq header (start with the character

@@ -49,12 +49,16 @@ becomes full of chunks of sequence tokens.")
     (write-fasta-sequence bio-sequence stream :token-case token-case)))
 
 (defmethod split-sequence-file (filespec (format (eql :fasta))
-                                generator &key (chunk-size 1))
+                                pathname-gen &key (chunk-size 1))
   (let ((file-pathname (pathname filespec)))
     (with-open-file (stream file-pathname :direction :input
                      :element-type 'base-char
                      :external-format :ascii)
-      (split-sequence-stream stream #'write-n-fasta chunk-size generator))))
+      (split-from-generator
+       (make-input-gen (make-line-input-stream stream) :fasta
+                       :parser (make-instance 'raw-sequence-parser))
+       #'write-raw-fasta
+       chunk-size pathname-gen))))
 
 (defmethod read-fasta-sequence ((stream binary-line-input-stream)
                                 (alphabet symbol)
@@ -153,15 +157,6 @@ cases where the identity, description, or both are empty strings."
                          :displaced-to str
                          :displaced-index-offset index)
          (make-string 0 :element-type str-elt-type))))))
-
-(defun write-n-fasta (stream n pathname)
-  "Reads up to N Fasta records from STREAM and writes them into a new
-file of PATHNAME. Returns the number of records actually written,
-which may be 0 if STREAM contained no further records."
-  (let ((gen (make-input-gen stream :fasta :alphabet :dna
-                             :parser (make-instance
-                                      'raw-sequence-parser))))
-    (write-n-raw-sequences gen #'write-raw-fasta n pathname)))
 
 (defun byte-fasta-header-p (bytes)
   "Returns T if BYTES are a Fasta header (start with the character

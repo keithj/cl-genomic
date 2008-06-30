@@ -177,9 +177,10 @@ TOKEN-CASE keyword is used to override the default character case for
 printing sequence residues, which is lowercase for DNA or RNA and
 uppercase for amino acids."))
 
-(defgeneric split-sequence-file (filespec format generator
+(defgeneric split-sequence-file (filespec format pathname-gen
                                  &key chunk-size)
   (:documentation "Splits sequence file identified by FILESPEC into
 automatically named files, each containing up to CHUNK-SIZE
-records. The new file names are created by the function GENERATOR. See
-iou:pathname-generator and iou:pathname-extender ."))
+records. The new file names are created by the function
+PATHNAME-GEN. See iou:pathname-generator and iou:pathname-extender
+."))

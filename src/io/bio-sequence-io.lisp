@@ -144,6 +144,14 @@
                             (residues vector))
   (incf (parsed-length parser) (length residues)))
 
+(defmethod object-identity ((parser bio-sequence-indexer)
+                            (identity string))
+  nil)
+
+(defmethod object-residues ((parser bio-sequence-indexer)
+                            residues)
+  nil)
+
 ;;; CLOS instance constructors
 (defmethod make-bio-sequence ((parser simple-sequence-parser))
   (let ((class (ecase (parsed-alphabet parser)
@@ -199,17 +207,14 @@
                      :quality quality
                      :metric (parsed-metric parser)))))
 
-(defun split-sequence-stream (stream writer n generator)
-  "Reads sequence records from STREAM and uses function WRITER to
-write N records each to new files whose pathnames are created by
-function GENERATOR."
+(defun split-from-generator (input-gen writer n pathname-gen)
   (loop
-     with in = (make-line-input-stream stream)
-     as num-written = (funcall writer in n (funcall generator))
+     as num-written = (write-n-raw-sequences input-gen writer n
+                                             (funcall pathname-gen))
      until (zerop num-written)))
 
-(defun write-n-raw-sequences (generator writer n pathname)
-  "Reads up to N raw sequence records by calling closure GENERATOR and
+(defun write-n-raw-sequences (input-gen writer n pathname)
+  "Reads up to N raw sequence records by calling closure INPUT-GEN and
 writes them into a new file of PATHNAME. Returns the number of records
 actually written, which may be 0 if STREAM contained no further
 records. WRITER is a function capable of writing an alist of raw data
@@ -217,6 +222,11 @@ contain keys and values as created by {defclass raw-sequence-parser} ,
 for example, {defun write-raw-fasta} and {defun write-raw-fastq} ."
   (declare (optimize (speed 3)))
   (declare (type function writer))
+  (unless (plusp n)
+    (error 'invalid-argument-error
+           :params 'n
+           :args n
+           :text "n must be a positive number"))
   (let ((num-written
          (with-open-file (out pathname :direction :output
                           :if-exists :supersede
@@ -224,12 +234,10 @@ for example, {defun write-raw-fasta} and {defun write-raw-fastq} ."
                           :external-format :ascii)
            (loop
               for count of-type fixnum from 0 below n
-              ;; for raw = (next generator) then (next generator)
-              as raw = (next generator)
+              as raw = (next input-gen)
               while raw
               do (funcall writer raw out)
               finally (return count)))))
-  (when (zerop num-written)
-    (delete-file pathname))
-  num-written))
-
+    (when (zerop num-written)
+      (delete-file pathname))
+    num-written))

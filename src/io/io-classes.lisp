@@ -39,7 +39,9 @@ sequence data with additional residue quality information."))
         :documentation "The raw sequence data parsed from the input
 stream."))
   (:documentation "A parser specialised for processing raw biological
-sequence data."))
+sequence data. This class is typically used for simple reformatting,
+splitting or counting operations where making CLOS objects is not
+desirable."))
 
 (defclass simple-sequence-parser (bio-sequence-parser)
   ((alphabet :initform nil
@@ -59,7 +61,7 @@ the input stream.")
              :documentation "The sequence residues parsed from the
 input stream."))
   (:documentation "A parser specialised for processing biological
-sequence data to build CLOS instances."))
+sequence data to build CLOS objects."))
 
 (defclass quality-sequence-parser (simple-sequence-parser
                                    quality-parser-mixin)
@@ -68,7 +70,7 @@ sequence data to build CLOS instances."))
             :documentation "The sequence quality data parsed from the
 input stream."))
   (:documentation "A parser specialised for processing biological
-sequence data with quality to build CLOS instances."))
+sequence data with quality to build CLOS objects."))
 
 (defclass virtual-sequence-parser (simple-sequence-parser)
   ((length :initform 0
@@ -76,6 +78,8 @@ sequence data with quality to build CLOS instances."))
            :documentation "The sequence length parsed from the input
 stream."))
   (:documentation "A parser specialised for processing biological
-sequence data to build CLOS instances that do not contain explicit
+sequence data to build CLOS objects that do not contain explicit
 residue data."))
 
+(defclass bio-sequence-indexer (bio-sequence-parser)
+  ())
