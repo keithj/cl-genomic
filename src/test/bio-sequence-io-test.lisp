@@ -30,21 +30,8 @@
          while (has-more-p gen)
          finally (return total)))))
 
-(fiveam:in-suite cl-bio-system:testsuite)
 
-;;; Test reading unambiguous/IUPAC Fasta DNA/RNA
-;; (test read-bio-sequence/interface
-;;   (with-open-file (fs (merge-pathnames "data/simple-dna1.fa")
-;;                    :direction :input
-;;                    :element-type '(unsigned-byte 8))
-;;     (let ((stream (make-line-input-stream fs)))
-;;       (signals error
-;;         (read-bio-sequence stream :fasta :alphabet nil))
-;;       (signals error
-;;         (read-bio-sequence stream :fasta :alphabet :invalid-alphabet))
-;;       (signals error
-;;         (read-bio-sequence stream :fasta :alphabet :dna
-;;                            :virtualp :invalid-virtualp)))))
+(fiveam:in-suite cl-bio-system:testsuite)
 
 (test bio-sequence-io/fasta/dna-simple
   (with-open-file (fs (merge-pathnames "data/simple-dna1.fa")
@@ -143,22 +130,6 @@
           (is (string= (format nil "Test~a" (1+ n)) (identity-of seq)))))
       (is (null (next gen))))))
 
-(test bio-sequence-io/multifasta/byte
-  (with-open-file (fs (merge-pathnames "data/iupac-dna2.fa")
-                   :direction :input
-                   :element-type '(unsigned-byte 8))
-    (let* ((stream (make-line-input-stream fs))
-           (gen (make-input-gen stream :fasta :alphabet :dna)))
-      (dotimes (n 2)
-        (let ((cur (current gen))
-              (seq (next gen)))
-          (is (eql cur seq))
-          (is (eql 'dna-sequence (type-of seq)))
-          (is (eql (find-alphabet :dna) (alphabet-of seq)))
-          (is (= 280 (length-of seq)))
-          (is (string= (format nil "Test~a" (1+ n)) (identity-of seq)))))
-      (is (null (next gen))))))
-
 (test bio-sequence-io/multifasta/raw
   (with-open-file (fs (merge-pathnames "data/iupac-dna2.fa")
                    :direction :input
@@ -211,20 +182,24 @@
          (is (string= "IL13" (gpu:assocdr :identity seq)
                        :start2 0 :end2 4))))))
 
-(test bio-sequence-io/fastq/simple/byte
-  (with-open-file (fs (merge-pathnames "data/phred.fq")
+(test bio-sequence-io/fasta/error
+  (with-open-file (fs (merge-pathnames "data/phred.fq") ; fastq!
                    :direction :input
-                   :element-type '(unsigned-byte 8))
-    (let* ((stream (make-line-input-stream fs))
-           (gen (make-input-gen stream :fastq :alphabet :dna)))
-      (do ((cur (current gen) (current gen))
-           (seq (next gen) (next gen)))
-          ((null seq) t)
-        (is (eql cur seq))
-        (is (eql 'dna-quality-sequence (type-of seq)))
-        (is (eql (find-alphabet :dna) (alphabet-of seq)))
-        (is (= 35 (length-of seq)))
-        (is (string= "IL13" (identity-of seq) :start2 0 :end2 4))))))
+                   :element-type 'base-char
+                   :external-format :ascii)
+    (signals bio-sequence-io-error
+        (make-input-gen (make-line-input-stream fs) :fasta
+                        :alphabet :dna))))
+
+(test bio-sequence-io/fastq/error
+  (with-open-file (fs (merge-pathnames "data/simple-dna1.fa") ; fasta!
+                   :direction :input
+                   :element-type 'base-char
+                   :external-format :ascii)
+    (signals bio-sequence-io-error
+      (make-input-gen (make-line-input-stream fs) :fastq
+                      :alphabet :dna
+                      :metric :phred))))
 
 (test write-fasta-sequence
   (let ((seq (make-instance 'dna-sequence :residues "acgtn"
@@ -252,7 +227,7 @@
         (tmp-filespec (iou:make-tmp-pathname
                        :tmpdir (merge-pathnames "data")
                        :type "fq")))
-    (dolist (args '((nil "acgtn") ( :lowercase "acgtn") (:uppercase "ACGTN")))
+    (dolist (args '((nil "acgtn") (:lowercase "acgtn") (:uppercase "ACGTN")))
       (with-open-file (stream tmp-filespec :direction :io
                        :element-type 'base-char
                        :external-format :ascii)

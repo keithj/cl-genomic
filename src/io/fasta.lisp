@@ -63,7 +63,7 @@ becomes full of chunks of sequence tokens.")
 (defmethod read-fasta-sequence ((stream character-line-input-stream)
                                 (alphabet symbol)
                                 (parser bio-sequence-parser))
-  (let ((seq-header (find-line stream #'content-string-p)))
+  (let ((seq-header (find-line stream #'content-string-p))) ; skip whitespace
     (cond ((eql :eof seq-header)
            nil)
           ((char-fasta-header-p seq-header)

@@ -35,6 +35,10 @@
    #:*default-knowledgebase*
    
    ;; Conditions
+   #:bio-sequence-error
+   #:bio-sequence-warning
+   #:bio-sequence-io-error
+   #:bio-sequence-op-error
    #:knowledgebase-error
 
    ;; Functions

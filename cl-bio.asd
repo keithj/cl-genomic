@@ -39,6 +39,8 @@
                           :pathname "src/"
                           :components
                           ((:file "package")
+                           (:file "conditions"
+                                  :depends-on ("package"))
                            (:file "bio-sequence-encoding"
                                   :depends-on ("package"))
                            (:file "bio-alphabets"
