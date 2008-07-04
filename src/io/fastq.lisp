@@ -53,18 +53,24 @@
 (defmethod read-fastq-sequence ((stream character-line-input-stream)
                                 (alphabet symbol)
                                 (parser quality-parser-mixin))
-  (let ((seq-header (find-line stream #'char-fastq-header-p)))
-    (if (vectorp seq-header)
-        (multiple-value-bind (residues quality-header quality)
-            (parse-fastq-record stream #'char-fastq-quality-header-p)
-          (declare (ignore quality-header))
-          (begin-object parser)
-          (object-alphabet parser alphabet)
-          (object-identity parser (string-left-trim '(#\@) seq-header))
-          (object-residues parser residues)
-          (object-quality parser quality)
-          (end-object parser))
-      nil)))
+  (let ((seq-header (find-line stream #'content-string-p))) ; skip whitespace
+    (cond ((eql :eof seq-header)
+           nil)
+          ((char-fastq-header-p seq-header)
+           (multiple-value-bind (residues quality-header quality)
+               (parse-fastq-record stream #'char-fastq-quality-header-p)
+             (declare (ignore quality-header))
+             (begin-object parser)
+             (object-alphabet parser alphabet)
+             (object-identity parser (string-left-trim '(#\@) seq-header))
+             (object-residues parser residues)
+             (object-quality parser quality)
+             (end-object parser)))
+          (t
+           (error 'bio-sequence-io-error
+                  :text (format nil
+                                "~s is not recognised as as Fastq header"
+                                seq-header))))))
 
 (defmethod write-fastq-sequence ((seq dna-quality-sequence) stream
                                  &key token-case)

@@ -63,26 +63,32 @@ becomes full of chunks of sequence tokens.")
 (defmethod read-fasta-sequence ((stream character-line-input-stream)
                                 (alphabet symbol)
                                 (parser bio-sequence-parser))
-  (let ((seq-header (find-line stream #'char-fasta-header-p)))
-    (if (vectorp seq-header)
-        (multiple-value-bind (identity description)
-            (parse-fasta-header seq-header)
-          (begin-object parser)
-          (object-alphabet parser alphabet)
-          (object-identity parser identity)
-          (object-description parser description)
-          (loop
-             as line = (stream-read-line stream)
-             with offset = 0
-             while (vectorp line)
-             until (char-fasta-header-p line)
-             do (progn
-                  (object-residues parser line)
-                  (incf offset (length line)))
-             finally (when (vectorp line) ; push back the new header
-                       (push-line stream line)))
-          (end-object parser))
-      nil)))
+  (let ((seq-header (find-line stream #'content-string-p)))
+    (cond ((eql :eof seq-header)
+           nil)
+          ((char-fasta-header-p seq-header)
+           (multiple-value-bind (identity description)
+               (parse-fasta-header seq-header)
+             (begin-object parser)
+             (object-alphabet parser alphabet)
+             (object-identity parser identity)
+             (object-description parser description)
+             (loop
+                as line = (stream-read-line stream)
+                with offset = 0
+                while (not (eql :eof line))
+                until (char-fasta-header-p line)
+                do (progn
+                     (object-residues parser line)
+                     (incf offset (length line)))
+                finally (unless (eql :eof line)
+                          (push-line stream line))) ; push back the new header
+             (end-object parser)))
+          (t
+           (error 'bio-sequence-io-error
+                  :text (format nil
+                                "~s is not recognised as as Fasta header"
+                                seq-header))))))
 
 (defmethod write-fasta-sequence ((seq bio-sequence) stream
                                  &key token-case) 
@@ -109,7 +115,7 @@ must contain keys and values as created by {defclass raw-sequence-parser} ."
     (loop
        for i from 0 below len by *fasta-line-width*
        do (write-line residues stream
-                      :start ib
+                      :start i
                       :end (min len (+ i *fasta-line-width*))))))
 
 (defun parse-fasta-header (str)
