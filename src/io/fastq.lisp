@@ -50,22 +50,6 @@
        #'write-raw-fastq
        chunk-size pathname-gen))))
 
-(defmethod read-fastq-sequence ((stream binary-line-input-stream)
-                                (alphabet symbol)
-                                (parser quality-parser-mixin))
-  (let ((seq-header (find-line stream #'byte-fastq-header-p)))
-    (if (vectorp seq-header)
-        (multiple-value-bind (residues quality-header quality)
-            (parse-fastq-record stream #'byte-fastq-quality-header-p)
-          (declare (ignore quality-header))
-          (begin-object parser)
-          (object-alphabet parser alphabet)
-          (object-identity parser (make-sb-string seq-header 1))
-          (object-residues parser (make-sb-string residues))
-          (object-quality parser (make-sb-string quality))
-          (end-object parser))
-      nil)))
-
 (defmethod read-fastq-sequence ((stream character-line-input-stream)
                                 (alphabet symbol)
                                 (parser quality-parser-mixin))
@@ -119,20 +103,10 @@ the quality header and the quality."
              "Incomplete Fastq record."))
     (values residues quality-header quality)))
 
-(defun byte-fastq-header-p (bytes)
-  "Returns T if BYTES are a Fastq header (start with the character
-code for '@'), or NIL otherwise."
-  (starts-with-byte-p bytes (char-code #\@)))
-
 (defun char-fastq-header-p (str)
   "Returns T if STR is a Fastq header (starts with the character '@'),
 or NIL otherwise."
   (starts-with-char-p str #\@))
-
-(defun byte-fastq-quality-header-p (bytes)
-  "Returns T if BYTES are a Fastq quality header (start with the
-character code for '+'), or NIL otherwise."
-  (starts-with-byte-p bytes (char-code #\+)))
 
 (defun char-fastq-quality-header-p (str)
  "Returns T if STR is a Fastq header (starts with the character '@'),

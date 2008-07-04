@@ -60,30 +60,6 @@ becomes full of chunks of sequence tokens.")
        #'write-raw-fasta
        chunk-size pathname-gen))))
 
-(defmethod read-fasta-sequence ((stream binary-line-input-stream)
-                                (alphabet symbol)
-                                (parser bio-sequence-parser))
-  (let ((seq-header (find-line stream #'byte-fasta-header-p)))
-    (if (vectorp seq-header)
-        (multiple-value-bind (identity description)
-            (parse-fasta-header (make-sb-string seq-header))
-          (begin-object parser)
-          (object-alphabet parser alphabet)
-          (object-identity parser identity)
-          (object-description parser description)
-          (loop
-             as line = (stream-read-line stream)
-             with offset = 0
-             while (vectorp line)
-             until (byte-fasta-header-p line)
-             do (progn
-                  (object-residues parser (make-sb-string line))
-                  (incf offset (length line)))
-             finally (when (vectorp line) ; push back the new header
-                       (push-line stream line)))
-          (end-object parser))
-      nil)))
-
 (defmethod read-fasta-sequence ((stream character-line-input-stream)
                                 (alphabet symbol)
                                 (parser bio-sequence-parser))
@@ -133,7 +109,7 @@ must contain keys and values as created by {defclass raw-sequence-parser} ."
     (loop
        for i from 0 below len by *fasta-line-width*
        do (write-line residues stream
-                      :start i
+                      :start ib
                       :end (min len (+ i *fasta-line-width*))))))
 
 (defun parse-fasta-header (str)
@@ -157,11 +133,6 @@ cases where the identity, description, or both are empty strings."
                          :displaced-to str
                          :displaced-index-offset index)
          (make-string 0 :element-type str-elt-type))))))
-
-(defun byte-fasta-header-p (bytes)
-  "Returns T if BYTES are a Fasta header (start with the character
-code for '>'), or NIL otherwise."
-  (starts-with-byte-p bytes (char-code #\>)))
 
 (defun char-fasta-header-p (str)
   "Returns T if STR is a Fasta header (starts with the character
