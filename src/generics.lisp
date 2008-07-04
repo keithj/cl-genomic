@@ -184,3 +184,9 @@ automatically named files, each containing up to CHUNK-SIZE
 records. The new file names are created by the function
 PATHNAME-GEN. See iou:pathname-generator and iou:pathname-extender
 ."))
+
+(defgeneric convert-sequence-file (in-filespec in-format
+                                   out-filespec out-format)
+  (:documentation "Converts the sequence data in the file identified
+by IN-FILESPEC in format IN-FORMAT, to OUT-FORMAT, writing the data to
+a new file identified by OUT-FILESPEC."))

@@ -293,3 +293,27 @@
     (let ((chunk (merge-pathnames (first args))))
       (is (= (second args) (count-seq-records chunk :fasta)))
       (delete-file chunk))))
+
+(test convert-sequence-file/fastq->fasta
+  (let ((in-filespec (merge-pathnames "data/phred.fq"))
+        (out-filespec (namestring (iou:make-tmp-pathname
+                                   :tmpdir (merge-pathnames "data")
+                                   :type "fa"))))
+    (convert-sequence-file in-filespec :fastq out-filespec :fasta)
+    (with-open-file (fqs in-filespec :direction :input)
+      (with-open-file (fas out-filespec :direction :input)
+        (let ((fq-gen (make-input-gen (make-line-input-stream fqs) :fastq
+                                      :alphabet :dna
+                                      :metric :phred))
+              (fa-gen (make-input-gen (make-line-input-stream fas) :fasta
+                                      :alphabet :dna)))
+          (is-true (loop
+                      as fq = (next fq-gen)
+                      while fq
+                      always (let ((fa (next fa-gen)))
+                               (and (string= (identity-of fq)
+                                             (identity-of fa))
+                                    (string= (to-string fq)
+                                             (to-string fa))))))
+          (is (null (next fa-gen))))))
+    (delete-file out-filespec)))

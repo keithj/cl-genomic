@@ -125,6 +125,7 @@
    #:end-object
 
    #:split-sequence-file
+   #:convert-sequence-file
    
    #:parsed-alphabet
    #:parsed-identity

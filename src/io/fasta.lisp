@@ -167,5 +167,3 @@ code for '>'), or NIL otherwise."
   "Returns T if STR is a Fasta header (starts with the character
 '>'), or NIL otherwise."
   (starts-with-char-p str #\>))
-
-

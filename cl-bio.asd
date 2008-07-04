@@ -68,6 +68,10 @@
                                   :depends-on ("bio-sequence-io"))
                            (:file "fastq"
                                   :depends-on ("bio-sequence-io"))
+                           (:file "format-conversion"
+                                  :depends-on ("bio-sequence-io"
+                                               "fasta"
+                                               "fastq"))
                            (:file "gff3"))
                           :depends-on (:core))))
 
