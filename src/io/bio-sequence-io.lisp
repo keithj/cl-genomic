@@ -144,13 +144,6 @@
                             (residues vector))
   (incf (parsed-length parser) (length residues)))
 
-(defmethod object-identity ((parser bio-sequence-indexer)
-                            (identity string))
-  nil)
-
-(defmethod object-residues ((parser bio-sequence-indexer)
-                            residues)
-  nil)
 
 ;;; CLOS instance constructors
 (defmethod make-bio-sequence ((parser simple-sequence-parser))
@@ -208,6 +201,10 @@
                      :metric (parsed-metric parser)))))
 
 (defun split-from-generator (input-gen writer n pathname-gen)
+  "Reads raw sequence records from closure INPUT-GEN and writes up to
+N of them into a series of new files using function WRITER. The new
+files names are denoted by filespecs read from PATHNAME-GEN. Returns
+when INPUT-GEN is exhausted."
   (loop
      as num-written = (write-n-raw-sequences input-gen writer n
                                              (funcall pathname-gen))

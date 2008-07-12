@@ -81,5 +81,3 @@ stream."))
 sequence data to build CLOS objects that do not contain explicit
 residue data."))
 
-(defclass bio-sequence-indexer (bio-sequence-parser)
-  ())
