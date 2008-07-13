@@ -38,13 +38,13 @@ alphabet.")
     (make-instance 'alphabet
                    :name :dna
                    :tokens tokens
-                   :index (loop
-                             with index = (make-hash-table)
-                             for i from 0 below (length tokens)
-                             do (setf (gethash
-                                       (encode-dna-4bit (aref tokens i)) index)
-                                      i)
-                             finally (return index))))
+                   :index
+                   (loop
+                      with index = (make-hash-table)
+                      for i from 0 below (length tokens)
+                      do (setf (gethash
+                                (encode-dna-4bit (aref tokens i)) index) i)
+                      finally (return index))))
   "The IUPAC DNA alphabet.")
 
 (defvar *rna*
@@ -54,13 +54,13 @@ alphabet.")
     (make-instance 'alphabet
                    :name :rna
                    :tokens tokens
-                   :index (loop
-                             with index = (make-hash-table)
-                             for i from 0 below (length tokens)
-                             do (setf (gethash
-                                       (encode-rna-4bit (aref tokens i)) index)
-                                      i)
-                             finally (return index))))
+                   :index
+                   (loop
+                      with index = (make-hash-table)
+                      for i from 0 below (length tokens)
+                      do (setf (gethash
+                                (encode-rna-4bit (aref tokens i)) index) i)
+                      finally (return index))))
   "The IUPAC RNA alphabet.")
 
 (defvar *alphabets* (make-hash-table)

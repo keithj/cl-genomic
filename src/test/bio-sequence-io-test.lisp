@@ -43,7 +43,7 @@
            (cur (current gen))
            (seq (next gen)))
       (is (eql cur seq))
-      (is (eql 'dna-sequence (type-of seq)))
+      (is (subtypep (type-of seq)  'dna-sequence))
       (is (eql (find-alphabet :dna) (alphabet-of seq)))
       (is-false (virtualp seq))
       (is (= 210 (length-of seq)))
@@ -59,7 +59,7 @@
            (cur (current gen))
            (seq (next gen)))
       (is (eql cur seq))
-      (is (eql 'dna-sequence (type-of seq)))
+      (is (subtypep (type-of seq) 'dna-sequence))
       (is (eql (find-alphabet :dna) (alphabet-of seq)))
       (is-true (virtualp seq))
       (is (= 210 (length-of seq)))
@@ -73,7 +73,7 @@
     (let* ((stream (make-line-input-stream fs))
            (gen (make-input-gen stream :fasta :alphabet :dna))
            (seq (next gen)))
-      (is (eql 'dna-sequence (type-of seq)))
+      (is (subtypep (type-of seq) 'dna-sequence))
       (is (eql (find-alphabet :dna) (alphabet-of seq)))
       (is (= 210 (length-of seq)))
       (is (string= "Test1" (identity-of seq))))))
@@ -89,7 +89,7 @@
         (let ((cur (current gen))
               (seq (next gen)))
           (is (eql cur seq))
-          (is (eql 'dna-sequence (type-of seq)))
+          (is (subtypep (type-of seq) 'dna-sequence))
           (is (eql (find-alphabet :dna) (alphabet-of seq)))
           (is (= 280 (length-of seq)))
           (is (string= (format nil "Test~a" (1+ n)) (identity-of seq)))))
@@ -106,7 +106,7 @@
         (let ((cur (current gen))
               (seq (next gen)))
           (is (eql cur seq))
-          (is (eql 'dna-sequence (type-of seq)))
+          (is (subtypep (type-of seq) 'dna-sequence))
           (is (eql (find-alphabet :dna) (alphabet-of seq)))
           (is-true (virtualp seq))
           (is (= 280 (length-of seq)))
@@ -124,7 +124,7 @@
         (let ((cur (current gen))
               (seq (next gen)))
           (is (eql cur seq))
-          (is (eql 'dna-sequence (type-of seq)))
+          (is (subtypep (type-of seq) 'dna-sequence))
           (is (eql (find-alphabet :dna) (alphabet-of seq)))
           (is (= 280 (length-of seq)))
           (is (string= (format nil "Test~a" (1+ n)) (identity-of seq)))))
@@ -158,7 +158,7 @@
            (seq (next gen) (next gen)))
           ((null seq) t)
         (is (eql cur seq))
-        (is (eql 'dna-quality-sequence (type-of seq)))
+        (is (subtypep (type-of seq) 'dna-quality-sequence))
         (is (eql (find-alphabet :dna) (alphabet-of seq)))
         (is (= 35 (length-of seq)))
         (is (string= "IL13" (identity-of seq) :start2 0 :end2 4))))))
@@ -202,8 +202,7 @@
                       :metric :phred))))
 
 (test write-fasta-sequence
-  (let ((seq (make-instance 'dna-sequence :residues "acgtn"
-                            :identity "foo"))
+  (let ((seq (make-dna "acgtn" :identity "foo"))
         (tmp-filespec (iou:make-tmp-pathname
                        :tmpdir (merge-pathnames "data")
                        :type "fa")))
@@ -220,10 +219,9 @@
       (delete-file tmp-filespec))))
 
 (test write-fastq-sequence
-  (let ((seq (make-instance 'dna-quality-sequence :residues "acgtn"
-                            :quality "<<<<<"
-                            :identity "foo"
-                            :metric :phred))
+  (let ((seq (make-dna-quality "acgtn" "<<<<<"
+                               :identity "foo"
+                               :metric :phred))
         (tmp-filespec (iou:make-tmp-pathname
                        :tmpdir (merge-pathnames "data")
                        :type "fq")))

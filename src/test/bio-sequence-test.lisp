@@ -36,8 +36,10 @@
   "Test presence of expected tokens in standard alphabets."
   (mapc #'(lambda (alphabet tokens)
             (is (eq (length tokens) (size-of alphabet)))
-            (dolist (token tokens)
-              (is-true (memberp alphabet token))))
+            (is-true
+             (loop
+                for token in tokens
+                always (memberp alphabet token))))
         (mapcar #'find-alphabet '(:dna :rna))
         (mapcar #'(lambda (str)
                     (loop
@@ -59,14 +61,10 @@
 
 ;;; Sequence constructors
 (test make-dna/rna
-  (let ((seqs (list (make-instance 'dna-sequence
-                                   :residues "tagc") ; unambiguous
-                    (make-instance 'dna-sequence
-                                   :residues "nnnn") ; ambiguous
-                    (make-instance 'rna-sequence
-                                   :residues "uagc") ; unambiguous
-                    (make-instance 'rna-sequence
-                                   :residues "nnnn"))) ; ambiguous
+  (let ((seqs (list (make-dna "tagc") ; unambiguous
+                    (make-dna "nnnn") ; ambiguous
+                    (make-rna "uagc") ; unambiguous
+                    (make-rna "nnnn"))) ; ambiguous
         (class-names (list 'dna-sequence
                            'dna-sequence
                            'rna-sequence
@@ -76,23 +74,17 @@
                          *rna*
                          *rna*)))
     (mapcar #'(lambda (seq class-name alphabet)
-                (is (eql class-name (class-name (class-of seq))))
+                (is (subtypep (class-name (class-of seq)) class-name))
                 (is (eql alphabet (alphabet-of seq))))
             seqs class-names alphabets))
   (signals error
-    (make-instance 'dna-sequence))
+    (make-dna ""))
   (signals error
-    (make-instance 'dna-sequence :residues "u"))
+    (make-dna "u"))
   (signals error
-    (make-instance 'rna-sequence :residues "t"))
+    (make-rna "t"))
   (signals error
-    (make-instance 'dna-sequence :residues ""))
-  (signals error
-    (make-instance 'dna-sequence :residues '(#\t #\a #\g #\c)))
-  (signals error
-    (make-instance 'dna-sequence :length -1))
-  (signals error
-    (make-instance 'dna-sequence :residues "tagc" :length 99)))
+    (make-dna '(#\t #\a #\g #\c))))
 
 (test phred-quality
   (let ((pvals '(0.1 0.01 0.001 0.0001 0.00001))
@@ -102,29 +94,29 @@
        for qual in quals
        do (is (eql qual (phred-quality pval))))))
 
-(test make-quality-dna
-  (let ((seqs (list (make-instance 'dna-quality-sequence ; unambiguous
-                     :residues "agaatattctgaccccagttactttcaaga"
-                     :quality "<<<<<<<<<<<<<<<<<<<<<735513;3<"
+(test make-dna-quality
+  (let ((seqs (list (make-dna-quality ; unambiguous
+                     "agaatattctgaccccagttactttcaaga"
+                     "<<<<<<<<<<<<<<<<<<<<<735513;3<"
                      :metric :phred)
-                    (make-instance 'dna-quality-sequence ; ambiguous
-                     :residues "ntgccaaaaaatagaaaagtcancgatatt"
-                     :quality "<<<<<<<<<<<<<<<<<8<<<<<<5<3.5:"
+                    (make-dna-quality ; ambiguous
+                     "ntgccaaaaaatagaaaagtcancgatatt"
+                     "<<<<<<<<<<<<<<<<<8<<<<<<5<3.5:"
                      :metric :phred)))
         (class-names (list 'dna-quality-sequence
                            'dna-quality-sequence)))
     (mapcar #'(lambda (seq class-name)
-                (is (eql class-name (class-name (class-of seq)))))
+                (is (subtypep (class-name (class-of seq)) class-name)))
             seqs class-names))
   (signals error
-   (make-instance 'dna-quality-sequence
-    :residues "agaatattctgaccccagttactttcaaga"
-    :quality "<<<<<<<"
+   (make-dna-quality
+    "agaatattctgaccccagttactttcaaga"
+    "<<<<<<<"
     :metric :phred))
   (signals error
-    (make-instance 'dna-quality-sequence
-     :residues "agaatattctgaccccagttactttcaaga"
-     :quality "<<<<<<<<<<<<<<<<<8<<<<<<5<3.5:"
+    (make-dna-quality
+     "agaatattctgaccccagttactttcaaga"
+     "<<<<<<<<<<<<<<<<<8<<<<<<5<3.5:"
      :metric :invalid-metric)))
 
 ;;; Utility methods
@@ -135,52 +127,33 @@
   (is-false (simplep "acgn" (find-alphabet :rna))))
 
 (test anonymousp
-  (is-true (anonymousp (make-instance 'dna-sequence
-                                      :residues "tagc")))
-  (is-false (anonymousp (make-instance 'dna-sequence
-                                      :residues "tagc"
-                                      :identity "test"))))
+  (is-true (anonymousp (make-dna "tagc")))
+  (is-false (anonymousp (make-dna "tagc" :identity "test"))))
 
 ;;; Sequence accessors
 (test length-of/bio-sequence
   (let ((len 10))
-    (is (= len (length-of (make-instance 'dna-sequence
-                                         :residues "aaaaaaaaaa"))))
-    (is (= len (length-of (make-instance 'dna-sequence
-                                         :residues "aaaaaaaaaa")))))
-  (signals error
-    (setf (length-of (make-instance 'dna-sequence
-                                    :residues "aaaaaaaaaa")) 99)))
+    (is (= len (length-of (make-dna "aaaaaaaaaa"))))
+    (is (= len (length-of (make-dna "aaaaaaaaaa"))))))
 
 (test residue-of/dna-sequence
   (let ((residues "tttt")
-        (seq (make-instance 'dna-sequence
-                            :residues "aaaa")))
+        (seq (make-dna "aaaa")))
     (dotimes (n (length residues))
       (setf (residue-of seq n) (aref residues n))
       (is (char= (residue-of seq n) (aref residues n))))))
 
 (test residue-of/rna-sequence
   (let ((residues "uuuu")
-        (rna-seq (make-instance 'rna-sequence
-                                :residues "aaaa")))
+        (rna-seq (make-rna "aaaa")))
     (dotimes (n (length residues))
       (setf (residue-of rna-seq n) (aref residues n))
       (is (char= (residue-of rna-seq n) (aref residues n))))))
 
-(test residue-of/virtual-sequence
-  (signals error
-    (residue-of (make-instance 'dna-sequence
-                               :length 10) 0))
-  (signals error
-    (setf (residue-of (make-instance 'dna-sequence
-                                     :length 10) 0) #\a)))
-
 ;;; Sequence transformations
 (test to-string/dna-sequence
   (let* ((residues "acgt")
-         (seq (make-instance 'dna-sequence
-                             :residues residues)))
+         (seq (make-dna residues)))
     ;; no args
     (is (string= residues (to-string seq)))
     ;; optional arg start
@@ -191,8 +164,7 @@
 
 (test to-string/rna-sequence
   (let* ((residues "acgu")
-         (seq (make-instance 'rna-sequence
-                             :residues residues)))
+         (seq (make-rna residues)))
     ;; no args
     (is (string= residues (to-string seq)))
     ;; optional arg start
@@ -203,18 +175,14 @@
 
 (test reverse-sequence/dna-sequence
   (let* ((residues "aaccggtt")
-         (seq (make-instance 'dna-sequence
-                             :residues residues)))
+         (seq (make-dna residues)))
     (is (string= (to-string (reverse-sequence seq))
                  (reverse residues)))))
 
 (test reverse-sequence/dna-quality-sequence
   (let* ((residues "agaatattctgaccccagttactttcaaga")
          (quality "<<<<<<<<<<<<<<<<<<<<<735513;3<")
-         (seq (make-instance 'dna-quality-sequence 
-                             :residues residues
-                             :quality quality
-                             :metric :phred))
+         (seq (make-dna-quality residues quality :metric :phred))
          (rseq (reverse-sequence seq)))
     (is (string= (to-string rseq)
                  (reverse residues)))
@@ -225,8 +193,7 @@
 
 (test nreverse-sequence/dna-sequence
   (let* ((residues "aaccggtt")
-         (seq (make-instance 'dna-sequence
-                             :residues residues)))
+         (seq (make-dna residues)))
     (is (string= (to-string (nreverse-sequence seq))
                  (reverse residues)))))
 
@@ -235,10 +202,7 @@
          (quality "<<<<<<<<<<<<<<<<<<<<<735513;3<")
          (rresidues (reverse residues))
          (rquality (reverse quality))
-         (seq (make-instance 'dna-quality-sequence 
-                             :residues residues
-                             :quality quality
-                             :metric :phred))
+         (seq (make-dna-quality residues quality :metric :phred))
          (rseq (nreverse-sequence seq)))
     (is (string= rresidues (to-string rseq)))
     (is (equalp rquality
@@ -248,18 +212,14 @@
 
 (test complement-sequence/dna-sequence
   (let* ((residues "acgtrykmswbdhvn")
-         (seq (make-instance 'dna-sequence
-                             :residues residues)))
+         (seq (make-dna residues)))
     (is (string= (to-string (complement-sequence seq))
                  "tgcayrmkswvhdbn"))))
 
 (test complement-sequence/dna-quality-sequence
   (let* ((residues "agaatattctgaccccagttactttcaaga")
          (quality "<<<<<<<<<<<<<<<<<<<<<735513;3<")
-         (seq (make-instance 'dna-quality-sequence 
-                             :residues residues
-                             :quality quality
-                             :metric :phred)))
+         (seq (make-dna-quality residues quality :metric :phred)))
     (is (string= "tcttataagactggggtcaatgaaagttct"
                  (to-string (complement-sequence seq))))
     (is (string= quality
@@ -269,8 +229,7 @@
 
 (test reverse-complement/dna-sequence
   (let* ((residues "acgtrykmswbdhvn")
-         (seq (make-instance 'dna-sequence
-                             :residues residues)))
+         (seq (make-dna residues)))
     (is (string= (to-string (reverse-complement seq))
                  "nbdhvwskmryacgt"))))
 
@@ -278,10 +237,7 @@
   (let* ((residues "agaatattctgaccccagttactttcaaga")
          (quality "<<<<<<<<<<<<<<<<<<<<<735513;3<")
          (rquality (reverse quality))
-         (seq (make-instance 'dna-quality-sequence 
-                             :residues residues
-                             :quality quality
-                             :metric :phred)))
+         (seq (make-dna-quality residues quality :metric :phred)))
     (is (string= "tcttgaaagtaactggggtcagaatattct"
                  (to-string (reverse-complement seq))))
     (let ((rcquality (quality-of (reverse-complement seq))))
@@ -291,8 +247,7 @@
 
 (test nreverse-complement/dna-sequence
   (let* ((residues "acgtrykmswbdhvn")
-         (seq (make-instance 'dna-sequence
-                             :residues residues)))
+         (seq (make-dna residues)))
     (is (string= (to-string (nreverse-complement seq))
                  "nbdhvwskmryacgt"))))
 
@@ -300,10 +255,7 @@
   (let* ((residues "agaatattctgaccccagttactttcaaga")
          (quality "<<<<<<<<<<<<<<<<<<<<<735513;3<")
          (rquality (reverse quality))
-         (seq (make-instance 'dna-quality-sequence 
-                             :residues residues
-                             :quality quality
-                             :metric :phred))
+         (seq (make-dna-quality residues quality :metric :phred))
          (rseq (nreverse-complement seq)))
     (is (string= "tcttgaaagtaactggggtcagaatattct" (to-string rseq)))
     (let ((rcquality (quality-of rseq)))
@@ -313,8 +265,7 @@
 
 (test subsequence/bio-sequence
   (let* ((residues "aaggccttaaggcctt")
-         (seq (make-instance 'dna-sequence
-                             :residues residues)))
+         (seq (make-dna residues)))
     (is (string= (subseq residues 0 5) ; aaggc
                  (to-string (subsequence seq 0 5))))
     (is (string= residues
@@ -323,37 +274,26 @@
 (test subsequence/dna-quality-sequence
   (let* ((residues "agaatattctgaccccagttactttcaaga")
          (quality "<<<<<<<<<<<<<<<<<<<<<735513;3<")
-         (seq (make-instance 'dna-quality-sequence
-                             :residues residues
-                             :quality quality
-                             :metric :phred)))
+         (seq (make-dna-quality residues quality :metric :phred)))
     (is (string= (subseq residues 0 5)
                  (to-string (subsequence seq 0 5))))
     (loop
        for q across (quality-of (subsequence seq 0 5))
        do (is (= 27 q)))))
 
-(test subsequence/virtual-sequence
-  (signals invalid-operation-error
-      (subsequence (make-instance 'dna-sequence :length 10) 1)))
-
 (test residue-frequencies/bio-sequence
-  (let ((seq (make-instance 'dna-sequence
-                            :residues "aacccgggt")))
+  (let ((seq (make-dna "aacccgggt")))
     (mapc #'(lambda (token freq)
-              (is (eq (cdr (assoc token (residue-frequencies seq)
+              (is (eq (cdr (assoc token (residue-frequencies
+                                         seq
+                                         (find-alphabet :dna))
                                   :test #'char= )) freq)))
           '(#\a #\c #\g #\t)
-          '(2 3 3 1)))
-  (signals error
-    (residue-frequencies (make-instance 'dna-sequence
-                                        :length 10))))
+          '(2 3 3 1))))
 
 (test search-sequence
-  (let ((seq (make-instance 'dna-sequence
-                            :residues "tacgagtcgttttagcgcgattatataa"))
-        (sub (make-instance 'dna-sequence
-                            :residues "gtttt")))
+  (let ((seq (make-dna "tacgagtcgttttagcgcgattatataa"))
+        (sub (make-dna "gtttt")))
     (is (= 8 (search-sequence sub seq)))
     (is (= 9 (search-sequence sub seq :start1 1)))
     (is (= 8 (search-sequence sub seq :start2 1)))

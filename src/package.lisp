@@ -42,10 +42,12 @@
    #:knowledgebase-error
 
    ;; Functions
+   #:make-dna
+   #:make-rna
+   #:make-dna-quality
    #:complement-dna
    #:complement-rna
    #:find-alphabet
-   #:make-quality-dna
    #:phred-quality
    #:encode-phred-quality
    #:decode-phred-quality

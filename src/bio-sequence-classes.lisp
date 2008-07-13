@@ -78,29 +78,41 @@ be the same length as the array of residues."))
   (:documentation "A mixin with support for bio-sequences that have a
 numeric quality value for each residue."))
 
-(defclass bio-sequence (identity-mixin)
+(defclass token-sequence ()
   ((alphabet :initarg :alphabet
-             :reader alphabet-of
-             :documentation "The alphabet whose tokens comprise the
-sequence.")
-   (residues :initform nil
-             :initarg :residues
-             :accessor residues-of
-             :documentation "The residues of the sequence or NIL if no
-sequence data are available.")
-   (length :initform nil
-           :initarg :length
-           :documentation "The logical length of the sequence in
-residues. This value is not required to be supported by concrete
-sequence data."))
-  (:documentation "A biological sequence comprising tokens from a
-specified alphabet. Its position relative to other bio-sequences may
-be given by specifying the sequence-locations of its start in those
-sequences."))
+             :reader alphabet-of))
+  (:documentation "A sequence of tokens belonging to an alphabet."))
+
+(defclass virtual-token-sequence (token-sequence)
+  ((length :initarg :length
+           :accessor length-of)))
+
+(defclass simple-token-sequence (token-sequence)
+  ())
+
+(defclass encoded-token-sequence (token-sequence)
+  ())
+
+(defclass mmapped-sequence ()
+  ())
+
+(defclass vector-sequence ()
+  ((vector :initarg :vector
+           :accessor vector-of)))
+
+(defclass simple-vector-sequence (simple-token-sequence vector-sequence)
+  ())
+
+(defclass encoded-vector-sequence (encoded-token-sequence vector-sequence)
+  ())
+
+(defclass bio-sequence ()
+  ()
+  (:documentation "A biological sequence."))
 
 (defclass nucleic-acid-sequence (bio-sequence)
   ()
-  (:documentation "A logical nucleic acid sequence."))
+  (:documentation "A nucleic acid sequence."))
 
 (defclass dna-sequence (nucleic-acid-sequence)
   ((alphabet :allocation :class
@@ -114,5 +126,22 @@ bases."))
   (:documentation "A concrete RNA sequence comprising IUPAC ambiguity
 bases."))
 
-(defclass dna-quality-sequence (dna-sequence quality-mixin)
+(defclass encoded-dna-sequence (dna-sequence encoded-vector-sequence
+                                             identity-mixin)
+  ())
+
+(defclass encoded-rna-sequence (rna-sequence encoded-vector-sequence
+                                             identity-mixin)
+  ())
+
+(defclass dna-quality-sequence (encoded-dna-sequence quality-mixin
+                                                     identity-mixin)
+  ())
+
+(defclass virtual-dna-sequence (dna-sequence virtual-token-sequence
+                                             identity-mixin)
+  ())
+
+(defclass virtual-rna-sequence (rna-sequence virtual-token-sequence
+                                             identity-mixin)
   ())

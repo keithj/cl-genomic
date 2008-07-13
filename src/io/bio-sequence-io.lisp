@@ -147,9 +147,9 @@
 
 ;;; CLOS instance constructors
 (defmethod make-bio-sequence ((parser simple-sequence-parser))
-  (let ((class (ecase (parsed-alphabet parser)
-                 (:dna 'dna-sequence)
-                 (:rna 'rna-sequence)))
+  (let ((constructor (ecase (parsed-alphabet parser)
+                       (:dna #'make-dna)
+                       (:rna #'make-rna)))
         (chunks (parsed-residues parser)))
     (when (zerop (length chunks))
       (error 'invalid-operation-error
@@ -158,23 +158,23 @@
                       (string (concat-strings chunks))
                       ((array (unsigned-byte 8))
                        (concat-into-sb-string chunks)))))
-      (make-instance class
-                     :identity (parsed-identity parser)
-                     ;; FIXME -- :description
-                     :residues residues))))
+      (funcall constructor residues
+               :identity (parsed-identity parser)
+               ;; FIXME -- :description
+               ))))
 
 (defmethod make-bio-sequence ((parser virtual-sequence-parser))
   (let ((class (ecase (parsed-alphabet parser)
-                 (:dna 'dna-sequence)
-                 (:rna 'rna-sequence))))
+                 (:dna 'virtual-dna-sequence)
+                 (:rna 'virtual-rna-sequence))))
     (make-instance class
                    :identity (parsed-identity parser)
                    ;; FIXME -- :description
                    :length (parsed-length parser))))
 
 (defmethod make-bio-sequence ((parser quality-sequence-parser))
-  (let ((class (ecase (parsed-alphabet parser)
-                 (:dna 'dna-quality-sequence)))
+  (let ((constructor (ecase (parsed-alphabet parser)
+                       (:dna 'make-quality-dna)))
         (residue-chunks (parsed-residues parser))
         (quality-chunks (parsed-quality parser)))
     (when (zerop (length residue-chunks))
@@ -193,12 +193,10 @@
           (quality (if (= 1 (length quality-chunks))
                        (aref quality-chunks 0)
                      (concat-quality-arrays quality-chunks))))
-      (make-instance class
-                     :identity (parsed-identity parser)
-                     ;; FIXME -- :description
-                     :residues residues
-                     :quality quality
-                     :metric (parsed-metric parser)))))
+      (funcall constructor residues quality
+               :identity (parsed-identity parser)
+               ;; FIXME -- :description
+               :metric (parsed-metric parser)))))
 
 (defun split-from-generator (input-gen writer n pathname-gen)
   "Reads raw sequence records from closure INPUT-GEN and writes up to
