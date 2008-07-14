@@ -174,7 +174,7 @@
 
 (defmethod make-bio-sequence ((parser quality-sequence-parser))
   (let ((constructor (ecase (parsed-alphabet parser)
-                       (:dna 'make-quality-dna)))
+                       (:dna 'make-dna-quality)))
         (residue-chunks (parsed-residues parser))
         (quality-chunks (parsed-quality parser)))
     (when (zerop (length residue-chunks))

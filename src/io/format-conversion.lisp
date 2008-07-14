@@ -33,7 +33,7 @@
                      :element-type 'base-char
                      :external-format :ascii
                      :if-exists :supersede)
-      (let ((gen (make-input-gen (make-line-input-stream in) in-format
+      (let ((gen (make-seq-input (make-line-input-stream in) in-format
                                  :parser (make-instance
                                           'raw-sequence-parser))))
         (loop

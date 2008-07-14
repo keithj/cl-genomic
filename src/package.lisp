@@ -119,8 +119,8 @@
    #:metric-of
    #:quality-of
 
-   #:make-input-gen
-   #:make-output-fn
+   #:make-seq-input
+   #:make-seq-output
    #:begin-object
    #:object-alphabet
    #:object-relation

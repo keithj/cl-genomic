@@ -337,11 +337,13 @@
                   name metric len)))))
 
 (defun quality-string (quality metric)
+  "Wrapper for ENCODE-QUALITY that encodes QUALITY, an array of bytes
+representing base quality scores, as a string using an encoder
+appropriate for METRIC, a quality metric \(:PHRED or :ILLUMINA\)."
   (let ((encoder (ecase metric
                    (:phred #'encode-phred-quality)
-                   (:illumina #'encode-illumina-quality)))
-        (str (make-string (length quality) :element-type 'base-char)))
-    (map-into str encoder quality)))
+                   (:illumina #'encode-illumina-quality))))
+    (encode-quality quality encoder)))
 
 (defun encode-quality (quality encoder)
   "Encodes QUALITY, an array of bytes representing base quality
@@ -362,19 +364,25 @@ DECODER."
     quality-seq))
 
 (defun ensure-encoded-4bit (vector encoder)
-  "Returns VECTOR after ensuring that its elements are encoded as
-unsigned-byte 4 using ENCODER."
-  (if (equal '(unsigned-byte 4) (array-element-type vector))
-      vector
-    (let ((encoded (make-array (length vector)
-                               :element-type '(unsigned-byte 4))))
-      (when (< 0 (length vector))
+  "If VECTOR is a string, returns an encoded token vector of element
+type \(unsigned-byte 4\) of the same length, otherwise returns
+VECTOR. ENCODER is the encoding function used to convert characters to
+\(unsigned-byte 4\)."
+  (if (stringp vector)
+      (let ((encoded (make-array (length vector)
+                                 :element-type '(unsigned-byte 4))))
+        (when (< 0 (length vector))
           (copy-array vector 0 (1- (length encoded))
                       encoded 0 encoder))
-      encoded)))
+        encoded)
+    vector))
 
 (defun ensure-decoded-quality (quality metric)
-  (if (subtypep (array-element-type quality) 'character)
+  "If QUALITY is a string, returns a decoded quality vector of
+integers of the same length, otherwise returns QUALITY. METRIC is
+either :PHRED or :ILLUMINA, denoting the quality metric to be used
+when decoding."
+  (if (stringp quality)
       (let ((decoder (ecase metric
                        (:phred #'decode-phred-quality)
                        (:illumina #'decode-illumina-quality))))

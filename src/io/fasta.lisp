@@ -25,7 +25,7 @@
 becomes full of chunks of sequence tokens.")
 
 
-(defmethod make-input-gen ((stream line-input-stream)
+(defmethod make-seq-input ((stream line-input-stream)
                            (format (eql :fasta))
                            &key (alphabet :dna) parser virtual)
   (let* ((parser (or parser
@@ -43,7 +43,7 @@ becomes full of chunks of sequence tokens.")
                          (read-fasta-sequence stream alphabet parser))))
           (:more (not (null current)))))))
 
-(defmethod make-output-con ((stream stream) (format (eql :fasta))
+(defmethod make-seq-output ((stream stream) (format (eql :fasta))
                             &key token-case)
   (lambda (bio-sequence)
     (write-fasta-sequence bio-sequence stream :token-case token-case)))
@@ -55,7 +55,7 @@ becomes full of chunks of sequence tokens.")
                      :element-type 'base-char
                      :external-format :ascii)
       (split-from-generator
-       (make-input-gen (make-line-input-stream stream) :fasta
+       (make-seq-input (make-line-input-stream stream) :fasta
                        :parser (make-instance 'raw-sequence-parser))
        #'write-raw-fasta
        chunk-size pathname-gen))))

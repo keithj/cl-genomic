@@ -38,8 +38,8 @@ fixnum."))
 NIL otherwise."))
 
 (defgeneric virtualp (bio-sequence)
-  (:documentation "Returns T if BIO-SEQUENCE has no concrete token-seq
-representation, merely a length, or NIL otherwise."))
+  (:documentation "Returns T if BIO-SEQUENCE has no concrete token
+sequence representation, merely a length, or NIL otherwise."))
 
 (defgeneric length-of (bio-sequence)
   (:documentation "Returns the length of BIO-SEQUENCE."))
@@ -137,14 +137,14 @@ object. The method must return T if the accumulated state of the
 current object is valid, or NIL otherwise. If PARSER is constructing a
 CLOS object, the object must be returned by this method."))
 
-(defgeneric make-input-gen (stream format &key alphabet parser
+(defgeneric make-seq-input (stream format &key alphabet parser
                             &allow-other-keys)
   (:documentation "Returns a generator function of arity 1 that uses
 PARSER to read a single bio-sequence of ALPHABET, in FORMAT, from
 STREAM. The standard generator interface functions, CURRENT, NEXT and
 HAS-MORE-P may be used in operations on the returned generator."))
 
-(defgeneric make-output-con (stream format &key token-case
+(defgeneric make-seq-output (stream format &key token-case
                              &allow-other-keys)
   (:documentation "Returns a consumer function of arity 1 that accepts
 a bio-sequence and writes a representation in FORMAT to STREAM. The

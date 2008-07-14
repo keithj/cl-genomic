@@ -21,7 +21,7 @@
   (with-open-file (stream filespec :direction :input
                    :element-type 'base-char
                    :external-format :ascii)
-    (let ((gen (make-input-gen (make-line-input-stream stream) format
+    (let ((gen (make-seq-input (make-line-input-stream stream) format
                                :alphabet :dna
                                :metric :phred)))
       (loop
@@ -39,7 +39,7 @@
                    :element-type 'base-char
                    :external-format :ascii)
     (let* ((stream (make-line-input-stream fs))
-           (gen (make-input-gen stream :fasta :alphabet :dna))
+           (gen (make-seq-input stream :fasta :alphabet :dna))
            (cur (current gen))
            (seq (next gen)))
       (is (eql cur seq))
@@ -55,7 +55,7 @@
                    :element-type 'base-char
                    :external-format :ascii)
     (let* ((stream (make-line-input-stream fs))
-           (gen (make-input-gen stream :fasta :alphabet :dna :virtual t))
+           (gen (make-seq-input stream :fasta :alphabet :dna :virtual t))
            (cur (current gen))
            (seq (next gen)))
       (is (eql cur seq))
@@ -71,7 +71,7 @@
                    :element-type 'base-char
                    :external-format :ascii)
     (let* ((stream (make-line-input-stream fs))
-           (gen (make-input-gen stream :fasta :alphabet :dna))
+           (gen (make-seq-input stream :fasta :alphabet :dna))
            (seq (next gen)))
       (is (subtypep (type-of seq) 'dna-sequence))
       (is (eql (find-alphabet :dna) (alphabet-of seq)))
@@ -84,7 +84,7 @@
                    :element-type 'base-char
                    :external-format :ascii)
     (let* ((stream (make-line-input-stream fs))
-           (gen (make-input-gen stream :fasta :alphabet :dna)))
+           (gen (make-seq-input stream :fasta :alphabet :dna)))
       (dotimes (n 2)
         (let ((cur (current gen))
               (seq (next gen)))
@@ -101,7 +101,7 @@
                    :element-type 'base-char
                    :external-format :ascii)
     (let* ((stream (make-line-input-stream fs))
-           (gen (make-input-gen stream :fasta :alphabet :dna :virtual t)))
+           (gen (make-seq-input stream :fasta :alphabet :dna :virtual t)))
       (dotimes (n 2)
         (let ((cur (current gen))
               (seq (next gen)))
@@ -119,7 +119,7 @@
                    :element-type 'base-char
                    :external-format :ascii)
     (let* ((stream (make-line-input-stream fs))
-           (gen (make-input-gen stream :fasta :alphabet :dna)))
+           (gen (make-seq-input stream :fasta :alphabet :dna)))
       (dotimes (n 2)
         (let ((cur (current gen))
               (seq (next gen)))
@@ -137,7 +137,7 @@
                    :external-format :ascii)
     (let* ((stream (make-line-input-stream fs))
            (parser (make-instance 'raw-sequence-parser))
-           (gen (make-input-gen stream :fasta :alphabet :dna
+           (gen (make-seq-input stream :fasta :alphabet :dna
                                 :parser parser)))
       (dotimes (n 2)
         (let ((seq (next gen)))
@@ -153,7 +153,7 @@
                    :element-type 'base-char
                    :external-format :ascii)
     (let* ((stream (make-line-input-stream fs))
-           (gen (make-input-gen stream :fastq :alphabet :dna)))
+           (gen (make-seq-input stream :fastq :alphabet :dna)))
       (do ((cur (current gen) (current gen))
            (seq (next gen) (next gen)))
           ((null seq) t)
@@ -170,7 +170,7 @@
                    :external-format :ascii)
     (let* ((stream (make-line-input-stream fs))
            (parser (make-instance 'raw-sequence-parser))
-           (gen (make-input-gen stream :fastq :alphabet :dna
+           (gen (make-seq-input stream :fastq :alphabet :dna
                                 :parser parser)))
        (do ((cur (current gen) (current gen))
             (seq (next gen) (next gen)))
@@ -188,7 +188,7 @@
                    :element-type 'base-char
                    :external-format :ascii)
     (signals bio-sequence-io-error
-        (make-input-gen (make-line-input-stream fs) :fasta
+        (make-seq-input (make-line-input-stream fs) :fasta
                         :alphabet :dna))))
 
 (test bio-sequence-io/fastq/error
@@ -197,7 +197,7 @@
                    :element-type 'base-char
                    :external-format :ascii)
     (signals bio-sequence-io-error
-      (make-input-gen (make-line-input-stream fs) :fastq
+      (make-seq-input (make-line-input-stream fs) :fastq
                       :alphabet :dna
                       :metric :phred))))
 
@@ -275,10 +275,10 @@
     (convert-sequence-file in-filespec :fastq out-filespec :fasta)
     (with-open-file (fqs in-filespec :direction :input)
       (with-open-file (fas out-filespec :direction :input)
-        (let ((fq-gen (make-input-gen (make-line-input-stream fqs) :fastq
+        (let ((fq-gen (make-seq-input (make-line-input-stream fqs) :fastq
                                       :alphabet :dna
                                       :metric :phred))
-              (fa-gen (make-input-gen (make-line-input-stream fas) :fasta
+              (fa-gen (make-seq-input (make-line-input-stream fas) :fasta
                                       :alphabet :dna)))
           (is-true (loop
                       as fq = (next fq-gen)

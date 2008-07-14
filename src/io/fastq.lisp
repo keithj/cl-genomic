@@ -17,7 +17,7 @@
 
 (in-package :bio-sequence)
 
-(defmethod make-input-gen ((stream line-input-stream)
+(defmethod make-seq-input ((stream line-input-stream)
                            (format (eql :fastq))
                            &key (alphabet :dna) (metric :phred) parser)
   (let* ((parser (or parser
@@ -32,7 +32,7 @@
                  (setf current (read-fastq-sequence stream alphabet parser))))
         (:more (not (null current)))))))
 
-(defmethod make-output-con ((stream stream) (format (eql :fastq))
+(defmethod make-seq-output ((stream stream) (format (eql :fastq))
                             &key token-case)
   (lambda (bio-sequence)
     (write-fastq-sequence bio-sequence stream :token-case token-case)))
@@ -45,7 +45,7 @@
                      :element-type 'base-char
                      :external-format :ascii)
       (split-from-generator
-       (make-input-gen (make-line-input-stream stream) :fastq
+       (make-seq-input (make-line-input-stream stream) :fastq
                        :parser (make-instance 'raw-sequence-parser))
        #'write-raw-fastq
        chunk-size pathname-gen))))
@@ -74,15 +74,12 @@
 
 (defmethod write-fastq-sequence ((seq dna-quality-sequence) stream
                                  &key token-case)
-  (let ((*print-pretty* nil)
-        (encoder (ecase (metric-of seq)
-                   (:phred #'encode-phred-quality)
-                   (:illumina #'encode-illumina-quality))))
+  (let ((*print-pretty* nil))
     (write-char #\@ stream)
     (write-line (identity-of seq) stream)
     (write-line (to-string seq :token-case token-case) stream)
     (write-line "+" stream)
-    (write-line (encode-quality (quality-of seq) encoder) stream)))
+    (write-line (quality-string (quality-of seq) (metric-of seq)) stream)))
 
 (defun write-raw-fastq (raw stream)
   "Writes sequence data RAW to STREAM in Fastq format. The alist RAW
