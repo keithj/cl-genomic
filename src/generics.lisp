@@ -37,6 +37,9 @@ fixnum."))
   (:documentation "Returns T if CHAR is a member token of ALPHABET, or
 NIL otherwise."))
 
+(defgeneric explode-ambiguity (alphabet char)
+  (:documentation ""))
+
 (defgeneric virtualp (bio-sequence)
   (:documentation "Returns T if BIO-SEQUENCE has no concrete token
 sequence representation, merely a length, or NIL otherwise."))
@@ -55,6 +58,9 @@ argument passed to the RESIDUE-OF method."))
 (defgeneric (setf residue-of) (value bio-sequence index)
   (:documentation "Sets the residue at INDEX of BIO-SEQUENCE to
 VALUE."))
+
+(defgeneric residue-frequencies (bio-sequence alphabet)
+  (:documentation ""))
 
 (defgeneric to-string (bio-sequence &key start end token-case)
   (:documentation "Returns the string representing BIO-SEQUENCE,

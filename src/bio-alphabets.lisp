@@ -32,9 +32,9 @@ alphabet.")
   (:documentation "Alphabets are sets of tokens."))
 
 (defvar *dna*
-  (let ((tokens (make-array 15
+  (let ((tokens (make-array 16
                             :element-type 'base-char
-                            :initial-contents "acgtrykmswbdhvn")))
+                            :initial-contents "acgtrykmswbdhvn-")))
     (make-instance 'alphabet
                    :name :dna
                    :tokens tokens
@@ -48,9 +48,9 @@ alphabet.")
   "The IUPAC DNA alphabet.")
 
 (defvar *rna*
-  (let ((tokens (make-array 15
+  (let ((tokens (make-array 16
                             :element-type 'base-char
-                            :initial-contents "acgurykmswbdhvn")))
+                            :initial-contents "acgurykmswbdhvn-")))
     (make-instance 'alphabet
                    :name :rna
                    :tokens tokens

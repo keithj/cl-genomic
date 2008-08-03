@@ -35,7 +35,8 @@ character BASE."
     ((#\d #\D) #\h)
     ((#\h #\H) #\d)
     ((#\v #\V) #\b)
-    ((#\n #\N) #\n)))
+    ((#\n #\N) #\n)
+    (#\-       #\-)))
 
 (defun complement-rna (base)
   "Returns the complentary RNA base to that represented by the
@@ -55,7 +56,8 @@ character BASE."
     ((#\d #\D) #\h)
     ((#\h #\H) #\d)
     ((#\v #\V) #\b)
-    ((#\n #\N) #\n)))
+    ((#\n #\N) #\n)
+    (#\-       #\-)))
 
 (declaim (inline complement-dna-4bit))
 (defun complement-dna-4bit (encoded-base)
@@ -97,7 +99,8 @@ ENCODED-BASE."
     (#b1101 #b0111)
     (#b0111 #b1101)
     (#b1110 #b1011)
-    (#b1111 #b1111)))
+    (#b1111 #b1111)
+    (#b0000 #b0000)))
 
 (declaim (inline encode-dna-4bit))
 (defun encode-dna-4bit (base)
@@ -121,7 +124,8 @@ combinations of these."
     ((#\d #\D) #b1101)
     ((#\h #\H) #b0111)
     ((#\v #\V) #b1110)
-    ((#\n #\N) #b1111)))
+    ((#\n #\N) #b1111)
+    (#\-       #b0000)))
 
 (declaim (inline decode-dna-4bit))
 (defun decode-dna-4bit (encoded-base)
@@ -141,7 +145,8 @@ combinations of these."
     (#b1101 #\d)
     (#b0111 #\h)
     (#b1110 #\v)
-    (#b1111 #\n)))
+    (#b1111 #\n)
+    (#b0000 #\-)))
 
 (declaim (inline encode-dna-comp-4bit))
 (defun encode-dna-comp-4bit (base)
@@ -180,7 +185,8 @@ combinations of these."
     ((#\d #\D) #b1101)
     ((#\h #\H) #b0111)
     ((#\v #\V) #b1110)
-    ((#\n #\N) #b1111)))
+    ((#\n #\N) #b1111)
+    (#\-       #b0000)))
 
 (declaim (inline decode-rna-4bit))
 (defun decode-rna-4bit (encoded-base)
@@ -200,7 +206,8 @@ combinations of these."
     (#b1101 #\d)
     (#b0111 #\h)
     (#b1110 #\v)
-    (#b1111 #\n)))
+    (#b1111 #\n)
+    (#b0000 #\-)))
 
 (declaim (inline encode-rna-comp-4bit))
 (defun encode-rna-comp-4bit (base)
@@ -253,6 +260,11 @@ lower case character."
 probability."
   (round (* -10 (/ (log p)
                    (log 10)))))
+
+(defun phred-probability (q)
+  "Returns the error probability of a base where Q is the Phred
+score."
+  (expt 10 (/ (- q) 10)))
 
 (defun encode-phred-quality (q)
   "Returns the character encoding of the Phred quality score Q."

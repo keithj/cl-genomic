@@ -145,3 +145,9 @@ bases."))
 (defclass virtual-rna-sequence (rna-sequence virtual-token-sequence
                                              identity-mixin)
   ())
+
+(defclass subst-matrix ()
+  ((matrix :initarg :matrix
+           :reader matrix-of)
+   (index :initarg :index
+          :reader index-of)))

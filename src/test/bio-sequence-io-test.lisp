@@ -15,7 +15,7 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;
 
-(in-package :cl-bio-test)
+(in-package :cl-genomic-test)
 
 (defun count-seq-records (filespec format)
   (with-open-file (stream filespec :direction :input
@@ -31,7 +31,7 @@
          finally (return total)))))
 
 
-(fiveam:in-suite cl-bio-system:testsuite)
+(fiveam:in-suite cl-genomic-system:testsuite)
 
 (test bio-sequence-io/fasta/dna-simple
   (with-open-file (fs (merge-pathnames "data/simple-dna1.fa")

@@ -15,7 +15,7 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;
 
-(defpackage :cl-bio-test
+(defpackage :cl-genomic-test
   (:use #:common-lisp #:cl-gp-utilities #:cl-io-utilities
-         #:bio-sequence #:fiveam)
+        #:bio-sequence #:fiveam)
   (:documentation "bio-sequence tests."))

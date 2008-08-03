@@ -12,15 +12,15 @@ all: fasl doc
 
 fasl:
 	sbcl --noinform --noprint \
-	--eval "(progn (asdf:oos 'asdf:compile-op :cl-bio) (quit))"
+	--eval "(progn (asdf:oos 'asdf:compile-op :cl-genomic) (quit))"
 
 doc:
 	sbcl --noinform --noprint \
-	--eval "(progn (asdf:oos 'asdf:cldoc-op :cl-bio) (quit))"
+	--eval "(progn (asdf:oos 'asdf:cldoc-op :cl-genomic) (quit))"
 
 test:
 	sbcl --noinform --noprint \
-	--eval "(progn (asdf:oos 'asdf:test-op :cl-bio) (quit))"
+	--eval "(progn (asdf:oos 'asdf:test-op :cl-genomic) (quit))"
 
 clean:
 	find . -name \*.fasl -exec rm {} \;

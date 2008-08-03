@@ -15,9 +15,9 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;
 
-(in-package :cl-bio-test)
+(in-package :cl-genomic-test)
 
-(fiveam:in-suite cl-bio-system:testsuite)
+(fiveam:in-suite cl-genomic-system:testsuite)
 
 ;;; Complementing nucleic acids
 (test complement-dna

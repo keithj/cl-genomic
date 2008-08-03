@@ -15,15 +15,15 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;
 
-(in-package :cl-bio-system)
+(in-package :cl-genomic-system)
 
 (fiveam:def-suite testsuite
     :description "The test suite.")
 
 
-(in-package :cl-bio-test)
+(in-package :cl-genomic-test)
 
-(fiveam:in-suite cl-bio-system:testsuite)
+(fiveam:in-suite cl-genomic-system:testsuite)
 
 ;;; Alphabets
 (test find-alphabet/standard
