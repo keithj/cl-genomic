@@ -146,8 +146,3 @@ bases."))
                                              identity-mixin)
   ())
 
-(defclass subst-matrix ()
-  ((matrix :initarg :matrix
-           :reader matrix-of)
-   (index :initarg :index
-          :reader index-of)))

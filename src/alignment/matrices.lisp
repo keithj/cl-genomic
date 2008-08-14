@@ -17,6 +17,73 @@
 
 (in-package :bio-sequence)
 
+(defmacro define-subst-index (name elements &key (test '=))
+  `(progn
+     (defun ,name (value)
+       (declare (optimize (speed 3) (safety 0)))
+       (declare (type fixnum value))
+       (cond ,@(loop
+                  for elt in elements
+                  for i = 0 then (1+ i)
+                  collect `((,test value ,elt)
+                            ,i))
+             (t
+              (error "Unknown subsitition matrix value ~a." value))))))
+
+;; For nucleotide sequence quality-adaptive substitution values see
+;; the paper by Malde in Bioinformatics 24, pp. 897-900.
+
+(defun combined-error-prob (e1 e2)
+  "Calculates the combined error probability of a substitution at a
+base position in two sequences having individual error probabilities
+of E1 and E2. Given that the probability of a match occuring between
+two erronously called bases is 1/3 * e1 * e2, this function "
+  (- (+ e1 e2) (* 4/3 (* e1 e2))))
+
+(defun quality-match-score (e)
+  (let ((x (- 1.0 e)))
+    (log (/ (if (zerop x)
+                single-float-epsilon
+              x) 0.25) 2)))
+
+(defun quality-mismatch-penalty (e)
+  (log (/ e 0.75) 2))
+
+(declaim (inline quality-match-index))
+(defun quality-match-index (q)
+  q)
+
+(declaim (inline simple-dna-index))
+(define-subst-index simple-dna-index
+    #.(loop
+         for c across "ACGTN"
+         collect (encode-dna-4bit c)))
+
+(defvar *quality-match-matrix*
+  (make-array '(100 100)
+              :element-type 'single-float
+              :initial-contents
+              (loop
+                 for q1 from 0 to 99
+                 collect (loop
+                            for q2 from 0 to 99
+                            collect (quality-match-score
+                                     (combined-error-prob
+                                      (phred-probability q1)
+                                      (phred-probability q2)))))))
+(defvar *quality-mismatch-matrix*
+  (make-array '(100 100)
+              :element-type 'single-float
+              :initial-contents
+              (loop
+                 for q1 from 0 to 99
+                 collect (loop
+                            for q2 from 0 to 99
+                            collect (quality-mismatch-penalty
+                                     (combined-error-prob
+                                      (phred-probability q1)
+                                      (phred-probability q2)))))))
+
 (defvar *simple-dna-matrix*
   (make-array '(5 5)
               :element-type 'single-float
@@ -25,18 +92,6 @@
                                   (-4.0 -4.0  5.0 -4.0 -1.0)
                                   (-4.0 -4.0 -4.0  5.0 -1.0)
                                   (-1.0 -1.0 -1.0 -1.0 -1.0))))
-
-(defvar *simple-dna-index*
-  (make-array 5 :element-type '(unsigned-byte 4)
-              :initial-contents
-              (loop
-                 for c across "ACGTN"
-                 collect (encode-dna-4bit c))))
-
-(defvar *simple-dna-subst*
-  (make-instance 'subst-matrix
-                 :matrix *simple-dna-matrix*
-                 :index *simple-dna-index*))
 
 (defvar *blosum50-matrix*
   (make-array '(23 23)
@@ -66,11 +121,11 @@
                 (-1.0  0.0  0.0  1.0 -3.0  4.0  5.0 -2.0  0.0 -3.0 -3.0  1.0 -1.0 -4.0 -1.0  0.0 -1.0 -2.0 -2.0 -3.0  2.0  5.0 -1.0)
                 (-1.0 -1.0 -1.0 -1.0 -2.0 -1.0 -1.0 -2.0 -1.0 -1.0 -1.0 -1.0 -1.0 -2.0 -2.0 -1.0  0.0 -3.0 -1.0 -1.0 -1.0 -1.0 -1.0))))
 
-(defvar *blosum50-index*
-  (make-array 23 :element-type '(unsigned-byte 8)
-              :initial-contents "ARNDCQEGHILKMFPSTWYVBZX"))
+(defun simple-dna-subst (x y)
+  (aref *simple-dna-matrix*
+   (simple-dna-index x) (simple-dna-index y)))
 
-(defvar *blosum50-subst*
-  (make-instance 'subst-matrix
-                 :matrix *blosum50-matrix*
-                 :index *blosum50-index*))
+(defun quality-dna-subst (x y qx qy)
+  (if (= x y)
+      (aref *quality-match-matrix* qx qy)
+    (aref *quality-mismatch-matrix* qx qy)))

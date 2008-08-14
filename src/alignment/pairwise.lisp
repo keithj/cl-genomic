@@ -29,132 +29,232 @@
 (defconstant +none+ 0
   "Dynamic programming backtrace null pointer.")
 
+(defmacro with-affine-gap-matrices ((score delete insert backtrace) (m n)
+                                    &body body)
+  `(let ((,score (make-array (list ,m ,n) :element-type 'single-float
+                             :initial-element 0.0))
+         (,delete (make-array (list ,m ,n) :element-type 'single-float
+                              :initial-element 0.0))
+         (,insert (make-array (list ,m ,n) :element-type 'single-float
+                              :initial-element 0.0))
+         (,backtrace (make-array (list ,m ,n) :element-type 'path-pointer
+                                 :initial-element +none+)))
+     (declare (type (simple-array single-float (* *))
+                    ,score ,delete ,insert)
+              (type (simple-array path-pointer (* *)) ,backtrace))
+     ,@body))
+
+(defmacro define-affine-gap-dp (((cell prev-cell max-cell)
+                                 (cell-score del-score ins-score max-score)
+                                 (score delete insert backtrace
+                                        (gap-open gap-extend))
+                                 cell-score-form &optional cell-exclusion-form)
+                                &body body)
+  (destructuring-bind ((row col) (prev-row prev-col) (max-row max-col))
+      (list cell prev-cell max-cell)
+    (with-gensyms (rows cols)
+      `(let ((,rows (array-dimension ,score 0))
+             (,cols (array-dimension ,score 1))
+             (,max-score 0.0)
+             (,max-row 0)
+             (,max-col 0))
+         (loop
+            for ,row of-type fixnum from 1 below ,rows
+            for ,prev-row of-type fixnum = (1- ,row)
+            do (loop
+                  for ,col of-type fixnum from 1 below ,cols
+                  for ,prev-col of-type fixnum = (1- ,col)
+                    ,@(when cell-exclusion-form
+                        `(when ,cell-exclusion-form))
+                  do (let ((,del-score
+                            (if (= 1 ,row)
+                                (+ (aref ,score ,prev-row ,col)
+                                   ,gap-open)
+                              (max (+ (aref ,score ,prev-row ,col)
+                                      ,gap-open)
+                                   (+ (aref ,delete ,prev-row ,col)
+                                      ,gap-extend))))
+                           (,ins-score
+                            (if (= 1 ,col)
+                                (+ (aref ,score ,row ,prev-col)
+                                   ,gap-open)
+                              (max (+ (aref ,score ,row ,prev-col)
+                                      ,gap-open)
+                                   (+ (aref ,insert ,row ,prev-col)
+                                      ,gap-extend)))))
+                       (setf (aref ,delete ,row ,col) ,del-score
+                             (aref ,insert ,row ,col) ,ins-score)
+                       (let ((,cell-score ,cell-score-form))
+                         (setf (aref ,score ,row ,col) ,cell-score
+                               (aref ,backtrace ,row ,col)
+                               (cond ((= ,cell-score ,del-score)
+                                      +delete+)
+                                     ((= ,cell-score ,ins-score)
+                                      +insert+)
+                                     (t
+                                      +match+)))
+                         (when (> ,cell-score ,max-score)
+                           (setf ,max-score ,cell-score
+                                 ,max-row ,row
+                                 ,max-col ,col))))))
+         ,@body))))
 
 ;; Modify finding shared kmers to use a substitution matrix
 
-(defmethod align-local-affine ((seqm encoded-dna-sequence)
-                               (seqn encoded-dna-sequence)
-                               (submat subst-matrix)
-                               &key (gap-open -10.0) (gap-extend -1.0)
-                               (band-centre 0)
-                               (band-width most-positive-fixnum)
-                               alignment)
+;; kmer seeded heuristic
+(defmethod align-local-ksh ((seqm encoded-dna-sequence)
+                            (seqn encoded-dna-sequence) subst-fn
+                            &key (k 6) (gap-open -10.0) (gap-extend -1.0)
+                            alignment)
   (let ((vecm (vector-of seqm))
-        (vecn (vector-of seqn)))
-    (multiple-value-bind (max-score scomat btmat bti btj)
-        (smith-waterman-gotoh vecm vecn
-                              (matrix-of submat) (index-of submat)
-                              :gap-open gap-open
-                              :gap-extend gap-extend
-                              :band-centre band-centre
-                              :band-width band-width)
-      (values max-score
-              (when alignment
-                (dp-backtrace vecm vecn scomat btmat bti btj))))))
+        (vecn (vector-of seqn))
+        (align-score 0.0)
+        (align-obj nil))
+    (multiple-value-bind (bwidth bcentre)
+        (multiple-value-call #'pairwise-band-width
+          (find-common-kmers vecm vecn k))
+      (when (plusp bwidth)
+        (multiple-value-setq (align-score align-obj)
+          (smith-waterman-gotoh vecm vecn subst-fn
+                                :gap-open gap-open :gap-extend gap-extend
+                                :band-centre bcentre :band-width bwidth
+                                :alignment alignment))))
+    (values align-score align-obj)))
 
-(defun smith-waterman-gotoh (vecm vecn submat subidx &key
-                             (gap-open -10.0) (gap-extend -1.0)
-                             (band-centre 0) (band-width most-positive-fixnum))
+(defmethod align-local-ksh ((seqm vector) (seqn vector) subst-fn
+                            &key (k 6) (gap-open -10.0) (gap-extend -1.0)
+                            alignment)
+  (let ((vecm (ensure-encoded-4bit seqm #'encode-dna-4bit))
+        (vecn (ensure-encoded-4bit seqn #'encode-dna-4bit))
+        (align-score 0.0)
+        (align-obj nil))
+    (multiple-value-bind (bwidth bcentre)
+        (multiple-value-call #'pairwise-band-width
+          (find-common-kmers vecm vecn k))
+      (when (plusp bwidth)
+        (multiple-value-setq (align-score align-obj)
+          (smith-waterman-gotoh vecm vecn subst-fn
+                                :gap-open gap-open :gap-extend gap-extend
+                                :band-centre bcentre :band-width bwidth
+                                :alignment alignment))))
+    (values align-score align-obj)))
+
+(defmethod align-local ((seqm encoded-dna-sequence)
+                        (seqn encoded-dna-sequence) subst-fn
+                        &key (gap-open -10.0) (gap-extend -1.0)
+                        (band-centre 0)
+                        (band-width most-positive-fixnum) alignment)
+  (smith-waterman-gotoh (vector-of seqm) (vector-of seqn) subst-fn
+                        :gap-open gap-open :gap-extend gap-extend
+                        :band-centre band-centre :band-width band-width
+                        :alignment alignment))
+
+(defmethod align-local ((seqm vector) (seqn vector) subst-fn
+                        &key (gap-open -10.0) (gap-extend -1.0)
+                        (band-centre 0)
+                        (band-width most-positive-fixnum) alignment)
+  (let ((vecm (ensure-encoded-4bit seqm #'encode-dna-4bit))
+        (vecn (ensure-encoded-4bit seqn #'encode-dna-4bit)))
+    (smith-waterman-gotoh vecm vecn subst-fn
+                          :gap-open gap-open :gap-extend gap-extend
+                          :band-centre band-centre :band-width band-width
+                          :alignment alignment)))
+
+(defmethod align-local ((seqm dna-quality-sequence)
+                        (seqn dna-quality-sequence) subst-fn
+                        &key (gap-open -10.0) (gap-extend -1.0)
+                        (band-centre 0)
+                        (band-width most-positive-fixnum) alignment)
+  (declare (ignore band-centre band-width))  
+  (smith-waterman-gotoh-qual (vector-of seqm) (vector-of seqn)
+                             (quality-of seqm) (quality-of seqn) subst-fn
+                             :gap-open gap-open :gap-extend gap-extend
+                             :alignment alignment))
+
+(defun smith-waterman-gotoh (vecm vecn subst-fn
+                             &key (gap-open -10.0) (gap-extend -1.0)
+                             (band-centre 0) (band-width most-positive-fixnum)
+                             alignment)
   "Performs a Smith Waterman alignment of VECM against VECN using
-Gotoh's improvement. Affine gap scoring is used, expressed as
-penalties, that is to say GAP-OPEN and GAP-EXTEND should be negative
-values. The alignment may be banded to prune the search space.
+Gotoh's improvement. The affine gap scoring is expressed as penalties,
+that is to say GAP-OPEN and GAP-EXTEND should be negative values. The
+alignment may be banded to prune the search space.
 
 Arguments:
 
 - vecm \(vector\): A vector to be aligned.
 - vecn \(vector\): A vector to be aligned.
-- submat \(matrix\): A substitution matrix.
-- subidx \(vector\): A vector index used to locate rows and columns in
-the substitution matrix. This index contains all the tokens in the
-alphabet of the vectors being aligned. The index of the token in the
-index corresponds to its row and column indices in the substitution
-matrix.
+- subst-fn \(function\): A substitution function that accepts two
+vector elements as arguments and returns a single-float substitution
+score.
 
 Key:
 
 - gap-open \(single-float\): The gap opening penalty.
 - gap-extend \(single-float\): The gap extension penalty.
-
 - band-centre \(fixnum\): The band centre for banded searches. This
 defaults to 0, the main diagonal. The desired band may be calculated
 by subtracting a j coordinate from its corresponding i coordinate.
 - band-width \(fixnum\): The band width for banded searches. This
 defaults to most-positive-fixnum so that the search space is not
 pruned.
+- alignment \(boolean\): Flag to indicate whether an alignment should
+be returned.
 
 Returns:
 
-- The single-float maximum score from the matrix.
-- The single-float score matrix.
-- The backtrace matrix.
-- The i coordinate of the backtrace starting point.
-- The j coordinate of the backtrace starting point."
-  (declare (optimize (speed 3) (debug 0) (safety 1)))
-  (declare (type single-float gap-open gap-extend)
+- The single-float score of the alignment.
+- An alignment object, or NIL."
+  (declare (optimize (speed 3) (safety 0)))
+  (declare (type function subst-fn)
+           (type single-float gap-open gap-extend)
            (type fixnum band-centre band-width)
-           (type (simple-array single-float (* *)) submat)
-           (type (simple-array (unsigned-byte 4)) vecm vecn subidx))
+           (type (simple-array (unsigned-byte 4)) vecm vecn))
   (flet ((subn (x y) ; local fn to avoid boxing of returned floats
-           (let ((i (position x subidx :test #'=))
-                 (j (position y subidx :test #'=)))
-             (aref submat i j))))
-    (let* ((m (length vecm))
-           (n (length vecn))
-           (half-width (ceiling band-width 2))
-           (dim (list (1+ m) (1+ n))))
-      (let ((mat (make-array dim :element-type 'single-float
-                             :initial-element 0.0))
-            (del (make-array dim :element-type 'single-float
-                             :initial-element 0.0))
-            (ins (make-array dim :element-type 'single-float
-                             :initial-element 0.0))
-            (btr (make-array dim :element-type 'path-pointer
-                             :initial-element +none+))
-            (max-score 0.0)
-            (imax 0)
-            (jmax 0))
-        (declare (type (simple-array single-float (* *)) mat del ins)
-                 (type (simple-array path-pointer (* *)) btr))
-        (loop
-           for i of-type fixnum from 1 to m
-           for idec of-type fixnum = (1- i)
-           do (loop
-                 for j of-type fixnum from 1 to n
-                 for jdec of-type fixnum = (1- j)
-                 for diag of-type fixnum = (- i j) ; the diagonal of this cell
-                 when (< (- diag half-width) band-centre (+ diag half-width))
-                 do (let ((dscore (if (= 1 i)
-                                      (+ (aref mat idec j) gap-open)
-                                    (max (+ (aref mat idec j) gap-open)
-                                         (+ (aref del idec j) gap-extend))))
-                          (iscore (if (= 1 j)
-                                      (+ (aref mat i jdec) gap-open)
-                                    (max (+ (aref mat i jdec) gap-open)
-                                         (+ (aref ins i jdec) gap-extend)))))
-                      (setf (aref del i j) dscore
-                            (aref ins i j) iscore)
-                      (let ((score (max 0.0 ; to keep the search local
-                                        (+ (aref mat idec jdec)
-                                           (subn (aref vecm idec)
-                                                 (aref vecn jdec)))
-                                        dscore
-                                        iscore)))
-                        (setf (aref mat i j) score
-                              (aref btr i j) (cond ((= score dscore)
-                                                    +delete+)
-                                                   ((= score iscore)
-                                                    +insert+)
-                                                   (t
-                                                    +match+)))
-                        (when (> score max-score)
-                          (setf max-score score
-                                imax i
-                                jmax j))))))
-        (values max-score mat btr imax jmax)))))
+           (funcall subst-fn x y)))
+    (let ((m (length vecm))
+          (n (length vecn))
+          (half-width (ceiling band-width 2)))
+      (with-affine-gap-matrices
+          (mat del ins btr) ((1+ m) (1+ n))
+        (define-affine-gap-dp
+            (((row col) (prev-row prev-col) (max-row max-col))
+             (cell-score del-score ins-score max-score)
+             (mat del ins btr (gap-open gap-extend))
+             (max 0.0 ; to keep the search local
+                  (the single-float
+                    (+ (aref mat prev-row prev-col)
+                       (the single-float
+                         (subn (aref vecm prev-row) (aref vecn prev-col))))))
+             (let ((diag (- row col)))
+               (< (- diag half-width) band-centre (+ diag half-width))))
+          (values max-score
+                  (when alignment
+                    (dp-backtrace vecm vecn mat btr max-row max-col))))))))
+
+(defun smith-waterman-gotoh-qual (vecm vecn qualm qualn subst-fn
+                                  &key (gap-open -10.0) (gap-extend -1.0)
+                                  alignment)
+  (flet ((subn (x y qx qy)
+           (funcall subst-fn x y qx qy)))
+    (let ((m (length vecm))
+          (n (length vecn)))
+      (with-affine-gap-matrices
+          (mat del ins btr) ((1+ m) (1+ n))
+        (define-affine-gap-dp2
+            ( ((row col) (prev-row prev-col) (max-row max-col))
+              (cell-score del-score ins-score max-score)
+              (mat del ins btr (gap-open gap-extend))
+             (max 0.0
+                  (+ (aref mat prev-row prev-col)
+                     (subn (aref vecm prev-row) (aref vecn prev-col)
+                           (aref qualm prev-row) (aref qualn prev-col)))))
+          (values max-score
+                  (when alignment
+                    (dp-backtrace vecm vecn mat btr max-row max-col))))))))
 
 (defun dp-backtrace (vecm vecn scomat btmat bti btj)
-  (declare (optimize (speed 3) (safety 1)))
+  (declare (optimize (speed 3) (safety 0)))
   (declare (type (simple-array (unsigned-byte 4) (*)) vecm vecn)
            (type (simple-array single-float (* *)) scomat)
            (type (simple-array path-pointer (* *)) btmat))
@@ -183,8 +283,8 @@ Returns:
                    (decf j))
                   (t
                    (error "Unknown backtrace pointer ~a" ptr)))))
-    (list (make-instance 'encoded-dna-sequence :vector am)
-          (make-instance 'encoded-dna-sequence :vector an))))
+    (list i (make-instance 'encoded-dna-sequence :vector (nreverse am)) bti
+          j (make-instance 'encoded-dna-sequence :vector (nreverse an)) btj)))
 
 (defun make-kmer-table (vec k &optional (size 16))
   "Creates a hash-table of the kmers of length K in vector VEC.
@@ -200,11 +300,11 @@ Returns:
 A EQUAL hash-table of the kmers of length K in vector VEC. The hash
 keys are the kmers, while the hash values are lists of the coordinates
 at which those kmers occur."
-  (declare (optimize (speed 3) (safety 1)))
-  (declare (type simple-string vec)
+  (declare (optimize (speed 3) (safety 0)))
+  (declare (type (simple-array (unsigned-byte 4) (*)) vec)
            (type fixnum k))
   (let ((end (- (length vec) k))
-        (table (make-hash-table :size size :test #'equal)))
+        (table (make-hash-table :size size :test #'equalp)))
     (loop
        for i from 0 to end
        do (push i (gethash (subseq vec i (+ i k)) table)))
@@ -229,12 +329,12 @@ Returns:
 The returned lists each contain the a number of elements equal to the
 number of unique, shared kmers found. The coordinate lists at the nth
 position in each list refer to the same kmer."
-  (declare (optimize (speed 3) (safety 1)))
-  (declare (type simple-string vecm vecn)
+  (declare (optimize (speed 3) (safety 0)))
+  (declare (type (simple-array (unsigned-byte 4) (*)) vecm vecn)
            (type fixnum k))
   (let ((end (- (length vecm) k))
         (kmern (make-kmer-table vecn k size))
-        (matched (make-hash-table :size size :test #'equal)))
+        (matched (make-hash-table :size size :test #'equalp)))
     (loop
        for i from 0 to end
        as kmer = (subseq vecm i (+ i k))
@@ -269,58 +369,87 @@ Returns:
 - A fixnum matrix band width that contains all diagonals described by
 the arguments.
 - A fixnum diagonal about which the band is centred."
-  (let ((mind 0)
-        (maxd 0))
+  (declare (optimize (speed 3) (safety 0)))
+  (declare (type list mcoords ncoords))
+  (let ((k 0)
+        (c 0))
+    (declare (type fixnum k c))
+    (when (and mcoords ncoords)
+      (let ((mind 0)
+            (maxd 0))
+        (declare (type fixnum mind maxd))
+        (loop
+           for m in mcoords
+           for n in ncoords
+           do (loop
+                 for i of-type fixnum in m
+                 do (loop
+                       for j of-type fixnum in n
+                       for d of-type fixnum = (- i j)
+                       do (setf mind (min mind d)
+                                maxd (max maxd d)))))
+        ;; FIXME -- is this value for k correct? When there are no
+        ;; kmers k is 2, which is why we test of that condition
+        ;; above. It would be nice to omit that special case.
+        (setf k (+ 2 (- maxd mind))
+              c (round (the fixnum
+                         (+ (the fixnum
+                              (/ (the fixnum (- maxd mind)) 2)) mind))))))
+    (values k c)))
+
+(defun print-banding (m n band-centre band-width a b)
+  (let ((x (make-array (list (1+ m) (1+ n)) :initial-element 0))
+        (half-width (ceiling band-width 2)))
     (loop
-       for m in mcoords
-       for n in ncoords
+       for i from 1 to m
        do (loop
-             for i in m
-             do (loop
-                   for j in n
-                   for d = (- i j)
-                   do (setf mind (min mind d)
-                            maxd (max maxd d)))))
-    (let ((k (+ 2 (- maxd mind)))
-          (c (round (+ (/ (- maxd mind) 2) mind))))
-      (values k c))))
+             for j from 1 to n
+             for diag = (- i j)
+             do (progn
+                  (when (< (- diag half-width)
+                           band-centre
+                           (+ diag half-width))
+                    (setf (aref x i j) 1))
+                  (when (= band-centre diag)
+                    (setf (aref x i j) 8)))))
+    (mapc #'(lambda (z w)
+              (setf (aref x
+                          (first z)
+                          (first w)) 2)) a b)
+    (princ x)
+    (terpri)))
+
+(defun test-align (fastq-filespec)
+  (with-open-file (in fastq-filespec
+                   :direction :input
+                   :element-type 'base-char
+                   :external-format :ascii)
+    (let ((adapter (make-dna "GATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG"))
+          (gen  (make-seq-input (make-line-input-stream in) :fastq
+                                :alphabet :dna :metric :phred)))
+      (loop
+         with total = 0
+         with count = 0
+         as fq = (next gen)
+         while fq
+         do (multiple-value-bind (score seqs)
+                (align-local adapter fq #'simple-dna-subst)
+              ;; (align-local-ksh adapter fq #'simple-dna-subst :k 6)
+              (when (> score 35.0)
+                (incf total))
+              (when (= 50000 count)
+                (return))
+              (when (zerop (rem count 1000))
+                (format t "~a ...~%" count))
+              (incf count))
+         finally (return total)))))
+
+(defun read-fasta (filespec)
+  (with-open-file (fs filespec
+                   :direction :input
+                   :element-type 'base-char
+                   :external-format :ascii)
+    (next (make-seq-input (make-line-input-stream fs) :fasta
+                          :alphabet :dna))))
 
 
-;; (defun test-align (fastq-filespec)
-;;   (with-open-file (in fastq-filespec
-;;                    :direction :input
-;;                    :element-type 'base-char
-;;                    :external-format :ascii)
-;;     (let ((adapter "GATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG")
-;;           (gen  (make-seq-input (make-line-input-stream in) :fastq
-;;                                 :alphabet :dna :metric :phred
-;;                                 :parser (make-instance
-;;                                          'raw-sequence-parser))))
-;;       (loop
-;;          with total = 0
-;;          with count = 0
-;;          as fq = (next gen)
-;;          while fq
-;;          do (multiple-value-bind (score seqs)
-;;                 (sw-affine3 adapter (assocdr :residues fq)
-;;                             *simple-dna*
-;;                             *simple-dna-index*
-;;                             :gap-open -10.0  :gap-extend -1.0
-;;                             :bandw 2)
-;;               (when (> score 29)
-;;                 (incf total)
-;; ;;                 (princ score)
-;; ;;                 (terpri)
-;; ;;                 (write-line (first seqs))
-;; ;;                 (write-line (second seqs))
-;; ;;                 (terpri)
-;;                 )
-;;               (when (= 10000000 count)
-;;                 (return))
-;;               (when (zerop (rem count 100000))
-;;                 (format t "~a ...~%" count))
-;;               (incf count))
-;;          finally (return total)))))
-
-;; Find which area of the matrix contains all the interesting seeds
-;; and limit the SW band to this area.
