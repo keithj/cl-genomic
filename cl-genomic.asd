@@ -92,8 +92,8 @@
   (operate 'load-op :cl-genomic-test)
 
   (let ((*default-pathname-defaults* (component-pathname c)))
-    (funcall (intern (string :run!) (string :fiveam))
-             'cl-genomic-system:testsuite)))
+    (funcall (intern (string :run-tests) (string :lift))
+             :config "cl-genomic-test.config")))
 
 (defmethod operation-done-p ((op test-op) (c (eql (find-system
                                                    :cl-genomic))))

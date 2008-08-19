@@ -34,10 +34,10 @@
 ;; the paper by Malde in Bioinformatics 24, pp. 897-900.
 
 (defun combined-error-prob (e1 e2)
-  "Calculates the combined error probability of a substitution at a
-base position in two sequences having individual error probabilities
-of E1 and E2. Given that the probability of a match occuring between
-two erronously called bases is 1/3 * e1 * e2, this function "
+  "Calculates the combined error probability of a substitution between
+two bases having individual error probabilities of E1 and E2, given
+that the probability of a match occuring between two erronously called
+bases is 1/3 * e1 * e2."
   (- (+ e1 e2) (* 4/3 (* e1 e2))))
 
 (defun quality-match-score (e)
@@ -121,10 +121,12 @@ two erronously called bases is 1/3 * e1 * e2, this function "
                 (-1.0  0.0  0.0  1.0 -3.0  4.0  5.0 -2.0  0.0 -3.0 -3.0  1.0 -1.0 -4.0 -1.0  0.0 -1.0 -2.0 -2.0 -3.0  2.0  5.0 -1.0)
                 (-1.0 -1.0 -1.0 -1.0 -2.0 -1.0 -1.0 -2.0 -1.0 -1.0 -1.0 -1.0 -1.0 -2.0 -2.0 -1.0  0.0 -3.0 -1.0 -1.0 -1.0 -1.0 -1.0))))
 
+(declaim (inline simple-dna-subst))
 (defun simple-dna-subst (x y)
   (aref *simple-dna-matrix*
    (simple-dna-index x) (simple-dna-index y)))
 
+(declaim (inline quality-dna-subst))
 (defun quality-dna-subst (x y qx qy)
   (if (= x y)
       (aref *quality-match-matrix* qx qy)

@@ -15,28 +15,22 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;
 
-(in-package :cl-genomic-system)
-
-(fiveam:def-suite testsuite
-    :description "The test suite.")
-
-
 (in-package :cl-genomic-test)
 
-(fiveam:in-suite cl-genomic-system:testsuite)
+(deftestsuite bio-sequence-tests (cl-genomic-tests)
+  ())
 
 ;;; Alphabets
-(test find-alphabet/standard
-  (is (eql *dna* (find-alphabet :dna)))
-  (is (eql *rna* (find-alphabet :rna)))
-  (signals error
+(addtest (bio-sequence-tests) find-alphabet/standard
+  (ensure-same *dna* (find-alphabet :dna))
+  (ensure-same *rna* (find-alphabet :rna))
+  (ensure-error
     (find-alphabet :foo)))
 
-(test standard-alphabets
-  "Test presence of expected tokens in standard alphabets."
+(addtest (bio-sequence-tests) standard-alphabets
   (mapc #'(lambda (alphabet tokens)
-            (is (eq (length tokens) (size-of alphabet)))
-            (is-true
+            (ensure (eq (length tokens) (size-of alphabet)))
+            (ensure
              (loop
                 for token in tokens
                 always (memberp alphabet token))))
@@ -44,23 +38,22 @@
         (mapcar #'(lambda (str)
                     (loop
                        for c across str collect c))
-                '("acgtrykmswbdhvn" "acgurykmswbdhvn"))))
+                (list dna-residues rna-residues))))
 
-(test name-of/alphabet
-  "Test alphabet."
+(addtest (bio-sequence-tests) name-of/alphabet
   (let ((name "test name"))
-    (is (string= name
-                 (name-of (make-instance 'alphabet
-                                         :name name))))))
+    (ensure (string= name
+                     (name-of (make-instance 'alphabet
+                                             :name name))))))
 
-(test tokens-of/alphabet
+(addtest (bio-sequence-tests) tokens-of/alphabet
   (let ((tokens "abcd"))
-    (is (string= tokens
-                 (tokens-of (make-instance 'alphabet
-                                           :tokens tokens))))))
+    (ensure (string= tokens
+                     (tokens-of (make-instance 'alphabet
+                                               :tokens tokens))))))
 
 ;;; Sequence constructors
-(test make-dna/rna
+(addtest (bio-sequence-tests) make-dna/rna
   (let ((seqs (list (make-dna "tagc") ; unambiguous
                     (make-dna "nnnn") ; ambiguous
                     (make-rna "uagc") ; unambiguous
@@ -74,27 +67,27 @@
                          *rna*
                          *rna*)))
     (mapcar #'(lambda (seq class-name alphabet)
-                (is (subtypep (class-name (class-of seq)) class-name))
-                (is (eql alphabet (alphabet-of seq))))
+                (ensure (subtypep (class-name (class-of seq)) class-name))
+                (ensure-same alphabet (alphabet-of seq)))
             seqs class-names alphabets))
-  (signals error
+  (ensure-error
     (make-dna ""))
-  (signals error
+  (ensure-error
     (make-dna "u"))
-  (signals error
+  (ensure-error
     (make-rna "t"))
-  (signals error
+  (ensure-error
     (make-dna '(#\t #\a #\g #\c))))
 
-(test phred-quality
+(addtest (bio-sequence-tests) phred-quality
   (let ((pvals '(0.1 0.01 0.001 0.0001 0.00001))
         (quals '(10 20 30 40 50)))
     (loop
        for pval in pvals
        for qual in quals
-       do (is (eql qual (phred-quality pval))))))
+       do (ensure-same qual (phred-quality pval)))))
 
-(test make-dna-quality
+(addtest (bio-sequence-tests) make-dna-quality
   (let ((seqs (list (make-dna-quality ; unambiguous
                      "agaatattctgaccccagttactttcaaga"
                      "<<<<<<<<<<<<<<<<<<<<<735513;3<"
@@ -106,196 +99,197 @@
         (class-names (list 'dna-quality-sequence
                            'dna-quality-sequence)))
     (mapcar #'(lambda (seq class-name)
-                (is (subtypep (class-name (class-of seq)) class-name)))
+                (ensure (subtypep (class-name (class-of seq)) class-name)))
             seqs class-names))
-  (signals error
+  (ensure-error
    (make-dna-quality
     "agaatattctgaccccagttactttcaaga"
     "<<<<<<<"
     :metric :phred))
-  (signals error
+  (ensure-error
     (make-dna-quality
      "agaatattctgaccccagttactttcaaga"
      "<<<<<<<<<<<<<<<<<8<<<<<<5<3.5:"
      :metric :invalid-metric)))
 
 ;;; Utility methods
-(test simplep/string
-  (is-true (simplep "acgt" (find-alphabet :dna)))
-  (is-false (simplep "acgn" (find-alphabet :dna)))
-  (is-true (simplep "acgu" (find-alphabet :rna)))
-  (is-false (simplep "acgn" (find-alphabet :rna))))
+(addtest (bio-sequence-tests) simplep/string
+  (ensure (simplep "acgt" (find-alphabet :dna)))
+  (ensure (not (simplep "acgn" (find-alphabet :dna))))
+  (ensure (simplep "acgu" (find-alphabet :rna)))
+  (ensure (not (simplep "acgn" (find-alphabet :rna)))))
 
-(test anonymousp
-  (is-true (anonymousp (make-dna "tagc")))
-  (is-false (anonymousp (make-dna "tagc" :identity "test"))))
+(addtest (bio-sequence-tests) anonymousp
+  (ensure (anonymousp (make-dna "tagc")))
+  (ensure (not (anonymousp (make-dna "tagc" :identity "test")))))
 
 ;;; Sequence accessors
-(test length-of/bio-sequence
+(addtest (bio-sequence-tests) length-of/bio-sequence
   (let ((len 10))
-    (is (= len (length-of (make-dna "aaaaaaaaaa"))))
-    (is (= len (length-of (make-dna "aaaaaaaaaa"))))))
+    (ensure (= len (length-of (make-dna "aaaaaaaaaa"))))
+    (ensure (= len (length-of (make-dna "aaaaaaaaaa"))))))
 
-(test residue-of/dna-sequence
+(addtest (bio-sequence-tests) residue-of/dna-sequence
   (let ((residues "tttt")
         (seq (make-dna "aaaa")))
     (dotimes (n (length residues))
       (setf (residue-of seq n) (aref residues n))
-      (is (char= (residue-of seq n) (aref residues n))))))
+      (ensure (char= (residue-of seq n) (aref residues n))))))
 
-(test residue-of/rna-sequence
+(addtest (bio-sequence-tests) residue-of/rna-sequence
   (let ((residues "uuuu")
         (rna-seq (make-rna "aaaa")))
     (dotimes (n (length residues))
       (setf (residue-of rna-seq n) (aref residues n))
-      (is (char= (residue-of rna-seq n) (aref residues n))))))
+      (ensure (char= (residue-of rna-seq n) (aref residues n))))))
 
 ;;; Sequence transformations
-(test to-string/dna-sequence
+(addtest (bio-sequence-tests) to-string/dna-sequence
   (let* ((residues "acgt")
          (seq (make-dna residues)))
     ;; no args
-    (is (string= residues (to-string seq)))
+    (ensure (string= residues (to-string seq)))
     ;; optional arg start
      (dotimes (n 4)
-       (is (string= (subseq residues n) (to-string seq :start n))))
+       (ensure (string= (subseq residues n)
+                        (to-string seq :start n))))
      (dotimes (n 4)
-       (is (string= (subseq residues 0 n) (to-string seq :start 0 :end n))))))
+       (ensure (string= (subseq residues 0 n)
+                        (to-string seq :start 0 :end n))))))
 
-(test to-string/rna-sequence
+(addtest (bio-sequence-tests) to-string/rna-sequence
   (let* ((residues "acgu")
          (seq (make-rna residues)))
     ;; no args
-    (is (string= residues (to-string seq)))
+    (ensure (string= residues (to-string seq)))
     ;; optional arg start
      (dotimes (n 4)
-       (is (string= (subseq residues n) (to-string seq :start n))))
+       (ensure (string= (subseq residues n)
+                        (to-string seq :start n))))
      (dotimes (n 4)
-       (is (string= (subseq residues 0 n) (to-string seq :start 0 :end n))))))
+       (ensure (string= (subseq residues 0 n)
+                        (to-string seq :start 0 :end n))))))
 
-(test reverse-sequence/dna-sequence
+(addtest (bio-sequence-tests) reverse-sequence/dna-sequence
   (let* ((residues "aaccggtt")
          (seq (make-dna residues)))
-    (is (string= (to-string (reverse-sequence seq))
-                 (reverse residues)))))
+    (ensure (string= (to-string (reverse-sequence seq))
+                     (reverse residues)))))
 
-(test reverse-sequence/dna-quality-sequence
+(addtest (bio-sequence-tests) reverse-sequence/dna-quality-sequence
   (let* ((residues "agaatattctgaccccagttactttcaaga")
          (quality "<<<<<<<<<<<<<<<<<<<<<735513;3<")
          (seq (make-dna-quality residues quality :metric :phred))
          (rseq (reverse-sequence seq)))
-    (is (string= (to-string rseq)
-                 (reverse residues)))
-    (is (string= (reverse quality)
-                 (map-into (make-string (length residues))
-                           #'encode-phred-quality
-                           (quality-of rseq))))))
+    (ensure (string= (to-string rseq)
+                     (reverse residues)))
+    (ensure (string= (reverse quality)
+                     (map-into (make-string (length residues))
+                               #'encode-phred-quality
+                               (quality-of rseq))))))
 
-(test nreverse-sequence/dna-sequence
+(addtest (bio-sequence-tests) nreverse-sequence/dna-sequence
   (let* ((residues "aaccggtt")
          (seq (make-dna residues)))
-    (is (string= (to-string (nreverse-sequence seq))
-                 (reverse residues)))))
+    (ensure (string= (to-string (nreverse-sequence seq))
+                     (reverse residues)))))
 
-(test nreverse-sequence/dna-quality-sequence
+(addtest (bio-sequence-tests) nreverse-sequence/dna-quality-sequence
   (let* ((residues "agaatattctgaccccagttactttcaaga")
          (quality "<<<<<<<<<<<<<<<<<<<<<735513;3<")
          (rresidues (reverse residues))
          (rquality (reverse quality))
          (seq (make-dna-quality residues quality :metric :phred))
          (rseq (nreverse-sequence seq)))
-    (is (string= rresidues (to-string rseq)))
-    (is (equalp rquality
-                (map-into (make-string (length residues))
-                          #'encode-phred-quality
-                          (quality-of rseq))))))
+    (ensure (string= rresidues (to-string rseq)))
+    (ensure (equalp rquality
+                    (map-into (make-string (length residues))
+                              #'encode-phred-quality
+                              (quality-of rseq))))))
 
-(test complement-sequence/dna-sequence
-  (let* ((residues "acgtrykmswbdhvn")
-         (seq (make-dna residues)))
-    (is (string= (to-string (complement-sequence seq))
-                 "tgcayrmkswvhdbn"))))
+(addtest (bio-sequence-tests) complement-sequence/dna-sequence
+  (let ((seq (make-dna dna-residues)))
+    (ensure (string= (to-string (complement-sequence seq))
+                     "atcgyrmkswvhdbn-"))))
 
-(test complement-sequence/dna-quality-sequence
+(addtest (bio-sequence-tests) complement-sequence/dna-quality-sequence
   (let* ((residues "agaatattctgaccccagttactttcaaga")
          (quality "<<<<<<<<<<<<<<<<<<<<<735513;3<")
          (seq (make-dna-quality residues quality :metric :phred)))
-    (is (string= "tcttataagactggggtcaatgaaagttct"
-                 (to-string (complement-sequence seq))))
-    (is (string= quality
-                 (map-into (make-string (length residues))
-                          #'encode-phred-quality
-                          (quality-of seq))))))
+    (ensure (string= "tcttataagactggggtcaatgaaagttct"
+                     (to-string (complement-sequence seq))))
+    (ensure (string= quality
+                     (map-into (make-string (length residues))
+                               #'encode-phred-quality
+                               (quality-of seq))))))
 
-(test reverse-complement/dna-sequence
-  (let* ((residues "acgtrykmswbdhvn")
-         (seq (make-dna residues)))
-    (is (string= (to-string (reverse-complement seq))
-                 "nbdhvwskmryacgt"))))
+(addtest (bio-sequence-tests) reverse-complement/dna-sequence
+  (let ((seq (make-dna dna-residues)))
+    (ensure (string= (to-string (reverse-complement seq))
+                     "-nbdhvwskmrygcta"))))
 
-(test reverse-complement/dna-quality-sequence
+(addtest (bio-sequence-tests) reverse-complement/dna-quality-sequence
   (let* ((residues "agaatattctgaccccagttactttcaaga")
          (quality "<<<<<<<<<<<<<<<<<<<<<735513;3<")
          (rquality (reverse quality))
          (seq (make-dna-quality residues quality :metric :phred)))
-    (is (string= "tcttgaaagtaactggggtcagaatattct"
-                 (to-string (reverse-complement seq))))
+    (ensure (string= "tcttgaaagtaactggggtcagaatattct"
+                     (to-string (reverse-complement seq))))
     (let ((rcquality (quality-of (reverse-complement seq))))
-      (is (string= rquality
-                   (map-into (make-string (length residues))
-                             #'encode-phred-quality rcquality))))))
+      (ensure (string= rquality
+                       (map-into (make-string (length residues))
+                                 #'encode-phred-quality rcquality))))))
 
-(test nreverse-complement/dna-sequence
-  (let* ((residues "acgtrykmswbdhvn")
-         (seq (make-dna residues)))
-    (is (string= (to-string (nreverse-complement seq))
-                 "nbdhvwskmryacgt"))))
+(addtest (bio-sequence-tests) nreverse-complement/dna-sequence
+  (let ((seq (make-dna dna-residues)))
+    (ensure (string= (to-string (nreverse-complement seq))
+                     "-nbdhvwskmrygcta"))))
 
-(test nreverse-complement/dna-quality-sequence
+(addtest (bio-sequence-tests) nreverse-complement/dna-quality-sequence
   (let* ((residues "agaatattctgaccccagttactttcaaga")
          (quality "<<<<<<<<<<<<<<<<<<<<<735513;3<")
          (rquality (reverse quality))
          (seq (make-dna-quality residues quality :metric :phred))
          (rseq (nreverse-complement seq)))
-    (is (string= "tcttgaaagtaactggggtcagaatattct" (to-string rseq)))
+    (ensure (string= "tcttgaaagtaactggggtcagaatattct" (to-string rseq)))
     (let ((rcquality (quality-of rseq)))
-      (is (string= rquality
-                   (map-into (make-string (length residues))
-                             #'encode-phred-quality rcquality))))))
+      (ensure (string= rquality
+                       (map-into (make-string (length residues))
+                                 #'encode-phred-quality rcquality))))))
 
-(test subsequence/bio-sequence
+(addtest (bio-sequence-tests) subsequence/bio-sequence
   (let* ((residues "aaggccttaaggcctt")
          (seq (make-dna residues)))
-    (is (string= (subseq residues 0 5) ; aaggc
-                 (to-string (subsequence seq 0 5))))
-    (is (string= residues
-                 (to-string (subsequence seq 0))))))
+    (ensure (string= (subseq residues 0 5) ; aaggc
+                     (to-string (subsequence seq 0 5))))
+    (ensure (string= residues
+                     (to-string (subsequence seq 0))))))
 
-(test subsequence/dna-quality-sequence
+(addtest (bio-sequence-tests) subsequence/dna-quality-sequence
   (let* ((residues "agaatattctgaccccagttactttcaaga")
          (quality "<<<<<<<<<<<<<<<<<<<<<735513;3<")
          (seq (make-dna-quality residues quality :metric :phred)))
-    (is (string= (subseq residues 0 5)
-                 (to-string (subsequence seq 0 5))))
+    (ensure (string= (subseq residues 0 5)
+                     (to-string (subsequence seq 0 5))))
     (loop
        for q across (quality-of (subsequence seq 0 5))
-       do (is (= 27 q)))))
+       do (ensure (= 27 q)))))
 
-(test residue-frequencies/bio-sequence
+(addtest (bio-sequence-tests) residue-frequencies/bio-sequence
   (let ((seq (make-dna "aacccgggt")))
     (mapc #'(lambda (token freq)
-              (is (eq (cdr (assoc token (residue-frequencies
-                                         seq
-                                         (find-alphabet :dna))
-                                  :test #'char= )) freq)))
+              (ensure (eq (cdr (assoc token (residue-frequencies
+                                             seq
+                                             (find-alphabet :dna))
+                                      :test #'char= )) freq)))
           '(#\a #\c #\g #\t)
           '(2 3 3 1))))
 
-(test search-sequence
+(addtest (bio-sequence-tests) search-sequence
   (let ((seq (make-dna "tacgagtcgttttagcgcgattatataa"))
         (sub (make-dna "gtttt")))
-    (is (= 8 (search-sequence sub seq)))
-    (is (= 9 (search-sequence sub seq :start1 1)))
-    (is (= 8 (search-sequence sub seq :start2 1)))
-    (is (= 3 (search-sequence sub seq :end1 1)))
-    (is (null (search-sequence sub seq :end2 1)))))
+    (ensure (= 8 (search-sequence sub seq)))
+    (ensure (= 9 (search-sequence sub seq :start1 1)))
+    (ensure (= 8 (search-sequence sub seq :start2 1)))
+    (ensure (= 3 (search-sequence sub seq :end1 1)))
+    (ensure-null (search-sequence sub seq :end2 1))))

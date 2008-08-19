@@ -37,8 +37,13 @@ fixnum."))
   (:documentation "Returns T if CHAR is a member token of ALPHABET, or
 NIL otherwise."))
 
+(defgeneric ambiguousp (alphabet char)
+  (:documentation "Returns T if CHAR is ambiguous in ALPHABET, or NIL
+otherwise."))
+
 (defgeneric explode-ambiguity (alphabet char)
-  (:documentation ""))
+  (:documentation "Returns a list of the ambuguity characters
+represented by CAHR in ALPHABET."))
 
 (defgeneric virtualp (bio-sequence)
   (:documentation "Returns T if BIO-SEQUENCE has no concrete token
@@ -196,3 +201,65 @@ PATHNAME-GEN. See iou:pathname-generator and iou:pathname-extender
   (:documentation "Converts the sequence data in the file identified
 by IN-FILESPEC in format IN-FORMAT, to OUT-FORMAT, writing the data to
 a new file identified by OUT-FILESPEC."))
+
+(defgeneric align-local (seqm seqn subst-fn &key gap-open gap-extend
+                         band-centre band-width alignment)
+  (:documentation "Performs Smith Waterman sequence alignment using
+affine gap penalties. The affine gap scoring is expressed as
+penalties, that is to say GAP-OPEN and GAP-EXTEND should be negative
+values. The alignment may be banded to prune the search space.
+
+Arguments:
+
+- seqm \(vector\): A sequence to be aligned.
+- seqn \(vector\): A sequence to be aligned.
+- subst-fn \(function\): A substitution function that accepts two
+sequence elements as arguments and returns a single-float substitution
+score.
+
+Key:
+
+- gap-open \(single-float\): The gap opening penalty.
+- gap-extend \(single-float\): The gap extension penalty.
+- band-centre \(fixnum\): The band centre for banded searches. This
+defaults to 0, the main diagonal. The desired band may be calculated
+by subtracting a j coordinate from its corresponding i coordinate.
+- band-width \(fixnum\): The band width for banded searches. This
+defaults to most-positive-fixnum so that the search space is not
+pruned.
+- alignment \(boolean\): Flag to indicate whether an alignment should
+be returned.
+
+Returns:
+
+- The single-float score of the alignment.
+- An alignment object, or NIL."))
+
+(defgeneric align-local-ksh (seqm seqn subst-fn &key gap-open gap-extend k
+                             alignment)
+  (:documentation "Performs Smith Waterman sequence alignment using
+affine gap penalties with a kmer seeding heuristic. The affine gap
+scoring is expressed as penalties, that is to say GAP-OPEN and
+GAP-EXTEND should be negative values. The alignment is seeded with
+kmers of length K and the alignment is banded to include all such kmers.
+
+Arguments:
+
+- seqm \(vector\): A sequence to be aligned.
+- seqn \(vector\): A sequence to be aligned.
+- subst-fn \(function\): A substitution function that accepts two
+sequence elements as arguments and returns a single-float substitution
+score.
+
+Key:
+
+- gap-open \(single-float\): The gap opening penalty.
+- gap-extend \(single-float\): The gap extension penalty.
+- k \(fixnum\): The seed kmer length.
+- alignment \(boolean\): Flag to indicate whether an alignment should
+be returned.
+
+Returns:
+
+- The single-float score of the alignment.
+- An alignment object, or NIL."))

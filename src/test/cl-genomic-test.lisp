@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (C) 2007-2008, Keith James. All rights reserved.
+;;; Copyright (C) 2008 Keith James. All rights reserved.
 ;;;
 ;;; This program is free software: you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
@@ -15,8 +15,9 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;
 
-(defpackage :cl-genomic-test
-  (:use #:common-lisp #:cl-gp-utilities #:cl-io-utilities
-        #:bio-sequence #:lift)
-  (:export #:cl-genomic-tests)
-  (:documentation "cl-genomic tests."))
+(in-package :cl-genomic-test)
+
+;; The base test of all cl-genomic tests
+(deftestsuite cl-genomic-tests ()
+  ((dna-residues "tagcrykmswbdhvn-")
+   (rna-residues "uagcrykmswbdhvn-")))

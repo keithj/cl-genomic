@@ -241,7 +241,7 @@ Returns:
           (n (length vecn)))
       (with-affine-gap-matrices
           (mat del ins btr) ((1+ m) (1+ n))
-        (define-affine-gap-dp2
+        (define-affine-gap-dp
             ( ((row col) (prev-row prev-col) (max-row max-col))
               (cell-score del-score ins-score max-score)
               (mat del ins btr (gap-open gap-extend))
@@ -392,9 +392,8 @@ the arguments.
         ;; kmers k is 2, which is why we test of that condition
         ;; above. It would be nice to omit that special case.
         (setf k (+ 2 (- maxd mind))
-              c (round (the fixnum
-                         (+ (the fixnum
-                              (/ (the fixnum (- maxd mind)) 2)) mind))))))
+              c (round (+ (/ (the fixnum (- maxd mind)) 2.0)
+                          mind)))))
     (values k c)))
 
 (defun print-banding (m n band-centre band-width a b)
@@ -426,15 +425,18 @@ the arguments.
                    :external-format :ascii)
     (let ((adapter (make-dna "GATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG"))
           (gen  (make-seq-input (make-line-input-stream in) :fastq
-                                :alphabet :dna :metric :phred)))
+                                :alphabet :dna :metric :phred
+                                :parser (make-instance 'raw-sequence-parser))))
       (loop
          with total = 0
          with count = 0
          as fq = (next gen)
          while fq
          do (multiple-value-bind (score seqs)
-                (align-local adapter fq #'simple-dna-subst)
-              ;; (align-local-ksh adapter fq #'simple-dna-subst :k 6)
+                ;; (align-local (to-string adapter)
+                ;;              (assocdr :residues fq) #'simple-dna-subst)
+              (align-local-ksh (to-string adapter) (assocdr :residues fq)
+                               #'simple-dna-subst :k 6)
               (when (> score 35.0)
                 (incf total))
               (when (= 50000 count)

@@ -271,7 +271,6 @@
 (defmethod nreverse-complement ((seq token-sequence))
   (nreverse-sequence (ncomplement-sequence seq)))
 
-
 (defmethod search-sequence :around ((seq1 token-sequence)
                                     (seq2 token-sequence)
                                     &key from-end start1 start2 end1 end2)

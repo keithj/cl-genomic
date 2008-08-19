@@ -78,7 +78,8 @@ ENCODED-BASE."
     (#b1101 #b0111)
     (#b0111 #b1101)
     (#b1110 #b1011)
-    (#b1111 #b1111)))
+    (#b1111 #b1111)
+    (#b0000 #b0000)))
 
 (declaim (inline complement-rna-4bit))
 (defun complement-rna-4bit (encoded-base)

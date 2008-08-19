@@ -148,6 +148,12 @@ frame."))
 ;; Want a shorthand for defining and adding a frame with slots
 
 
+(defun framep (object)
+  (subtypep (type-of object) 'frame))
+
+(defun slotp (object)
+  (subtypep (type-of object) 'slot))
+
 (defmethod initialize-instance :after ((kb knowledgebase) &key)
   )
 
@@ -182,7 +188,6 @@ frame."))
   (let ((*print-circle* t))
     (with-slots (name value) slot
       (format stream "<SLOT ~a: ~a>" name value))))
-
 
 ;;; Frame methods
 (defmethod find-frame ((frame-name string)
@@ -278,21 +283,37 @@ frame."))
 
 ;;; Slot value methods
 (defmethod slot-value-of ((frame frame) (slot-name string))
+  (unless (contains-slot-p frame slot-name)
+    (error 'knowledgebase-error :text
+           (format nil "~a is not a slot of ~a." slot-name frame)))
   ;; Need to delegate correctly so that dispatch on slot type can
   ;; occur
-  (value-of (find-slot frame slot-name)))
+  (slot-value-of frame (find-slot frame slot-name)))
+
+(defmethod slot-value-of ((frame frame) (slot single-valued-slot))
+  (value-of slot))
+
+;; Need to separate set-valued and single-valued
+;; (defmethod slot-value-of ((frame frame) (slot transitive-mixin))
+;;   (let ((value (value-of slot)))
+;;     (cond ((null value)
+;;            nil)
+;;           ((framep value)
+;;            (cons value (slot-value-of value (name-of slot))))
+;;           ((listp value)
+;;            (loop
+;;               for subval in value
+;;               nconc (if (framep subval)
+;;                         (append (list subval) (slot-value)))
+;;                 ))))
+;;   )
 
 (defmethod (setf slot-value-of) (value (frame frame) (slot-name string))
+  (unless (contains-slot-p frame slot-name)
+    (error 'knowledgebase-error :text
+           (format nil "~a is not a slot of ~a." slot-name frame)))
   (update-slot-value frame (find-slot frame slot-name) value))
 
-
-(defmethod read-slot-value ((frame frame) (slot single-valued-slot))
-
-  )
-
-(defmethod read-slot-value ((frame frame) (slot transitive-mixin))
-  
-  )
 
 
 ;; Possibly separate methods for direct slot values transitive slot

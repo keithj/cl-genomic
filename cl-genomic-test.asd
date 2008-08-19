@@ -18,18 +18,23 @@
 (in-package #:cl-genomic-system)
 
 (defsystem cl-genomic-test
-    :depends-on (:cl-genomic :fiveam)
+    :depends-on (:cl-genomic :lift)
     :components ((:module :cl-genomic-test
                           :pathname "src/test/"
                           :components
                           ((:file "package")
-                           (:file "bio-sequence-test"
+                           (:file "cl-genomic-test"
                                   :depends-on ("package"))
+                           (:file "bio-sequence-test"
+                                  :depends-on ("package"
+                                               "cl-genomic-test"))
                            (:file "bio-sequence-io-test"
                                   :depends-on ("package"
+                                               "cl-genomic-test"
                                                "bio-sequence-test"))
                            (:file "bio-sequence-encoding-test"
                                   :depends-on ("package"
+                                               "cl-genomic-test"
                                                "bio-sequence-test"))
                            (:file "frames-test"
                                   :depends-on ("package"
