@@ -34,7 +34,7 @@ sequence data with additional residue quality information."))
 
 (defclass raw-sequence-parser (bio-sequence-parser
                                quality-parser-mixin)
-  ((raw :initform '()
+  ((raw :initform ()
         :accessor parsed-raw
         :documentation "The raw sequence data parsed from the input
 stream."))

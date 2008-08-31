@@ -216,7 +216,8 @@ records. WRITER is a function capable of writing an alist of raw data
 contain keys and values as created by {defclass raw-sequence-parser} ,
 for example, {defun write-raw-fasta} and {defun write-raw-fastq} ."
   (declare (optimize (speed 3)))
-  (declare (type function writer))
+  (declare (type function writer)
+           (type fixnum n))
   (unless (plusp n)
     (error 'invalid-argument-error
            :params 'n

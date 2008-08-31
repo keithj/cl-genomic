@@ -41,12 +41,6 @@
                  :token #\-
                  :number -1))
 
-(defvar *without-strand*
-  (make-instance 'sequence-strand
-                 :name :unstranded
-                 :token #\.
-                 :number 0))
-
 (defvar *unknown-strand*
   (make-instance 'sequence-strand
                  :name :unknown
@@ -111,7 +105,10 @@ numeric quality value for each residue."))
   (:documentation "A biological sequence."))
 
 (defclass nucleic-acid-sequence (bio-sequence)
-  ()
+  ((strand-num :initform 1
+               :initarg :strand-num
+               :accessor strand-num-of
+               :documentation "The number of sequence strands."))
   (:documentation "A nucleic acid sequence."))
 
 (defclass dna-sequence (nucleic-acid-sequence)
@@ -146,3 +143,9 @@ bases."))
                                              identity-mixin)
   ())
 
+;; We could add mixins for double- versus single-stranded sequences
+;; Also need to add circularity
+
+;; Stranded intervals may be placed only on double-stranded sequences
+;; Or if single-stranded sequences are just that, single-stranded,
+;; they do have a strand, evenif specifying it is redundant

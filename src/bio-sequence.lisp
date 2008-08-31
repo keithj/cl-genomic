@@ -130,6 +130,14 @@
   (with-slots (vector) seq
     (length vector)))
 
+(defmethod single-stranded-p ((seq nucleic-acid-sequence))
+  (with-slots (strand-num) seq
+    (= 1 strand-num)))
+
+(defmethod double-stranded-p ((seq nucleic-acid-sequence))
+  (with-slots (strand-num) seq
+    (= 2 strand-num)))
+
 (defmethod residue-of ((seq encoded-dna-sequence) (index fixnum))
   (decode-dna-4bit (aref (vector-of seq) index)))
 
