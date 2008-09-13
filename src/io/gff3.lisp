@@ -369,7 +369,7 @@ START and END."
 SEQUENCE-STRAND instance) corresponding to line STR between START and
 END."
   (cond ((string= +gff3-dot-column+ str :start2 start :end2 end)
-         *without-strand*)
+         nil) ; FIXME -- was *without-strand*, should it be nil?
         ((string= +gff3-forward-strand+ str :start2 start :end2 end)
          *forward-strand*)
         ((string= +gff3-reverse-strand+ str :start2 start :end2 end)

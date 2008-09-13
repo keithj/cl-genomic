@@ -37,6 +37,9 @@ fixnum."))
   (:documentation "Returns T if CHAR is a member token of ALPHABET, or
 NIL otherwise."))
 
+(defgeneric token-index (alphabet token)
+  (:documentation ""))
+
 (defgeneric ambiguousp (alphabet char)
   (:documentation "Returns T if CHAR is ambiguous in ALPHABET, or NIL
 otherwise."))
@@ -49,8 +52,12 @@ represented by CAHR in ALPHABET."))
   (:documentation "Returns T if BIO-SEQUENCE has no concrete token
 sequence representation, merely a length, or NIL otherwise."))
 
-(defgeneric length-of (bio-sequence)
-  (:documentation "Returns the length of BIO-SEQUENCE."))
+(defgeneric single-stranded-p (nucleic-acid-sequence)
+  (:documentation ""))
+
+(defgeneric double-stranded-p (nucleic-acid-sequence)
+  (:documentation ""))
+
 
 (defgeneric residue-of (bio-sequence index)
   (:documentation "Returns the residue at INDEX of BIO-SEQUENCE. As

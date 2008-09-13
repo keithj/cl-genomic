@@ -29,7 +29,6 @@
 
    #:*forward-strand*
    #:*reverse-strand*
-   #:*without-strand*
    #:*unknown-strand*
 
    #:*default-knowledgebase*
@@ -39,7 +38,6 @@
    #:bio-sequence-warning
    #:bio-sequence-io-error
    #:bio-sequence-op-error
-   #:knowledgebase-error
 
    ;; Functions
    #:make-dna
@@ -62,32 +60,21 @@
 
    ;; Classes
    #:alphabet
+   #:sequence-strand
    #:bio-sequence
    #:nucleic-acid-sequence
    #:dna-sequence
    #:rna-sequence
    #:dna-quality-sequence
-
+   #:interval
+   #:bio-sequence-interval
+   #:nucleic-acid-sequence-interval
+   
    #:bio-sequence-parser
    #:raw-sequence-parser
    #:simple-sequence-parser
    #:quality-sequence-parser
    #:virtual-sequence-parser
-   
-   #:knowledgebase
-   #:reflexive-mixin
-   #:transitive-mixin
-   #:inverse-mixin
-   #:frame
-   #:single-valued-slot
-   #:set-valued-slot
-   #:single-valued-inverse-slot
-   #:set-valued-inverse-slot
-   #:part-of
-   #:has-part
-   #:subsequence-of
-   #:has-subsequence
-   #:instance
 
    ;; Generic functions
    #:anonymousp
@@ -96,6 +83,9 @@
    #:ambiguousp
    #:simplep
    #:virtualp
+   #:num-strands-of
+   #:single-stranded-p
+   #:double-stranded-p
    #:size-of
    #:memberp
    #:tokens-of
@@ -106,6 +96,12 @@
    #:residue-of
    #:residues-of
    #:length-of
+   #:metric-of
+   #:quality-of
+   #:upper-of
+   #:lower-of
+   #:strand-of
+   #:reference-of
    #:subsequence
    #:reverse-sequence
    #:nreverse-sequence
@@ -116,8 +112,8 @@
    #:search-sequence
    #:residue-frequencies
    #:to-string
-   #:metric-of
-   #:quality-of
+
+   #:interval-sequence
 
    #:make-seq-input
    #:make-seq-output

@@ -36,6 +36,6 @@
                                   :depends-on ("package"
                                                "cl-genomic-test"
                                                "bio-sequence-test"))
-                           (:file "frames-test"
+                           (:file "bio-sequence-interval-test"
                                   :depends-on ("package"
-                                               "bio-sequence-test"))))))
+                                               "cl-genomic-test"))))))

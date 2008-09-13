@@ -22,30 +22,27 @@
          :reader name-of
          :documentation "The strand name.")
    (token :initarg :token
-            :reader token-of
-            :documentation "The token representing the strand.")
+          :reader token-of
+          :documentation "The token representing the strand.")
    (number :initarg :number
            :reader number-of
-             :documentation "The number representing the strand."))
+           :documentation "The number representing the strand."))
   (:documentation "The strand of a nucleotide sequence."))
 
 (defvar *forward-strand*
-  (make-instance 'sequence-strand
-                 :name :forward
-                 :token #\+
-                 :number 1))
+  (make-instance 'sequence-strand :name :forward :token #\+ :number 1))
 
 (defvar *reverse-strand*
-  (make-instance 'sequence-strand
-                 :name :reverse
-                 :token #\-
-                 :number -1))
+  (make-instance 'sequence-strand :name :reverse :token #\- :number -1))
 
 (defvar *unknown-strand*
-  (make-instance 'sequence-strand
-                 :name :unknown
-                 :token #\?
-                 :number nil))
+  (make-instance 'sequence-strand :name :unknown :token #\? :number nil))
+
+(defclass stranded-mixin ()
+  ((strand :type sequence-strand
+           :initform *unknown-strand*
+           :initarg :strand
+           :accessor strand-of)))
 
 (defclass identity-mixin ()
   ((identity :initform nil
@@ -105,10 +102,10 @@ numeric quality value for each residue."))
   (:documentation "A biological sequence."))
 
 (defclass nucleic-acid-sequence (bio-sequence)
-  ((strand-num :initform 1
-               :initarg :strand-num
-               :accessor strand-num-of
-               :documentation "The number of sequence strands."))
+  ((num-strands :initform 1
+                :initarg :num-strands
+                :accessor num-strands-of
+                :documentation "The number of sequence strands."))
   (:documentation "A nucleic acid sequence."))
 
 (defclass dna-sequence (nucleic-acid-sequence)
@@ -143,9 +140,4 @@ bases."))
                                              identity-mixin)
   ())
 
-;; We could add mixins for double- versus single-stranded sequences
 ;; Also need to add circularity
-
-;; Stranded intervals may be placed only on double-stranded sequences
-;; Or if single-stranded sequences are just that, single-stranded,
-;; they do have a strand, evenif specifying it is redundant

@@ -22,9 +22,9 @@
 
 ;;; Alphabets
 (addtest (bio-sequence-tests) find-alphabet/standard
-  (ensure-same *dna* (find-alphabet :dna))
-  (ensure-same *rna* (find-alphabet :rna))
-  (ensure-error
+   (ensure-same *dna* (find-alphabet :dna))
+   (ensure-same *rna* (find-alphabet :rna))
+   (ensure-error
     (find-alphabet :foo)))
 
 (addtest (bio-sequence-tests) standard-alphabets
@@ -43,14 +43,12 @@
 (addtest (bio-sequence-tests) name-of/alphabet
   (let ((name "test name"))
     (ensure (string= name
-                     (name-of (make-instance 'alphabet
-                                             :name name))))))
+                     (name-of (make-instance 'alphabet :name name))))))
 
 (addtest (bio-sequence-tests) tokens-of/alphabet
   (let ((tokens "abcd"))
     (ensure (string= tokens
-                     (tokens-of (make-instance 'alphabet
-                                               :tokens tokens))))))
+                     (tokens-of (make-instance 'alphabet :tokens tokens))))))
 
 ;;; Sequence constructors
 (addtest (bio-sequence-tests) make-dna/rna
@@ -78,6 +76,16 @@
     (make-rna "t"))
   (ensure-error
     (make-dna '(#\t #\a #\g #\c))))
+
+(addtest (bio-sequence-tests) make-dna/rna/strands
+  (ensure (= 1 (num-strands-of (make-dna "tagc"))))
+  (ensure (= 2 (num-strands-of (make-dna "tagc" :num-strands 2))))
+  (ensure (= 1 (num-strands-of (make-rna "uagc"))))
+  (ensure (= 2 (num-strands-of (make-rna "uagc" :num-strands 2)))))
+
+(addtest (bio-sequence-tests) make-dna/rna/virtual
+  (ensure (string= "----" (to-string (make-dna nil :length 4))))
+  (ensure (string= "----" (to-string (make-rna nil :length 4)))))
 
 (addtest (bio-sequence-tests) phred-quality
   (let ((pvals '(0.1 0.01 0.001 0.0001 0.00001))
@@ -123,11 +131,27 @@
   (ensure (anonymousp (make-dna "tagc")))
   (ensure (not (anonymousp (make-dna "tagc" :identity "test")))))
 
+(addtest (bio-sequence-tests) single-stranded-p
+  (let ((seq (make-dna "aaaaaaaaaa")))
+    (ensure (single-stranded-p seq))))
+
+(addtest (bio-sequence-tests) double-stranded-p
+  (let ((seq (make-dna "aaaaaaaaaa" :num-strands 2)))
+    (ensure (double-stranded-p seq))))
+
 ;;; Sequence accessors
+(addtest (bio-sequence-tests) num-strands-of/nucleic-acid-sequence
+  (let ((ss-seq (make-dna "aaaaaaaaaa"))
+        (ds-seq (make-dna "aaaaaaaaaa" :num-strands 2)))
+    (ensure (= 1 (num-strands-of ss-seq)))
+    (ensure (= 2 (num-strands-of ds-seq)))))
+
 (addtest (bio-sequence-tests) length-of/bio-sequence
   (let ((len 10))
     (ensure (= len (length-of (make-dna "aaaaaaaaaa"))))
-    (ensure (= len (length-of (make-dna "aaaaaaaaaa"))))))
+    (ensure (= len (length-of (make-rna "aaaaaaaaaa"))))
+    (ensure (= len (length-of (make-dna nil :length len))))
+    (ensure (= len (length-of (make-rna nil :length len))))))
 
 (addtest (bio-sequence-tests) residue-of/dna-sequence
   (let ((residues "tttt")
@@ -142,6 +166,12 @@
     (dotimes (n (length residues))
       (setf (residue-of rna-seq n) (aref residues n))
       (ensure (char= (residue-of rna-seq n) (aref residues n))))))
+
+(addtest (bio-sequence-tests) residue-of/virtual-dna-sequence
+  (let* ((len 10)
+         (seq (make-dna nil :length 10)))
+    (dotimes (n len)
+      (ensure (char= #\- (residue-of seq n))))))
 
 ;;; Sequence transformations
 (addtest (bio-sequence-tests) to-string/dna-sequence

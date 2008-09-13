@@ -50,9 +50,11 @@
                                   :depends-on ("package"
                                                "bio-alphabets"
                                                "bio-sequence-encoding"))
+                           (:file "bio-sequence-interval"
+                                  :depends-on ("package"
+                                               "generics"
+                                               "bio-sequence-classes"))
                            (:file "generics"
-                                  :depends-on ("package"))
-                           (:file "frames"
                                   :depends-on ("package"))
                            (:file "bio-sequence"
                                   :depends-on ("package"
