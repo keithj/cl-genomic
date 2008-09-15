@@ -62,13 +62,13 @@
    #:alphabet
    #:sequence-strand
    #:bio-sequence
-   #:nucleic-acid-sequence
+   #:na-sequence
    #:dna-sequence
    #:rna-sequence
    #:dna-quality-sequence
    #:interval
    #:bio-sequence-interval
-   #:nucleic-acid-sequence-interval
+   #:na-sequence-interval
    
    #:bio-sequence-parser
    #:raw-sequence-parser
@@ -112,8 +112,8 @@
    #:search-sequence
    #:residue-frequencies
    #:to-string
-
-   #:interval-sequence
+   #:invert-complement
+   #:ninvert-complement
 
    #:make-seq-input
    #:make-seq-output

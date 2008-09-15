@@ -24,35 +24,78 @@
 (defclass interval ()
   ((reference :initform nil
               :initarg :reference
-              :accessor reference-of)
-   (upper :type fixnum
-          :initform 0
-          :initarg :upper
-          :accessor upper-of)
+              :accessor reference-of
+              :documentation "A reference sequence within which the
+              interval lies.")
    (lower :type fixnum
           :initform 0
           :initarg :lower
-          :accessor lower-of)))
+          :accessor lower-of
+          :documentation "The lower bound of the interval. If a
+          reference is defined, this must be within the bounds of the
+          reference sequence.")
+   (upper :type fixnum
+          :initform 0
+          :initarg :upper
+          :accessor upper-of
+          :documentation "The upper bound of the interval."))
+  (:documentation "An interval within a reference sequence. If a
+  reference is defined, this must be within the bounds of the
+  reference sequence. The basic interval has no notion of sequence
+  strandedness; the bounds always refer to the "))
 
 (defclass bio-sequence-interval (bio-sequence interval)
-  ())
+  ()
+  (:documentation "A biological sequence that is an interval within a
+  reference sequence."))
 
-(defclass nucleic-acid-sequence-interval (nucleic-acid-sequence
-                                          interval stranded-mixin)
-  ())
+(defclass na-sequence-interval (na-sequence interval stranded-mixin)
+  ()
+  (:documentation "A nucleic acid sequence that is an interval within
+  a reference sequence. In addition to the upper and lower bounds, a
+  strand is defined. The strand indicates the strand of the reference
+  sequence on which the interval lies. The"))
 
+(defgeneric invert-complement (na-sequence-interval)
+  (:documentation "Adds a copy of NA-SEQUENCE-INTERVAL to the
+  corresponding position on the complementary strand of the reference
+  sequence."))
+
+(defgeneric ninvert-complement (na-sequence-interval)
+  (:documentation "Destructively modifies NA-SEQUENCE-INTERVAL, moving
+  it to the position on the complementary strand of the reference
+  sequence."))
+
+;;; Initialization methods
 (defmethod initialize-instance :after ((interval bio-sequence-interval) &key)
   (with-slots (lower upper reference)
       interval
     (check-interval-range lower upper reference)))
   
 (defmethod initialize-instance :after
-    ((interval nucleic-acid-sequence-interval) &key)
+    ((interval na-sequence-interval) &key)
   (with-slots (reference lower upper strand num-strands)
       interval
     (check-interval-range lower upper reference)
     (check-interval-strands strand num-strands reference)))
 
+;;; Printing methods
+(defmethod print-object ((interval interval) stream)
+  (with-slots (lower upper)
+      interval
+    (format stream "#<INTERVAL ~a ~a>" lower upper)))
+
+(defmethod print-object ((interval bio-sequence-interval) stream)
+  (with-slots (lower upper)
+      interval
+    (format stream "#<BIO-SEQUENCE-INTERVAL ~a ~a>" lower upper)))
+
+(defmethod print-object ((interval na-sequence-interval) stream)
+  (with-slots (lower upper strand)
+      interval
+    (format stream "#<NA-SEQUENCE-INTERVAL ~a ~a ~a>" lower upper strand)))
+
+;;; Implementation methods
 (defmethod (setf reference-of) :before (value (interval interval))
   (with-slots (lower upper)
       interval
@@ -69,19 +112,19 @@
     (check-interval-range value upper reference)))
 
 (defmethod (setf reference-of) :before
-    (value (interval nucleic-acid-sequence-interval))
+    (value (interval na-sequence-interval))
   (with-slots (strand num-strands)
       interval
     (check-interval-strands strand num-strands value)))
 
 (defmethod (setf strand-of) :before
-    (value (interval nucleic-acid-sequence-interval))
+    (value (interval na-sequence-interval))
    (with-slots (reference num-strands)
        interval
      (check-interval-strands value num-strands reference)))
 
 (defmethod (setf num-strands-of) :before
-    (value (interval nucleic-acid-sequence-interval))
+    (value (interval na-sequence-interval))
   (with-slots (reference strand)
       interval
     (check-interval-strands strand value reference)))
@@ -91,32 +134,24 @@
       interval
     (- upper lower)))
 
-(defmethod to-string :around ((interval bio-sequence-interval) &key
+(defmethod to-string :around ((interval interval) &key
                               start end token-case)
   (declare (ignore start end token-case))
-  (with-slots (reference)
+  (with-slots (reference lower upper)
       interval
     (if reference
         (call-next-method)
-      (make-string 0))))
+      (make-string (- upper lower) :element-type 'base-char
+                   :initial-element #\-))))
 
-(defmethod to-string ((interval bio-sequence-interval) &key
+(defmethod to-string ((interval interval) &key
                       (start 0) (end (length-of interval)) token-case)
   (with-slots (reference lower upper)
       interval
     (to-string reference :start (+ lower start) :end (+ lower end)
                :token-case token-case)))
 
-(defmethod to-string :around ((interval nucleic-acid-sequence-interval) &key
-                              start end token-case)
-  (declare (ignore start end token-case))
-  (with-slots (reference)
-      interval
-    (if reference
-        (call-next-method)
-      (make-string 0))))
-
-(defmethod to-string ((interval nucleic-acid-sequence-interval) &key
+(defmethod to-string ((interval na-sequence-interval) &key
                       (start 0) (end (length-of interval)) token-case)
   (with-slots (reference lower upper strand)
       interval
@@ -128,7 +163,7 @@
                         :token-case token-case))
             ((and (eql *reverse-strand* strand) (= 2 num-strands))
              (to-string
-              (ncomplement-sequence
+              (nreverse-complement
                (subsequence reference (+ lower start) (+ lower end)))))
             (t
              (error 'bio-sequence-op-error
@@ -141,33 +176,34 @@
         interval
       (subsequence reference (+ lower start) (+ lower end)))))
 
-(defmethod subsequence ((interval nucleic-acid-sequence-interval)
+(defmethod subsequence ((interval na-sequence-interval)
                         (start fixnum) &optional end)
   (let ((end (or end (length-of interval))))
     (with-slots (reference lower upper strand num-strands)
         interval
-      (cond ((or (eql *unknown-strand* strand)
-                 (eql *forward-strand* strand))
-             (subsequence reference (+ lower start) (+ lower end)))
-            ((and (eql *reverse-strand* strand) (= num-strands 2))
-             (ncomplement-sequence
-              (subsequence reference (+ lower start) (+ lower end))))
-            (t
-             (error 'bio-sequence-op-error
-                    :text "a reverse-strand interval may not be applied to a single-stranded sequence."))))))
+      (let ((ref-num-strands (num-strands-of reference)))
+        (cond ((or (eql *unknown-strand* strand)
+                   (eql *forward-strand* strand))
+               (subsequence reference (+ lower start) (+ lower end)))
+              ((and (eql *reverse-strand* strand) (= ref-num-strands 2))
+               (nreverse-complement
+                (subsequence reference (+ lower start) (+ lower end))))
+              (t
+               (error 'bio-sequence-op-error
+                      :text "a reverse-strand interval may not be applied to a single-stranded sequence.")))))))
 
-(defmethod invert-complement ((interval nucleic-acid-sequence-interval))
+(defmethod invert-complement ((interval na-sequence-interval))
   (with-slots (reference lower upper strand)
       interval
     (let ((ref-length (length-of reference))
           (int-length (- upper lower)))
-      (make-instance 'nucleic-acid-sequence-interval
+      (make-instance 'na-sequence-interval
                      :lower (- ref-length upper)
                      :upper (+ (- ref-length upper) int-length)
                      :strand (invert-strand strand)
                      :reference reference))))
 
-(defmethod ninvert-complement ((interval nucleic-acid-sequence-interval))
+(defmethod ninvert-complement ((interval na-sequence-interval))
   (with-slots (reference lower upper strand num-strands)
       interval
     (check-interval-strands (invert-strand strand) num-strands reference)
@@ -178,9 +214,11 @@
             strand (invert-strand strand))))
   interval)
 
-
-(declaim (inline check-bounds))
+;;; Utility functions
+(declaim (inline check-interval-range))
 (defun check-interval-range (lower upper reference)
+  "Validates interval bounds LOWER and UPPER against REFERENCE to
+ensure that the interval lies within the bounds of the reference."
   (cond (reference
          (let ((length (length-of reference)))
            (cond ((or (< lower 0) (> lower length))
@@ -209,6 +247,10 @@
 
 (declaim (inline check-interval-strands))
 (defun check-interval-strands (strand num-strands reference)
+  "Validates STRAND and NUM-STRANDS against REFERENCE to ensure that a
+double-stranded interval is not applied to a single-stranded reference
+and a reverse-strand interval is not applied to a single-stranded
+reference."
   (if reference
       (let ((num-ref-strands (num-strands-of reference)))
         (cond ((and (= 1 num-ref-strands) (= 2 num-strands))

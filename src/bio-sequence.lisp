@@ -96,6 +96,24 @@
   (declare (ignore class residues initargs))
   (error "Not implemented."))
 
+;;; Printing methods
+(defmethod print-object ((alphabet alphabet) stream)
+  (format stream "#<ALPHABET ~a>" (slot-value alphabet 'name)))
+
+(defmethod print-object ((strand sequence-strand) stream)
+  (with-slots (name token number) strand
+      (format stream "#<SEQUENCE-STRAND ~a/~a/~a>" name token number)))
+
+(defmethod print-object ((seq dna-sequence) stream)
+  (print-seq-aux "DNA-SEQUENCE" seq stream))
+
+(defmethod print-object ((seq rna-sequence) stream)
+  (print-seq-aux "RNA-SEQUENCE" seq stream))
+
+(defmethod print-object ((seq dna-quality-sequence) stream)
+  (print-quality-seq-aux "DNA-QUALITY-SEQUENCE" seq stream))
+
+;;; Implementation methods
 (defmethod anonymousp ((seq identity-mixin))
   (null (identity-of seq)))
 
@@ -143,12 +161,12 @@
       seq
     (length vector)))
 
-(defmethod single-stranded-p ((seq nucleic-acid-sequence))
+(defmethod single-stranded-p ((seq na-sequence))
   (with-slots (num-strands)
       seq
     (= 1 num-strands)))
 
-(defmethod double-stranded-p ((seq nucleic-acid-sequence))
+(defmethod double-stranded-p ((seq na-sequence))
   (with-slots (num-strands)
       seq
     (= 2 num-strands)))
@@ -215,13 +233,6 @@
         ((nil) str)
         (:lowercase str)
         (:uppercase (nstring-upcase str))))))
-
-
-;;; FIXME -- add a means of making a reversed and/or complemented view
-;;; of a sequence without modifying it
-
-(defun reverse-complement-index (index len)
-  (- len index))
 
 (defmethod subsequence ((seq vector-sequence) (start fixnum)
                         &optional end)
@@ -386,28 +397,13 @@
       (pairlis (coerce (copy-seq (tokens-of alphabet)) 'list)
                (coerce frequencies 'list)))))
 
-(defmethod print-object ((alphabet alphabet) stream)
-  (format stream "<ALPHABET ~a>" (slot-value alphabet 'name)))
-
-(defmethod print-object ((strand sequence-strand) stream)
-  (with-slots (name token number) strand
-      (format stream "<SEQUENCE-STRAND ~a/~a/~a>" name token number)))
-
-(defmethod print-object ((seq dna-sequence) stream)
-  (print-seq-aux "DNA-SEQUENCE" seq stream))
-
-(defmethod print-object ((seq rna-sequence) stream)
-  (print-seq-aux "RNA-SEQUENCE" seq stream))
-
-(defmethod print-object ((seq dna-quality-sequence) stream)
-  (print-quality-seq-aux "DNA-QUALITY-SEQUENCE" seq stream))
-
+;;; Utility functions
 (defun print-seq-aux (name seq stream)
   "Helper function for printing bio-sequence objects."
   (let ((len (length-of seq)))
     (if (<= len *sequence-print-limit*)
-        (format stream "<~a \"~a\">" name (to-string seq))
-      (format stream "<~a length ~d>" name len))))
+        (format stream "#<~a \"~a\">" name (to-string seq))
+      (format stream "#<~a length ~d>" name len))))
 
 (defun print-quality-seq-aux (name seq stream)
   "Helper function for printing bio-sequence objects."
@@ -415,10 +411,10 @@
       seq
     (let ((len (length-of seq)))
       (if (<= len *sequence-print-limit*)
-          (format stream "<~a \"~a\" ~a quality \"~a\">"
+          (format stream "#<~a \"~a\" ~a quality \"~a\">"
                   name (to-string seq) metric
                   (quality-string quality metric))
-        (format stream "<~a ~a quality, length ~d>"
+        (format stream "#<~a ~a quality, length ~d>"
                 name metric len)))))
 
 (defun quality-string (quality metric)

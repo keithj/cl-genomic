@@ -28,39 +28,82 @@
                                :lower 10 :upper 1)))
 
 (addtest (bio-sequence-interval-tests)
-  make-instance/nucleic-acid-sequence-interval
+  make-instance/na-sequence-interval
   (ensure-error 'invalid-argument-error
-                (make-instance 'nucleic-acid-sequence-interval
+                (make-instance 'na-sequence-interval
                                :lower 10 :upper 1))
   (ensure-error 'invalid-argument-error
-                (make-instance 'nucleic-acid-sequence-interval
+                (make-instance 'na-sequence-interval
                                :reference (make-dna "acgt" :num-strands 1)
                                :lower 0
                                :upper 5
-                               :strand *reverse-strand*)))
+                               :strand *reverse-strand*))
+  (ensure-error 'invalid-argument-error
+                (make-instance 'na-sequence-interval
+                               :lower 0
+                               :upper 5
+                               :strand *forward-strand*
+                               :reference (make-dna "acgt" :num-strands 1)
+                               :num-strands 2)
+                :report "Made a double-stranded interval with a
+single-stranded reference."))
 
-(addtest (bio-sequence-interval-tests) bio-sequence-interval/accessors
-  (let* ((lower 0)
+(addtest (bio-sequence-interval-tests) interval/accessors
+  (let* ((lower 2)
          (upper 5)
-         (i (make-instance 'bio-sequence-interval
-                           :reference ss-seq
-                           :lower lower
-                           :upper upper)))
-    (ensure (= lower (lower-of i)))
-    (ensure (= upper (upper-of i)))
-    (ensure-same ss-seq (reference-of i))))
+         (interval (make-instance 'interval
+                                  :reference ss-seq
+                                  :lower lower
+                                  :upper upper)))
+    (ensure (= lower (lower-of interval)))
+    (ensure (= upper (upper-of interval)))
+    (ensure-same ss-seq (reference-of interval))
+    (ensure-error 'invalid-argument-error
+                  (setf (reference-of interval) (make-dna "a")))
+    (ensure-error 'invalid-argument-error
+                  (setf (lower-of interval) -1))
+    (ensure-error 'invalid-argument-error
+                  (setf (lower-of interval) 6))
+    (ensure-error 'invalid-argument-error
+                  (setf (upper-of interval) -1))
+    (ensure-error 'invalid-argument-error
+                  (setf (upper-of interval) 1))))
 
 (addtest (bio-sequence-interval-tests)
-  nucleic-acid-sequence-interval/accessors
-  (let* ((lower 0)
+  na-sequence-interval/accessors
+  (let* ((lower 2)
          (upper 5)
-         (i (make-instance 'nucleic-acid-sequence-interval
-                           :reference ss-seq
-                           :lower lower
-                           :upper upper)))
-    (ensure (= lower (lower-of i)))
-    (ensure (= upper (upper-of i)))
-    (ensure-same ss-seq (reference-of i))))
+         (interval1 (make-instance 'na-sequence-interval
+                                   :reference ss-seq
+                                   :lower lower
+                                   :upper upper))
+         (interval2 (make-instance 'na-sequence-interval
+                                   :reference ds-seq
+                                   :lower lower
+                                   :upper upper
+                                   :strand *forward-strand*))
+         (interval3 (make-instance 'na-sequence-interval
+                                   :reference ds-seq
+                                   :lower lower
+                                   :upper upper
+                                   :strand *forward-strand*
+                                   :num-strands 2))
+         (interval4 (make-instance 'na-sequence-interval
+                                   :reference ds-seq
+                                   :lower lower
+                                   :upper upper
+                                   :strand *reverse-strand*)))
+    (ensure (= lower (lower-of interval1)))
+    (ensure (= upper (upper-of interval1)))
+    (ensure-same ss-seq (reference-of interval1))
+    (ensure-error 'invalid-argument-error
+                  (setf (reference-of interval3) ss-seq))
+    (ensure-error 'invalid-argument-error
+                  (setf (reference-of interval4) ss-seq))
+    (ensure-error 'invalid-argument-error
+                  (setf (num-strands-of interval1) 2))
+    (ensure-error 'invalid-argument-error
+                  (setf (strand-of interval1) *reverse-strand*))))
 
 (addtest (bio-sequence-interval-tests) length-of/bio-sequence-interval
   (ensure (= 5 (length-of (make-instance 'bio-sequence-interval
@@ -68,14 +111,14 @@
                                          :lower 0
                                          :upper 5)))))
 
-(addtest (bio-sequence-interval-tests) length-of/nucleic-acid-sequence-interval
-  (ensure (= 5 (length-of (make-instance 'nucleic-acid-sequence-interval
+(addtest (bio-sequence-interval-tests) length-of/na-sequence-interval
+  (ensure (= 5 (length-of (make-instance 'na-sequence-interval
                                          :reference ss-seq
                                          :lower 0
                                          :upper 5)))))
 
 (addtest (bio-sequence-interval-tests) to-string/bio-sequence-interval
-  (ensure (string= ""
+  (ensure (string= "-----"
                    (to-string (make-instance 'bio-sequence-interval
                                              :reference nil
                                              :lower 0
@@ -86,23 +129,117 @@
                                              :lower 0
                                              :upper 5)))))
 
-(addtest (bio-sequence-interval-tests) to-string/nucleic-acid-sequence-interval
-  (ensure (string= ""
-                   (to-string (make-instance 'nucleic-acid-sequence-interval
+(addtest (bio-sequence-interval-tests) to-string/na-sequence-interval
+  (ensure (string= "-----"
+                   (to-string (make-instance 'na-sequence-interval
                                              :reference nil
                                              :lower 0
                                              :upper 5))))
   (ensure (string= "tagcr"
                    (to-string
-                    (make-instance 'nucleic-acid-sequence-interval
+                    (make-instance 'na-sequence-interval
                                    :reference ss-seq
                                    :lower 0
                                    :upper 5
                                    :strand *forward-strand*))))
-  (ensure (string= "atcgy"
+  (ensure (string= "ygcta"
                    (to-string
-                    (make-instance 'nucleic-acid-sequence-interval
+                    (make-instance 'na-sequence-interval
                                    :reference ds-seq
                                    :lower 0
                                    :upper 5
                                    :strand *reverse-strand*)))))
+
+(addtest (bio-sequence-interval-tests) subsequence/na-sequence-interval
+  (let* ((reference1 (make-dna "aagggct"))
+         (reference2 (make-dna "aagggct" :num-strands 2))
+         (interval1 (make-instance 'na-sequence-interval
+                                   :reference reference1
+                                   :lower 1
+                                   :upper 6))
+         (interval2 (make-instance 'na-sequence-interval
+                                   :reference reference1
+                                   :lower 1
+                                   :upper 6
+                                   :strand *forward-strand*))
+         (interval3 (make-instance 'na-sequence-interval
+                                   :reference reference2
+                                   :lower 1
+                                   :upper 6
+                                   :strand *reverse-strand*)))
+    ;; interval *unknown-strand*
+    (ensure (string= "aggg" (to-string (subsequence interval1 0 4))))
+    (ensure (string= "ggg" (to-string (subsequence interval1 1 4))))
+    (ensure (string= "gggc" (to-string (subsequence interval1 1))))
+    ;; interval *forward-strand*
+    (ensure (string= "aggg" (to-string (subsequence interval2 0 4))))
+    (ensure (string= "ggg" (to-string (subsequence interval2 1 4))))
+    (ensure (string= "gggc" (to-string (subsequence interval2 1))))
+    ;; interval *reverse-strand*
+    
+    ))
+
+(addtest (bio-sequence-interval-tests) invert-complement/na-sequence-interval
+  (let ((reference-ss (make-dna "aaacgtttgc"))
+        (reference-ds (make-dna "aaacgtttgc" :num-strands 2))
+        (lower 0)
+        (upper 4)
+        (strand *forward-strand*))
+    (let* ((interval1 (make-instance 'na-sequence-interval
+                                     :lower lower
+                                     :upper upper
+                                     :strand strand
+                                     :reference reference-ds))
+           (interval2 (invert-complement interval1))
+           (interval3 (invert-complement interval2))
+           (interval4 (make-instance 'na-sequence-interval
+                                     :lower lower
+                                     :upper upper
+                                     :strand strand
+                                     :reference reference-ss)))
+      ;; interval2 is the reverse-complement of interval1
+      (ensure (eql *reverse-strand* (strand-of interval2)))
+      (ensure (= 6 (lower-of interval2)))
+      (ensure (= 10 (upper-of interval2)))
+      (ensure (string= "gcaa" (to-string interval2)))
+      ;; interval3 is the reverse-complement of interval2, so should
+      ;; be identical to interval1
+      (ensure (eql *forward-strand* (strand-of interval3)))
+      (ensure (= 0 (lower-of interval3)))
+      (ensure (= 4 (upper-of interval3)))
+      (ensure (string= "aaac" (to-string interval3)))
+      (ensure-error 'invalid-argument-error
+                    (invert-complement interval4)
+                    :report "Successfully called invert-complement on
+                    an interval with a single-stranded reference."))))
+
+(addtest (bio-sequence-interval-tests) ninvert-complement/na-sequence-interval
+  (let ((reference-ss (make-dna "aaacgtttgc"))
+        (reference-ds (make-dna "aaacgtttgc" :num-strands 2))
+        (lower 0)
+        (upper 4)
+        (strand *forward-strand*))
+    (let* ((interval1 (make-instance 'na-sequence-interval
+                                     :lower lower
+                                     :upper upper
+                                     :strand strand
+                                     :reference reference-ds))
+           (interval2 (make-instance 'na-sequence-interval
+                                     :lower lower
+                                     :upper upper
+                                     :strand strand
+                                     :reference reference-ss)))
+      (ninvert-complement interval1)
+      (ensure (eql *reverse-strand* (strand-of interval1)))
+      (ensure (= 6 (lower-of interval1)))
+      (ensure (= 10 (upper-of interval1)))
+      (ensure (string= "gcaa" (to-string interval1)))
+      (ninvert-complement interval1)
+      (ensure (eql *forward-strand* (strand-of interval1)))
+      (ensure (= 0 (lower-of interval1)))
+      (ensure (= 4 (upper-of interval1)))
+      (ensure (string= "aaac" (to-string interval1)))
+      (ensure-error 'invalid-argument-error
+                    (invert-complement interval2)
+                    :report "Successfully called ninvert-complement on
+                    an interval with a single-stranded reference."))))

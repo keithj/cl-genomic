@@ -25,7 +25,7 @@
    (ensure-same *dna* (find-alphabet :dna))
    (ensure-same *rna* (find-alphabet :rna))
    (ensure-error
-    (find-alphabet :foo)))
+     (find-alphabet :foo)))
 
 (addtest (bio-sequence-tests) standard-alphabets
   (mapc #'(lambda (alphabet tokens)
@@ -110,10 +110,10 @@
                 (ensure (subtypep (class-name (class-of seq)) class-name)))
             seqs class-names))
   (ensure-error
-   (make-dna-quality
-    "agaatattctgaccccagttactttcaaga"
-    "<<<<<<<"
-    :metric :phred))
+    (make-dna-quality
+     "agaatattctgaccccagttactttcaaga"
+     "<<<<<<<"
+     :metric :phred))
   (ensure-error
     (make-dna-quality
      "agaatattctgaccccagttactttcaaga"
@@ -140,7 +140,7 @@
     (ensure (double-stranded-p seq))))
 
 ;;; Sequence accessors
-(addtest (bio-sequence-tests) num-strands-of/nucleic-acid-sequence
+(addtest (bio-sequence-tests) num-strands-of/na-sequence
   (let ((ss-seq (make-dna "aaaaaaaaaa"))
         (ds-seq (make-dna "aaaaaaaaaa" :num-strands 2)))
     (ensure (= 1 (num-strands-of ss-seq)))
@@ -171,7 +171,11 @@
   (let* ((len 10)
          (seq (make-dna nil :length 10)))
     (dotimes (n len)
-      (ensure (char= #\- (residue-of seq n))))))
+      (ensure (char= #\- (residue-of seq n))))
+    (ensure-error 'invalid-argument-error
+      (residue-of seq -1))
+    (ensure-error 'invalid-argument-error
+      (residue-of seq 11))))
 
 ;;; Sequence transformations
 (addtest (bio-sequence-tests) to-string/dna-sequence
@@ -180,12 +184,15 @@
     ;; no args
     (ensure (string= residues (to-string seq)))
     ;; optional arg start
-     (dotimes (n 4)
-       (ensure (string= (subseq residues n)
-                        (to-string seq :start n))))
-     (dotimes (n 4)
-       (ensure (string= (subseq residues 0 n)
-                        (to-string seq :start 0 :end n))))))
+    (dotimes (n 4)
+      (ensure (string= (subseq residues n)
+                       (to-string seq :start n))))
+    (dotimes (n 4)
+      (ensure (string= (subseq residues 0 n)
+                       (to-string seq :start 0 :end n))))
+    ;; optional arg token-case
+    (ensure (string= residues (to-string seq :token-case :lowercase)))
+    (ensure (string= "ACGT" (to-string seq :token-case :uppercase)))))
 
 (addtest (bio-sequence-tests) to-string/rna-sequence
   (let* ((residues "acgu")
@@ -193,12 +200,15 @@
     ;; no args
     (ensure (string= residues (to-string seq)))
     ;; optional arg start
-     (dotimes (n 4)
-       (ensure (string= (subseq residues n)
-                        (to-string seq :start n))))
-     (dotimes (n 4)
-       (ensure (string= (subseq residues 0 n)
-                        (to-string seq :start 0 :end n))))))
+    (dotimes (n 4)
+      (ensure (string= (subseq residues n)
+                       (to-string seq :start n))))
+    (dotimes (n 4)
+      (ensure (string= (subseq residues 0 n)
+                       (to-string seq :start 0 :end n))))
+    ;; optional arg token-case
+    (ensure (string= residues (to-string seq :token-case :lowercase)))
+    (ensure (string= "ACGU" (to-string seq :token-case :uppercase)))))
 
 (addtest (bio-sequence-tests) reverse-sequence/dna-sequence
   (let* ((residues "aaccggtt")
@@ -217,6 +227,11 @@
                      (map-into (make-string (length residues))
                                #'encode-phred-quality
                                (quality-of rseq))))))
+
+(addtest (bio-sequence-tests) reverse-sequence/virtual-token-sequence
+  (let ((seq (make-dna nil :length 10)))
+    (ensure (eql (class-of seq) (class-of (reverse-sequence seq))))
+    (ensure (= 10 (length-of (reverse-sequence seq))))))
 
 (addtest (bio-sequence-tests) nreverse-sequence/dna-sequence
   (let* ((residues "aaccggtt")
@@ -237,6 +252,11 @@
                               #'encode-phred-quality
                               (quality-of rseq))))))
 
+(addtest (bio-sequence-tests) nreverse-sequence/virtual-token-sequence
+  (let ((seq (make-dna nil :length 10)))
+    (ensure (eql (class-of seq) (class-of (reverse-sequence seq))))
+    (ensure (= 10 (length-of (reverse-sequence seq))))))
+
 (addtest (bio-sequence-tests) complement-sequence/dna-sequence
   (let ((seq (make-dna dna-residues)))
     (ensure (string= (to-string (complement-sequence seq))
@@ -252,6 +272,11 @@
                      (map-into (make-string (length residues))
                                #'encode-phred-quality
                                (quality-of seq))))))
+
+(addtest (bio-sequence-tests) complement-sequence/virtual-token-sequence
+  (let ((seq (make-dna nil :length 10)))
+    (ensure (eql (class-of seq) (class-of (complement-sequence seq))))
+    (ensure (= 10 (length-of (complement-sequence seq))))))
 
 (addtest (bio-sequence-tests) reverse-complement/dna-sequence
   (let ((seq (make-dna dna-residues)))
@@ -270,6 +295,11 @@
                        (map-into (make-string (length residues))
                                  #'encode-phred-quality rcquality))))))
 
+(addtest (bio-sequence-tests) reverse-complement/virtual-token-sequence
+  (let ((seq (make-dna nil :length 10)))
+    (ensure (eql (class-of seq) (class-of (reverse-complement seq))))
+    (ensure (= 10 (length-of (reverse-complement seq))))))
+
 (addtest (bio-sequence-tests) nreverse-complement/dna-sequence
   (let ((seq (make-dna dna-residues)))
     (ensure (string= (to-string (nreverse-complement seq))
@@ -286,6 +316,11 @@
       (ensure (string= rquality
                        (map-into (make-string (length residues))
                                  #'encode-phred-quality rcquality))))))
+
+(addtest (bio-sequence-tests) nreverse-complement/virtual-token-sequence
+  (let ((seq (make-dna nil :length 10)))
+    (ensure (eql (class-of seq) (class-of (nreverse-complement seq))))
+    (ensure (= 10 (length-of (nreverse-complement seq))))))
 
 (addtest (bio-sequence-tests) subsequence/bio-sequence
   (let* ((residues "aaggccttaaggcctt")
@@ -304,6 +339,11 @@
     (loop
        for q across (quality-of (subsequence seq 0 5))
        do (ensure (= 27 q)))))
+
+(addtest (bio-sequence-tests) subsequence/virtual-token-sequence
+  (let ((seq (make-dna nil :length 10)))
+    (ensure (= 5 (length-of (subsequence seq 0 5))))
+    (ensure (= 10 (length-of (subsequence seq 0))))))
 
 (addtest (bio-sequence-tests) residue-frequencies/bio-sequence
   (let ((seq (make-dna "aacccgggt")))

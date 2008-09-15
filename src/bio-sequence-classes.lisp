@@ -101,20 +101,20 @@ numeric quality value for each residue."))
   ()
   (:documentation "A biological sequence."))
 
-(defclass nucleic-acid-sequence (bio-sequence)
+(defclass na-sequence (bio-sequence)
   ((num-strands :initform 1
                 :initarg :num-strands
                 :accessor num-strands-of
                 :documentation "The number of sequence strands."))
   (:documentation "A nucleic acid sequence."))
 
-(defclass dna-sequence (nucleic-acid-sequence)
+(defclass dna-sequence (na-sequence)
   ((alphabet :allocation :class
              :initform *dna*))
   (:documentation "A concrete DNA sequence comprising IUPAC ambiguity
 bases."))
 
-(defclass rna-sequence (nucleic-acid-sequence)
+(defclass rna-sequence (na-sequence)
   ((alphabet :allocation :class
              :initform *rna*))
   (:documentation "A concrete RNA sequence comprising IUPAC ambiguity
