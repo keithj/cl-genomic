@@ -18,17 +18,24 @@
 (in-package :bio-sequence)
 
 (defmacro define-subst-index (name elements &key (test '=))
+  "Defines a numeric indexing function of ELEMENTS which accepts a
+single argument. If the argument is equal \(by TEST\) to the nth
+member of ELEMENTS, the function returns n. If the argument is not a
+member of ELEMENTS, an error is raised."
   `(progn
-     (defun ,name (value)
-       (declare (optimize (speed 3) (safety 0)))
-       (declare (type fixnum value))
-       (cond ,@(loop
-                  for elt in elements
-                  for i = 0 then (1+ i)
-                  collect `((,test value ,elt)
-                            ,i))
-             (t
-              (error "Unknown subsitition matrix value ~a." value))))))
+    (defun ,name (value)
+      (declare (optimize (speed 3) (safety 0)))
+      (declare (type fixnum value))
+      (cond ,@(loop
+                 for elt in elements
+                 for i = 0 then (1+ i)
+                 collect `((,test value ,elt)
+                           ,i))
+            (t
+             (error 'invalid-argument-error
+                    :params 'value
+                    :args value
+                    :text "unknown subsitution matrix value"))))))
 
 ;; For nucleotide sequence quality-adaptive substitution values see
 ;; the paper by Malde in Bioinformatics 24, pp. 897-900.
@@ -48,16 +55,6 @@ bases is 1/3 * e1 * e2."
 
 (defun quality-mismatch-penalty (e)
   (log (/ e 0.75) 2))
-
-(declaim (inline quality-match-index))
-(defun quality-match-index (q)
-  q)
-
-(declaim (inline simple-dna-index))
-(define-subst-index simple-dna-index
-    #.(loop
-         for c across "ACGTN"
-         collect (encode-dna-4bit c)))
 
 (defvar *quality-match-matrix*
   (make-array '(100 100)
@@ -93,6 +90,26 @@ bases is 1/3 * e1 * e2."
                                   (-4.0 -4.0 -4.0  5.0 -1.0)
                                   (-1.0 -1.0 -1.0 -1.0 -1.0))))
 
+(defvar *iupac-dna-matrix*
+  (make-array '(15 15)
+              :element-type 'single-float
+              :initial-contents
+              '(( 5.0 -4.0 -4.0 -4.0  2.0 -1.0  2.0  2.0 -1.0 -1.0  1.0  1.0  1.0 -2.0 -1.0)
+                (-4.0  5.0 -4.0 -4.0 -1.0  2.0  2.0 -1.0  2.0 -1.0 -2.0  1.0  1.0  1.0 -1.0)
+                (-4.0 -4.0  5.0 -4.0  2.0 -1.0 -1.0 -1.0  2.0  2.0  1.0 -2.0  1.0  1.0 -1.0)
+                (-4.0 -4.0 -4.0  5.0 -1.0  2.0 -1.0  2.0 -1.0  2.0  1.0  1.0 -2.0  1.0 -1.0)
+                ( 2.0 -1.0  2.0 -1.0  2.0 -2.0 -1.0  1.0  1.0  1.0  1.0 -1.0  1.0 -1.0 -1.0)
+                (-1.0  2.0 -1.0  2.0 -2.0  2.0 -1.0  1.0  1.0  1.0 -1.0  1.0 -1.0  1.0 -1.0)
+                ( 2.0  2.0 -1.0 -1.0 -1.0 -1.0  2.0  1.0  1.0 -1.0 -1.0  1.0  1.0 -1.0 -1.0)
+                ( 2.0 -1.0 -1.0  2.0  1.0  1.0  1.0  2.0 -1.0  1.0  1.0  1.0 -1.0 -1.0 -1.0)
+                (-1.0  2.0  2.0 -1.0  1.0  1.0  1.0 -1.0  2.0  1.0 -1.0 -1.0  1.0  1.0 -1.0)
+                (-1.0 -1.0  2.0  2.0  1.0  1.0 -1.0  1.0  1.0  2.0  1.0 -1.0 -1.0  1.0 -1.0)
+                ( 1.0 -2.0  1.0  1.0  1.0 -1.0 -1.0  1.0 -1.0  1.0  1.0 -1.0 -1.0 -1.0 -1.0)
+                ( 1.0  1.0 -2.0  1.0 -1.0  1.0  1.0  1.0 -1.0 -1.0 -1.0  1.0 -1.0 -1.0 -1.0)
+                ( 1.0  1.0  1.0 -2.0  1.0 -1.0  1.0 -1.0  1.0 -1.0 -1.0 -1.0  1.0 -1.0 -1.0)
+                (-2.0  1.0  1.0  1.0 -1.0  1.0 -1.0 -1.0  1.0  1.0 -1.0 -1.0 -1.0  1.0 -1.0)
+                (-1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0))))
+
 (defvar *blosum50-matrix*
   (make-array '(23 23)
               :element-type 'single-float
@@ -121,10 +138,32 @@ bases is 1/3 * e1 * e2."
                 (-1.0  0.0  0.0  1.0 -3.0  4.0  5.0 -2.0  0.0 -3.0 -3.0  1.0 -1.0 -4.0 -1.0  0.0 -1.0 -2.0 -2.0 -3.0  2.0  5.0 -1.0)
                 (-1.0 -1.0 -1.0 -1.0 -2.0 -1.0 -1.0 -2.0 -1.0 -1.0 -1.0 -1.0 -1.0 -2.0 -2.0 -1.0  0.0 -3.0 -1.0 -1.0 -1.0 -1.0 -1.0))))
 
+
+(declaim (inline simple-dna-index))
+(define-subst-index simple-dna-index
+    #.(loop
+         for c across "ACGTN"
+         collect (encode-dna-4bit c)))
+
+(declaim (inline iupac-dna-index))
+(define-subst-index iupac-dna-index
+    #.(loop
+         for c across "ACGTRYMWSKDHVBN"
+         collect (encode-dna-4bit c)))
+
 (declaim (inline simple-dna-subst))
 (defun simple-dna-subst (x y)
-  (aref *simple-dna-matrix*
-   (simple-dna-index x) (simple-dna-index y)))
+  "Returns a substitution score from a simple DNA matrix \(permitted
+residues are A, C, G, T and N\) for 4bit encoded DNA residues X and
+Y."
+  (aref *simple-dna-matrix* (simple-dna-index x) (simple-dna-index y)))
+
+(declaim (inline iupac-dna-subst))
+(defun iupac-dna-subst (x y)
+  "Returns a substitution score from a IUPAC DNA matrix \(permitted
+residues are A, C, G, T, R, Y, M, W, S, K, D, H, V, B and N\) for 4bit
+encoded DNA residues X and Y."
+  (aref *iupac-dna-matrix* (iupac-dna-index x) (iupac-dna-index y)))
 
 (declaim (inline quality-dna-subst))
 (defun quality-dna-subst (x y qx qy)

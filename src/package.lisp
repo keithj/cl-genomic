@@ -80,9 +80,16 @@
    #:anonymousp
    #:identity-of
    #:name-of
+   #:symbol-of
+   #:token-of
+   #:number-of
    #:ambiguousp
    #:simplep
    #:virtualp
+   #:strand-designator-p
+   #:decode-strand
+   #:invert-strand
+   #:match-strand
    #:num-strands-of
    #:single-stranded-p
    #:double-stranded-p

@@ -176,8 +176,9 @@ single-stranded reference."))
     (ensure (string= "ggg" (to-string (subsequence interval2 1 4))))
     (ensure (string= "gggc" (to-string (subsequence interval2 1))))
     ;; interval *reverse-strand*
-    
-    ))
+    (ensure (string= "ccct" (to-string (subsequence interval3 0 4))))
+    (ensure (string= "ccc" (to-string (subsequence interval3 1 4))))
+    (ensure (string= "gccc" (to-string (subsequence interval3 1))))))
 
 (addtest (bio-sequence-interval-tests) invert-complement/na-sequence-interval
   (let ((reference-ss (make-dna "aaacgtttgc"))

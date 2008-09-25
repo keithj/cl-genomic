@@ -433,14 +433,14 @@ the arguments.
          as fq = (next gen)
          while fq
          do (multiple-value-bind (score seqs)
-                ;; (align-local (to-string adapter)
-                ;;              (assocdr :residues fq) #'simple-dna-subst)
-              (align-local-ksh (to-string adapter) (assocdr :residues fq)
-                               #'simple-dna-subst :k 6)
+                (align-local (to-string adapter)
+                             (assocdr :residues fq) #'simple-dna-subst)
+              ;; (align-local-ksh (to-string adapter) (assocdr :residues fq)
+              ;;                                #'simple-dna-subst :k 6)
               (when (> score 35.0)
                 (incf total))
-              (when (= 50000 count)
-                (return))
+              ;;  (when (= 50000 count)
+              ;;                 (return))
               (when (zerop (rem count 1000))
                 (format t "~a ...~%" count))
               (incf count))
@@ -453,5 +453,3 @@ the arguments.
                    :external-format :ascii)
     (next (make-seq-input (make-line-input-stream fs) :fasta
                           :alphabet :dna))))
-
-

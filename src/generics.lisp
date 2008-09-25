@@ -48,6 +48,19 @@ otherwise."))
   (:documentation "Returns a list of the ambuguity characters
 represented by CAHR in ALPHABET."))
 
+(defgeneric strand-designator-p (object)
+  (:documentation ""))
+
+(defgeneric decode-strand (strand-designator &key strict)
+  (:documentation ""))
+
+(defgeneric invert-strand (sequence-strand)
+  (:documentation ""))
+
+(defgeneric match-strand (sequence-strand sequence-strand)
+  (:documentation ""))
+
+
 (defgeneric virtualp (bio-sequence)
   (:documentation "Returns T if BIO-SEQUENCE has no concrete token
 sequence representation, merely a length, or NIL otherwise."))

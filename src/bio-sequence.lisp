@@ -31,6 +31,29 @@
 (defvar *sequence-print-limit* 50
   "Maximum length of sequence to be pretty-printed.")
 
+(defmacro define-strand-decoder (type test forward reverse unknown)
+  `(progn
+    (defmethod decode-strand ((strand ,type) &key strict)
+      (cond ((,test ,forward strand)
+             *forward-strand*)
+            ((,test ,reverse strand)
+             *reverse-strand*)
+            ((,test ,unknown strand)
+             *unknown-strand*)
+            (t
+             (if strict
+                 (error 'invalid-argument-error
+                        :params 'strand
+                        :args strand
+                        :text (format nil "not a valid ~a strand designator"
+                                      ',type))
+               nil))))))
+
+(define-strand-decoder string string= "+" "-" "?")
+(define-strand-decoder fixnum = 1 -1 0)
+(define-strand-decoder character char= #\+ #\- #\?)
+(define-strand-decoder symbol eql :forward :reverse :unknown)
+
 (defun find-alphabet (name)
   (multiple-value-bind (alphabet presentp)
       (gethash name *alphabets*)
@@ -140,6 +163,15 @@
      for residue across residues
      never (ambiguousp alphabet residue)))
 
+(defmethod strand-designator-p (strand)
+  nil)
+
+(defmethod strand-designator-p ((strand string))
+  (decode-strand strand))
+
+(defmethod strand-designator-p ((strand fixnum))
+  (decode-strand strand))
+
 (defmethod invert-strand ((strand sequence-strand))
   (cond ((eql *forward-strand* strand)
          *reverse-strand*)
@@ -147,6 +179,12 @@
          *forward-strand*)
         (t
          *unknown-strand*)))
+
+(defmethod match-strand ((strand1 sequence-strand) (strand2 sequence-strand))
+  (cond ((or (eql *unknown-strand* strand1) (eql *unknown-strand* strand2))
+         t)
+        (t
+         (eql strand1 strand2))))
 
 (defmethod virtualp ((seq token-sequence))
   (declare (ignore seq))

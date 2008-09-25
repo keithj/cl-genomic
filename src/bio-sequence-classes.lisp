@@ -21,6 +21,9 @@
   ((name :initarg :name
          :reader name-of
          :documentation "The strand name.")
+   (symbol-of :initarg :symbol
+              :reader symbol-of
+              :documentation "The Lisp symbol representing the strand.")
    (token :initarg :token
           :reader token-of
           :documentation "The token representing the strand.")
@@ -30,13 +33,16 @@
   (:documentation "The strand of a nucleotide sequence."))
 
 (defvar *forward-strand*
-  (make-instance 'sequence-strand :name :forward :token #\+ :number 1))
+  (make-instance 'sequence-strand :name "forward" :symbol :forward
+                 :token #\+ :number 1))
 
 (defvar *reverse-strand*
-  (make-instance 'sequence-strand :name :reverse :token #\- :number -1))
+  (make-instance 'sequence-strand :name "reverse" :symbol :reverse
+                 :token #\- :number -1))
 
 (defvar *unknown-strand*
-  (make-instance 'sequence-strand :name :unknown :token #\? :number nil))
+  (make-instance 'sequence-strand :name "unknown" :symbol :unknown
+                 :token #\? :number nil))
 
 (defclass stranded-mixin ()
   ((strand :type sequence-strand
