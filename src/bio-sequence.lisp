@@ -71,7 +71,8 @@
            (apply #'make-instance 'virtual-dna-sequence initargs))
           (encode
            (make-encoded-vector-seq 'encoded-dna-sequence residues
-                                    #'encode-dna-4bit initargs))
+                                    #'encode-dna-4bit '(unsigned-byte 4)
+                                    initargs))
           (t
            (make-simple-vector-seq 'simple-dna-sequence residues
                                    initargs)))))
@@ -83,7 +84,8 @@
            (apply #'make-instance 'virtual-rna-sequence initargs))
           (encode
            (make-encoded-vector-seq 'encoded-rna-sequence residues
-                                    #'encode-rna-4bit initargs))
+                                    #'encode-rna-4bit '(unsigned-byte 4)
+                                    initargs))
           (t
            (make-simple-vector-seq 'simple-rna-sequence residues
                                    initargs)))))
@@ -99,21 +101,35 @@
   (let ((initargs (remove-args '(:encode :metric) initargs)))
     (cond (encode
            (apply #'make-instance 'dna-quality-sequence
-                  :vector (ensure-encoded-4bit residues #'encode-dna-4bit)
+                  :vector (ensure-encoded residues #'encode-dna-4bit
+                                          '(unsigned-byte 4))
                   :quality (ensure-decoded-quality quality metric)
                   :metric metric
                   initargs))
           (t
             (error "Not implemented.")))))
 
-(defun make-encoded-vector-seq (class residues encoder initargs)
+(defun make-aa (residues &rest initargs
+                &key (encode t) &allow-other-keys)
+  (let ((initargs (remove-args '(:encode) initargs)))
+    (cond ((null residues)
+           (apply #'make-instance 'virtual-aa-sequence initargs))
+          (encode
+           (make-encoded-vector-seq 'encoded-aa-sequence residues
+                                    #'encode-aa-7bit '(unsigned-byte 7)
+                                    initargs))
+          (t
+           (make-simple-vector-seq 'simple-aa-sequence residues
+                                   initargs)))))
+
+(defun make-encoded-vector-seq (class residues encoder element-type initargs)
   (unless (and (vectorp residues) (not (zerop (length residues))))
     (error 'invalid-argument-error
            :params 'residues
            :args residues
            :text "expected a non-empty vector"))
   (apply #'make-instance class
-         :vector (ensure-encoded-4bit residues encoder) initargs))
+         :vector (ensure-encoded residues encoder element-type) initargs))
 
 (defun make-simple-vector-seq (class residues initargs)
   (declare (ignore class residues initargs))
@@ -135,6 +151,9 @@
 
 (defmethod print-object ((seq dna-quality-sequence) stream)
   (print-quality-seq-aux "DNA-QUALITY-SEQUENCE" seq stream))
+
+(defmethod print-object ((seq aa-sequence) stream)
+  (print-seq-aux "AA-SEQUENCE" seq stream))
 
 ;;; Implementation methods
 (defmethod anonymousp ((seq identity-mixin))
@@ -267,6 +286,21 @@
       (when (< 0 (length str))
         (copy-array vector start seq-end
                     str str-start #'decode-rna-4bit))
+      (ecase token-case
+        ((nil) str)
+        (:lowercase str)
+        (:uppercase (nstring-upcase str))))))
+
+(defmethod to-string ((seq encoded-aa-sequence) &key
+                      (start 0) (end (length-of seq)) token-case)
+  (with-slots (vector)
+      seq
+    (let ((str (make-string (- end start) :element-type 'base-char))
+          (seq-end (1- end))
+          (str-start 0))
+      (when (< 0 (length str))
+        (copy-array vector start seq-end
+                    str str-start #'decode-aa-7bit))
       (ecase token-case
         ((nil) str)
         (:lowercase str)
@@ -482,14 +516,14 @@ DECODER."
                 quality-seq 0 decoder)
     quality-seq))
 
-(defun ensure-encoded-4bit (vector encoder)
+(defun ensure-encoded (vector encoder element-type)
   "If VECTOR is a string, returns an encoded token vector of element
 type \(unsigned-byte 4\) of the same length, otherwise returns
 VECTOR. ENCODER is the encoding function used to convert characters to
 \(unsigned-byte 4\)."
   (if (stringp vector)
       (let ((encoded (make-array (length vector)
-                                 :element-type '(unsigned-byte 4))))
+                                 :element-type element-type)))
         (when (< 0 (length vector))
           (copy-array vector 0 (1- (length encoded))
                       encoded 0 encoder))

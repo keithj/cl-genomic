@@ -26,6 +26,7 @@
    ;; Specials
    #:*dna*
    #:*rna*
+   #:*aa*
 
    #:*forward-strand*
    #:*reverse-strand*
@@ -43,6 +44,7 @@
    #:make-dna
    #:make-rna
    #:make-dna-quality
+   #:make-aa
    #:complement-dna
    #:complement-rna
    #:find-alphabet
@@ -65,11 +67,12 @@
    #:na-sequence
    #:dna-sequence
    #:rna-sequence
+   #:aa-sequence
    #:dna-quality-sequence
    #:interval
    #:bio-sequence-interval
    #:na-sequence-interval
-   
+
    #:bio-sequence-parser
    #:raw-sequence-parser
    #:simple-sequence-parser
@@ -122,6 +125,9 @@
    #:invert-complement
    #:ninvert-complement
 
+   #:align-local
+   #:align-local-ksh
+   
    #:make-seq-input
    #:make-seq-output
    #:begin-object
@@ -143,21 +149,7 @@
    #:parsed-metric
    #:parsed-quality
    #:parsed-length
-   #:parsed-raw
-
-   #:contains-frame-p
-   #:find-frame
-   #:add-frame
-   #:remove-frame
-   #:contains-slot-p
-   #:find-slot
-   #:slots-of
-   #:add-slot
-   #:remove-slot
-   #:domain-of
-   #:range-of
-   #:value-of
-   #:slot-value-of)
+   #:parsed-raw)
   (:documentation "The BIO-SEQUENCE package provides basic support for
 representing biological sequences. Concepts such as alphabets of
 sequence residues (nucleic acid bases and amino acids), sequences of

@@ -37,9 +37,6 @@ member of ELEMENTS, an error is raised."
                     :args value
                     :text "unknown subsitution matrix value"))))))
 
-;; For nucleotide sequence quality-adaptive substitution values see
-;; the paper by Malde in Bioinformatics 24, pp. 897-900.
-
 (defun combined-error-prob (e1 e2)
   "Calculates the combined error probability of a substitution between
 two bases having individual error probabilities of E1 and E2, given
@@ -48,12 +45,14 @@ bases is 1/3 * e1 * e2."
   (- (+ e1 e2) (* 4/3 (* e1 e2))))
 
 (defun quality-match-score (e)
+  "Calculates the match score given an error probabilty E."
   (let ((x (- 1.0 e)))
     (log (/ (if (zerop x)
                 single-float-epsilon
               x) 0.25) 2)))
 
 (defun quality-mismatch-penalty (e)
+  "Calculates the mismatch penalty given an error probabilty E."
   (log (/ e 0.75) 2))
 
 (defvar *quality-match-matrix*
@@ -67,7 +66,11 @@ bases is 1/3 * e1 * e2."
                             collect (quality-match-score
                                      (combined-error-prob
                                       (phred-probability q1)
-                                      (phred-probability q2)))))))
+                                      (phred-probability q2))))))
+  "A sequence quality-adaptive DNA substitution matrix for matching
+bases calculated as described by Malde in Bioinformatics 24,
+pp. 897-900.")
+
 (defvar *quality-mismatch-matrix*
   (make-array '(100 100)
               :element-type 'single-float
@@ -79,7 +82,10 @@ bases is 1/3 * e1 * e2."
                             collect (quality-mismatch-penalty
                                      (combined-error-prob
                                       (phred-probability q1)
-                                      (phred-probability q2)))))))
+                                      (phred-probability q2))))))
+  "A sequence quality-adaptive DNA substitution matrix for mismatching
+bases calculated as described by Malde in Bioinformatics 24,
+pp. 897-900.")
 
 (defvar *simple-dna-matrix*
   (make-array '(5 5)
@@ -88,7 +94,9 @@ bases is 1/3 * e1 * e2."
                                   (-4.0  5.0 -4.0 -4.0 -1.0)
                                   (-4.0 -4.0  5.0 -4.0 -1.0)
                                   (-4.0 -4.0 -4.0  5.0 -1.0)
-                                  (-1.0 -1.0 -1.0 -1.0 -1.0))))
+                                  (-1.0 -1.0 -1.0 -1.0 -1.0)))
+  "A DNA substitution matrix for sequences containing the bases A, C,
+G, T and N.")
 
 (defvar *iupac-dna-matrix*
   (make-array '(15 15)
@@ -108,7 +116,8 @@ bases is 1/3 * e1 * e2."
                 ( 1.0  1.0 -2.0  1.0 -1.0  1.0  1.0  1.0 -1.0 -1.0 -1.0  1.0 -1.0 -1.0 -1.0)
                 ( 1.0  1.0  1.0 -2.0  1.0 -1.0  1.0 -1.0  1.0 -1.0 -1.0 -1.0  1.0 -1.0 -1.0)
                 (-2.0  1.0  1.0  1.0 -1.0  1.0 -1.0 -1.0  1.0  1.0 -1.0 -1.0 -1.0  1.0 -1.0)
-                (-1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0))))
+                (-1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0)))
+  "A DNA substitution matrix for sequences containing IUPAC bases.")
 
 (defvar *blosum50-matrix*
   (make-array '(23 23)
@@ -151,6 +160,12 @@ bases is 1/3 * e1 * e2."
          for c across "ACGTRYMWSKDHVBN"
          collect (encode-dna-4bit c)))
 
+(declaim (inline blosum-50-index))
+(define-subst-index blosum-50-index
+    #.(loop
+         for c across "ARNDCQEGHILKMFPSTWYVBZX"
+         collect (encode-aa-7bit c)))
+
 (declaim (inline simple-dna-subst))
 (defun simple-dna-subst (x y)
   "Returns a substitution score from a simple DNA matrix \(permitted
@@ -170,3 +185,21 @@ encoded DNA residues X and Y."
   (if (= x y)
       (aref *quality-match-matrix* qx qy)
     (aref *quality-mismatch-matrix* qx qy)))
+
+(declaim (inline blosum-50-subst))
+(defun blosum-50-subst (x y)
+  (aref *blosum50-matrix* (blosum-50-index x) (blosum-50-index y)))
+
+(defvar *test-matrix*
+   (make-array '(5 5) ; ABCDE
+               :element-type 'single-float
+               :initial-contents '(( 8.0  0.0 -3.0 -2.0 -4.0)
+                                   ( 0.0  9.0 -5.0  0.0 -7.0)
+                                   (-3.0 -5.0  5.0 -3.0 -4.0)
+                                   (-2.0  0.0 -3.0  6.0 -4.0)
+                                   (-4.0 -7.0 -4.0 -4.0  8.0))))
+
+(defun test-subst (x y)
+  (let ((i (position x '(1 2 3 4 5)))
+        (j (position y '(1 2 3 4 5))))
+    (aref *test-matrix* i j)))

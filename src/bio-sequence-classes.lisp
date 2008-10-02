@@ -126,6 +126,10 @@ bases."))
   (:documentation "A concrete RNA sequence comprising IUPAC ambiguity
 bases."))
 
+(defclass aa-sequence (bio-sequence)
+  ((alphabet :allocation :class
+             :initform *aa*)))
+
 (defclass encoded-dna-sequence (dna-sequence encoded-vector-sequence
                                              identity-mixin)
   ())
@@ -145,5 +149,14 @@ bases."))
 (defclass virtual-rna-sequence (rna-sequence virtual-token-sequence
                                              identity-mixin)
   ())
+
+(defclass encoded-aa-sequence (aa-sequence encoded-vector-sequence
+                                           identity-mixin)
+  ())
+
+(defclass virtual-aa-sequence (aa-sequence virtual-token-sequence
+                                           identity-mixin)
+  ())
+
 
 ;; Also need to add circularity

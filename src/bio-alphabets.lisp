@@ -63,8 +63,24 @@ alphabet.")
                       finally (return index))))
   "The IUPAC RNA alphabet.")
 
+(defvar *aa*
+  (let ((tokens (make-array 28
+                            :element-type 'base-char
+                            :initial-contents "ABCDEFGHIJKLMNOPQRSTUVWXYZ*-")))
+    (make-instance 'alphabet
+                   :name :aa
+                   :tokens tokens
+                   :index
+                   (loop
+                      with index = (make-hash-table)
+                      for i from 0 below (length tokens)
+                      do (setf (gethash
+                                (encode-aa-7bit (aref tokens i)) index) i)
+                      finally (return index)))))
+
 (defvar *alphabets* (make-hash-table)
   "The standard biological alphabets.")
 
 (setf (gethash :dna *alphabets*) *dna*)
 (setf (gethash :rna *alphabets*) *rna*)
+(setf (gethash :aa *alphabets*) *aa*)
