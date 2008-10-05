@@ -56,6 +56,10 @@
    #:decode-illumina-quality
    #:illumina-to-phred-quality
 
+   #:simple-dna-subst
+   #:iupac-dna-subst
+   #:blosum-50-subst
+   
    #:split-fastq-file
    #:write-raw-fastq
    #:write-n-fastq
@@ -72,6 +76,8 @@
    #:interval
    #:bio-sequence-interval
    #:na-sequence-interval
+   #:na-alignment-interval
+   #:alignment
 
    #:bio-sequence-parser
    #:raw-sequence-parser
@@ -90,6 +96,9 @@
    #:simplep
    #:virtualp
    #:strand-designator-p
+   #:forward-strand-p
+   #:reverse-strand-p
+   #:unknown-strand-p
    #:decode-strand
    #:invert-strand
    #:match-strand
@@ -125,6 +134,8 @@
    #:invert-complement
    #:ninvert-complement
 
+   #:intervals-of
+   #:aligned-length-of
    #:align-local
    #:align-local-ksh
    

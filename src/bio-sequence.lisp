@@ -191,6 +191,15 @@
 (defmethod strand-designator-p ((strand fixnum))
   (decode-strand strand))
 
+(defmethod forward-strand-p ((strand (eql *forward-strand*)))
+  t)
+
+(defmethod reverse-strand-p ((strand (eql *reverse-strand*)))
+  t)
+
+(defmethod unknown-strand-p ((strand (eql *unknown-strand*)))
+  t)
+
 (defmethod invert-strand ((strand sequence-strand))
   (cond ((eql *forward-strand* strand)
          *reverse-strand*)
@@ -254,12 +263,21 @@
                :params 'index
                :args index
                :text "index must be >0 and < sequence length")
-      #\-)))
+      *gap-char*)))
+
+(defmethod num-gaps-of ((seq encoded-vector-sequence)
+                        &key (start 0) (end (length-of seq)))
+  (with-slots (vector)
+      seq
+    (loop
+       for i from start below end
+       count (= *encoded-gap-char* (aref vector i)))))
 
 (defmethod to-string ((seq virtual-token-sequence) &key
                       (start 0) (end (length-of seq)) token-case)
   (declare (ignore token-case))
-  (make-string (- end start) :element-type 'base-char :initial-element #\-))
+  (make-string (- end start) :element-type 'base-char
+               :initial-element *gap-char*))
 
 (defmethod to-string ((seq encoded-dna-sequence) &key
                       (start 0) (end (length-of seq)) token-case)

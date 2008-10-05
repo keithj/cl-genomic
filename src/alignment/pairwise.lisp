@@ -146,11 +146,7 @@
                                  :band-centre band-centre
                                  :band-width band-width
                                  :alignment alignment)
-    (values align-score (when align
-                          (destructuring-bind ((s1 e1) (s2 e2) (alm aln))
-                              align
-                            (list s1 (make-dna alm) e1
-                                  s2 (make-dna aln) e2))))))
+    (values align-score align)))
 
 ;; (defmethod align-local ((seqm dna-quality-sequence)
 ;;                         (seqn dna-quality-sequence) subst-fn
@@ -174,28 +170,7 @@
                                  :band-centre band-centre
                                  :band-width band-width
                                  :alignment alignment)
-    (values align-score (when align
-                          (destructuring-bind ((s1 e1) (s2 e2) (alm aln))
-                              align
-                            (list s1 (make-aa alm) e1
-                                  s2 (make-aa aln) e2))))))
-
-(defmethod align-local ((seqm encoded-aa-sequence)
-                        (seqn encoded-aa-sequence) subst-fn
-                        &key (gap-open -10.0) (gap-extend -1.0)
-                        (band-centre 0)
-                        (band-width most-positive-fixnum) alignment)
-  (multiple-value-bind (align-score align)
-      (smith-waterman-gotoh-7bit (vector-of seqm) (vector-of seqn) subst-fn
-                                 :gap-open gap-open :gap-extend gap-extend
-                                 :band-centre band-centre
-                                 :band-width band-width
-                                 :alignment alignment)
-    (values align-score (when align
-                          (destructuring-bind ((s1 e1) (s2 e2) (alm aln))
-                              align
-                            (list s1 (make-aa alm) e1
-                                  s2 (make-aa aln) e2))))))
+    (values align-score align)))
 
 ;; Modify finding shared kmers to use a substitution matrix
 ;; kmer seeded heuristic
@@ -216,11 +191,7 @@
                                      :gap-open gap-open :gap-extend gap-extend
                                      :band-centre bcentre :band-width bwidth
                                      :alignment alignment))))
-    (values align-score (when align
-                          (destructuring-bind ((s1 e1) (s2 e2) (alm aln))
-                              align
-                            (list s1 (make-aa alm) e1
-                                  s2 (make-aa aln) e2))))))
+    (values align-score align)))
 
 (defun smith-waterman-gotoh-4bit (vecm vecn subst-fn
                                   &key (gap-open -5.0)
@@ -250,8 +221,15 @@
                (< (- diag half-width) band-centre (+ diag half-width))))
           (values max-score
                   (when alignment
+                    (multiple-value-bind (alm startm endm aln startn endn)
                         (dp-backtrace-4bit vecm vecn sc ix iy
-                                           bt max-row max-col))))))))
+                                           bt max-row max-col)
+                      (make-instance 'alignment
+                                     :intervals (list
+                                                 (make-na-align-interval
+                                                  alm startm endm)
+                                                 (make-na-align-interval
+                                                  aln startn endn)))))))))))
 
 (defun smith-waterman-gotoh-7bit (vecm vecn subst-fn
                                   &key (gap-open -10.0)
@@ -281,8 +259,15 @@
                (< (- diag half-width) band-centre (+ diag half-width))))
           (values max-score
                   (when alignment
-                    (dp-backtrace-7bit vecm vecn sc ix iy
-                                       bt max-row max-col))))))))
+                    (multiple-value-bind (alm startm endm aln startn endn)
+                        (dp-backtrace-7bit vecm vecn sc ix iy
+                                           bt max-row max-col)
+                      (make-instance 'alignment
+                                     :intervals (list
+                                                 (make-aa-align-interval
+                                                  alm startm endm)
+                                                 (make-aa-align-interval
+                                                  aln startn endn)))))))))))
 
 ;; (defun smith-waterman-gotoh-qual (vecm vecn qualm qualn subst-fn
 ;;                                   &key (gap-open -10.0) (gap-extend -1.0)
@@ -313,13 +298,11 @@
   (let ((alm (make-array 100 :element-type '(unsigned-byte 4)
                          :adjustable t :fill-pointer 0))
         (aln (make-array 100 :element-type '(unsigned-byte 4)
-                         :adjustable t :fill-pointer 0)))
+                             :adjustable t :fill-pointer 0)))
     (define-backtrace ((vecm vecn alm aln :gap 0)
                        (score insertx inserty)
                        (btrace (start-row start-col) (row col)))
-      (list (list row start-row)
-            (list col start-col)
-            (list (nreverse alm) (nreverse aln))))))
+      (values (nreverse alm) row col (nreverse aln) start-row start-col))))
 
 (defun dp-backtrace-7bit (vecm vecn score insertx inserty
                           btrace start-row start-col)
@@ -327,15 +310,23 @@
   (declare (type (simple-array (unsigned-byte 7) (*)) vecm vecn)
            (type (simple-array single-float (* *)) score insertx inserty))
   (let ((alm (make-array 100 :element-type '(unsigned-byte 7)
-                         :adjustable t :fill-pointer 0))
+                             :adjustable t :fill-pointer 0))
         (aln (make-array 100 :element-type '(unsigned-byte 7)
-                         :adjustable t :fill-pointer 0)))
+                             :adjustable t :fill-pointer 0)))
     (define-backtrace ((vecm vecn alm aln :gap 0)
                        (score insertx inserty)
                        (btrace (start-row start-col) (row col)))
-      (list (list row start-row)
-            (list col start-col)
-            (list (nreverse alm) (nreverse aln))))))
+      (values (nreverse alm) row col (nreverse aln) start-row start-col))))
+
+(defun make-na-align-interval (vec lower upper
+                               &optional (strand *forward-strand*))
+  (make-instance 'na-alignment-interval
+                 :lower lower :upper upper :strand strand
+                 :aligned (make-dna vec)))
+
+(defun make-aa-align-interval (vec lower upper)
+  (make-instance 'aa-alignment-interval
+                 :lower lower :upper upper :aligned (make-aa vec)))
 
 (defun make-kmer-table (vec k &optional (size 16))
   "Creates a hash-table of the kmers of length K in vector VEC.

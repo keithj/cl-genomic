@@ -81,9 +81,11 @@
                  (:module :align
                           :pathname "src/alignment/"
                           :components
-                          ((:file "matrices")
+                          ((:file "bio-sequence-alignment")
+                           (:file "matrices")                           
                            (:file "pairwise"
-                                  :depends-on ("matrices")))
+                                  :depends-on ("matrices"
+                                               "bio-sequence-alignment")))
                           :depends-on (:core))))
 
 

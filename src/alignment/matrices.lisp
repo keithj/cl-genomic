@@ -190,16 +190,4 @@ encoded DNA residues X and Y."
 (defun blosum-50-subst (x y)
   (aref *blosum50-matrix* (blosum-50-index x) (blosum-50-index y)))
 
-(defvar *test-matrix*
-   (make-array '(5 5) ; ABCDE
-               :element-type 'single-float
-               :initial-contents '(( 8.0  0.0 -3.0 -2.0 -4.0)
-                                   ( 0.0  9.0 -5.0  0.0 -7.0)
-                                   (-3.0 -5.0  5.0 -3.0 -4.0)
-                                   (-2.0  0.0 -3.0  6.0 -4.0)
-                                   (-4.0 -7.0 -4.0 -4.0  8.0))))
 
-(defun test-subst (x y)
-  (let ((i (position x '(1 2 3 4 5)))
-        (j (position y '(1 2 3 4 5))))
-    (aref *test-matrix* i j)))

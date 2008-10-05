@@ -21,6 +21,7 @@
 ;;; have unattached intervals. An alternative is to use proxies, which
 ;;; may not be practical when there are millions of intervals and
 ;;; millions of references.
+
 (defclass interval ()
   ((reference :initform nil
               :initarg :reference
@@ -54,10 +55,15 @@
   (:documentation "A nucleic acid sequence that is an interval within
   a reference sequence. In addition to the upper and lower bounds, a
   strand is defined. The strand indicates the strand of the reference
-  sequence on which the interval lies. The"))
+  sequence on which the interval lies."))
+
+(defclass aa-sequence-interval (aa-sequence interval)
+  ()
+  (:documentation "An amino acid sequence that is an interval within
+  a reference sequence."))
 
 (defgeneric invert-complement (na-sequence-interval)
-  (:documentation "Adds a copy of NA-SEQUENCE-INTERVAL to the
+  (:documentation "Returns a copy of NA-SEQUENCE-INTERVAL at the
   corresponding position on the complementary strand of the reference
   sequence."))
 
@@ -142,7 +148,7 @@
     (if reference
         (call-next-method)
       (make-string (- upper lower) :element-type 'base-char
-                   :initial-element #\-))))
+                   :initial-element *gap-char*))))
 
 (defmethod to-string ((interval interval) &key
                       (start 0) (end (length-of interval)) token-case)
