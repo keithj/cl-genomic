@@ -148,7 +148,7 @@
     (if reference
         (call-next-method)
       (make-string (- upper lower) :element-type 'base-char
-                   :initial-element *gap-char*))))
+                   :initial-element +gap-char+))))
 
 (defmethod to-string ((interval interval) &key
                       (start 0) (end (length-of interval)) token-case)

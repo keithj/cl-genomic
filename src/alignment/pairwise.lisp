@@ -31,14 +31,37 @@
 
 (defmacro with-affine-gap-matrices ((score insertx inserty backtrace) (m n)
                                     &body body)
+  "Defines four matrices of single-floats for performing affine gap
+scored dynamic programming. These are a score matrix, matrices for
+inserts in the x and y sequences and a backtrace matrix for
+determining the alignments.
+
+Arguments:
+
+- score (symbol): Symbol to which the main score matrix will be bound.
+- insertx (symbol): Symbol to which the score matrix for insertion in
+  the x sequence will be bound.
+- insertx (symbol): Symbol to which the score matrix for insertion in
+  the y sequence will be bound.
+- backtrace (symbol): Symbol to which the alignment backtrace matrix
+  will be bound.
+
+- m (fixnum): The number of rows in the matrices (i.e. the length of
+  the y sequence.
+- n (fixnum): The number of columns in the matrices (i.e. the length
+  of the x sequence.
+
+Body:
+
+Forms to be executed in the context of these bindings."
   `(let ((,score (make-array (list ,m ,n) :element-type 'single-float
-                             :initial-element 0.0))
+                                          :initial-element 0.0))
          (,insertx (make-array (list ,m ,n) :element-type 'single-float
-                               :initial-element 0.0))
+                                            :initial-element 0.0))
          (,inserty (make-array (list ,m ,n) :element-type 'single-float
-                               :initial-element 0.0))
+                                            :initial-element 0.0))
          (,backtrace (make-array (list ,m ,n) :element-type 'path-pointer
-                                 :initial-element 0)))
+                                              :initial-element 0)))
     (declare (type (simple-array single-float (* *)) ,score ,insertx ,inserty)
              (type (simple-array path-pointer (* *)) ,backtrace))
     ,@body))
@@ -49,6 +72,47 @@
                                         (gap-open gap-extend))
                                  subst-form &optional cell-exclusion-form)
                                 &body body)
+  "Defines the skeleton for an affine gap dynamic programming
+algorithm.
+
+Arguments:
+
+- cell (lambda list): A lambda list of two symbols \(row column\) to which the
+  current cell's row and column indices are bound at each step.
+- prev-cell (lambda list): A lambda list of two symbols \(prev-row prev-col\) to
+  which the previous cell's row and column indices are bound at each
+  step. The previous cell is the one to the upper left of the current
+  cell.
+- max-cell (lambda list): A lambda list of two symbols \(max-row max-col\) to
+  which the row and column indices of the cell containing the maximum
+  score encountered so far in the main score matrix.
+
+- score (2d-array single-float): The main score matrix.
+- insertx (2d-array single-float): The score matrix for insertion in
+  the x sequence.
+- inserty (2d-array single-float): The score matrix for insertion in
+  the y sequence.
+- backtrace (2d-array path-pointer): The alignment backtrace matrix.
+
+- gap-open (single-float): The gap opening score, a negative value.
+- gap-extend (single-float): The gap extension score, a negative
+  value.
+
+- subst-form: A form that returns a single-float score for a cell,
+  typically using a substitution matrix.
+
+Optional:
+
+- cell-exclusion-form: A form that returns a generalized boolean value
+  of T if a score is to be calculated for the current cell, or NIL if
+  the default value is to remain. This is used to prune the search
+  area, implementing a banded search, for example.
+
+Body:
+
+Forms to be executed once the dynamic programming matrices have been
+filled. Typically these forms return a score and possibly an
+alignment."
   (destructuring-bind ((row col) (prev-row prev-col) (max-row max-col))
       (list cell prev-cell max-cell)
     (with-gensyms (rows cols ix-score iy-score ss
@@ -199,6 +263,35 @@
                                   (band-centre 0)
                                   (band-width most-positive-fixnum)
                                   alignment)
+  "Implements the Smith Waterman local alignment algorithm with
+Gotoh's improvement. This version is optimized for sequences with a
+4bit encoding.
+
+Arguments:
+
+- vecm \(simple-array \(unsigned-byte 4\)\): The m or y vector to be
+  aligned.
+- vecn \(simple-array \(unsigned-byte 4\)\): The n or x vector to be
+  aligned.
+
+Key:
+
+- gap-open (single-float): The gap opening score, a negative
+  value. Defaults to -5.0.
+- gap-extend (single-float): The gap extension score, a negative
+  value. Defaults to -1.0.
+
+- band-centre (fixnum): The band centre for banded
+  alignments. Defaults to 0.
+- band-width (fixnum): The band width about the band centre for banded
+  alignments. Defaults to most-positive-fixnum.
+
+- alignment (generalized boolean): T if an alignment is to be
+  calculated.
+
+Returns:
+- A single-float alignment score.
+- An alignment object."
   (declare (optimize (speed 3) (safety 0)))
   (declare (type function subst-fn)
            (type single-float gap-open gap-extend)
@@ -237,6 +330,35 @@
                                   (band-centre 0)
                                   (band-width most-positive-fixnum)
                                   alignment)
+    "Implements the Smith Waterman local alignment algorithm with
+Gotoh's improvement. This version is optimized for sequences with a
+4bit encoding.
+
+Arguments:
+
+- vecm \(simple-array \(unsigned-byte 7\)\): The m or y vector to be
+  aligned.
+- vecn \(simple-array \(unsigned-byte 7\)\): The n or x vector to be
+  aligned.
+
+Key:
+
+- gap-open (single-float): The gap opening score, a negative
+  value. Defaults to -10.0.
+- gap-extend (single-float): The gap extension score, a negative
+  value. Defaults to -1.0.
+
+- band-centre (fixnum): The band centre for banded
+  alignments. Defaults to 0.
+- band-width (fixnum): The band width about the band centre for banded
+  alignments. Defaults to most-positive-fixnum.
+
+- alignment (generalized boolean): T if an alignment is to be
+  calculated.
+
+Returns:
+- A single-float alignment score.
+- An alignment object."
   (declare (optimize (speed 3) (safety 0)))
   (declare (type function subst-fn)
            (type single-float gap-open gap-extend)
@@ -292,7 +414,7 @@
 
 (defun dp-backtrace-4bit (vecm vecn score insertx inserty
                           btrace start-row start-col)
-  (declare (optimize (speed 3) (safety 0)))
+  (declare (optimize (speed 3) (safety 1)))
   (declare (type (simple-array (unsigned-byte 4) (*)) vecm vecn)
            (type (simple-array single-float (* *)) score insertx inserty))
   (let ((alm (make-array 100 :element-type '(unsigned-byte 4)
@@ -306,7 +428,7 @@
 
 (defun dp-backtrace-7bit (vecm vecn score insertx inserty
                           btrace start-row start-col)
-  (declare (optimize (speed 3) (safety 0)))
+  (declare (optimize (speed 3) (safety 1)))
   (declare (type (simple-array (unsigned-byte 7) (*)) vecm vecn)
            (type (simple-array single-float (* *)) score insertx inserty))
   (let ((alm (make-array 100 :element-type '(unsigned-byte 7)

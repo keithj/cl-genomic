@@ -105,6 +105,7 @@
    #:num-strands-of
    #:single-stranded-p
    #:double-stranded-p
+   #:num-gaps-of
    #:size-of
    #:memberp
    #:tokens-of
@@ -134,6 +135,7 @@
    #:invert-complement
    #:ninvert-complement
 
+   #:aligned-of
    #:intervals-of
    #:aligned-length-of
    #:align-local

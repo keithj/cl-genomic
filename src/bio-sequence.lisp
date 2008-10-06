@@ -263,7 +263,7 @@
                :params 'index
                :args index
                :text "index must be >0 and < sequence length")
-      *gap-char*)))
+      +gap-char+)))
 
 (defmethod num-gaps-of ((seq encoded-vector-sequence)
                         &key (start 0) (end (length-of seq)))
@@ -271,13 +271,13 @@
       seq
     (loop
        for i from start below end
-       count (= *encoded-gap-char* (aref vector i)))))
+       count (= +encoded-gap-char+ (aref vector i)))))
 
 (defmethod to-string ((seq virtual-token-sequence) &key
                       (start 0) (end (length-of seq)) token-case)
   (declare (ignore token-case))
   (make-string (- end start) :element-type 'base-char
-               :initial-element *gap-char*))
+               :initial-element +gap-char+))
 
 (defmethod to-string ((seq encoded-dna-sequence) &key
                       (start 0) (end (length-of seq)) token-case)

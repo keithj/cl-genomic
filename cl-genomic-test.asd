@@ -38,4 +38,7 @@
                                                "bio-sequence-test"))
                            (:file "bio-sequence-interval-test"
                                   :depends-on ("package"
+                                               "cl-genomic-test"))
+                           (:file "bio-sequence-alignment-test"
+                                  :depends-on ("package"
                                                "cl-genomic-test"))))))

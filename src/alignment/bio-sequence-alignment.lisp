@@ -33,7 +33,10 @@
 (defclass alignment ()
   ((intervals :initform nil
                :initarg :intervals
-               :accessor intervals-of)))
+               :accessor intervals-of
+               :documentation "A list of aligned bio-sequence
+               intervals."))
+  (:documentation "A sequence alignment."))
 
 (defgeneric aligned-length-of (aligned)
   (:documentation "Returns the aligned length of a sequence or
@@ -88,5 +91,5 @@
     (to-string aligned :start start :end end :token-case token-case)))
 
 (defmethod ninvert-complement :before ((interval na-alignment-interval))
-  (error 'invalid-operation-error
+  (error 'bio-sequence-op-error
          :text "Alignment intervals may not be destructively modified."))

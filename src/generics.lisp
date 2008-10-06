@@ -60,6 +60,14 @@ represented by CAHR in ALPHABET."))
 (defgeneric match-strand (sequence-strand sequence-strand)
   (:documentation ""))
 
+(defgeneric forward-strand-p (sequence-strand)
+  (:documentation ""))
+
+(defgeneric reverse-strand-p (sequence-strand)
+  (:documentation ""))
+
+(defgeneric unknown-strand-p (sequence-strand)
+  (:documentation ""))
 
 (defgeneric virtualp (bio-sequence)
   (:documentation "Returns T if BIO-SEQUENCE has no concrete token
@@ -71,6 +79,8 @@ sequence representation, merely a length, or NIL otherwise."))
 (defgeneric double-stranded-p (nucleic-acid-sequence)
   (:documentation ""))
 
+(defgeneric num-gaps-of (bio-sequence &key start end)
+  (:documentation ""))
 
 (defgeneric residue-of (bio-sequence index)
   (:documentation "Returns the residue at INDEX of BIO-SEQUENCE. As
