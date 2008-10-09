@@ -55,7 +55,7 @@ bases is 1/3 * e1 * e2."
   "Calculates the mismatch penalty given an error probabilty E."
   (log (/ e 0.75) 2))
 
-(defconstant +quality-match-matrix+
+(defvar *quality-match-matrix*
   (make-array '(100 100)
               :element-type 'single-float
               :initial-contents
@@ -71,7 +71,7 @@ bases is 1/3 * e1 * e2."
 bases calculated as described by Malde in Bioinformatics 24,
 pp. 897-900.")
 
-(defconstant +quality-mismatch-matrix+
+(defvar *quality-mismatch-matrix*
   (make-array '(100 100)
               :element-type 'single-float
               :initial-contents
@@ -87,7 +87,7 @@ pp. 897-900.")
 bases calculated as described by Malde in Bioinformatics 24,
 pp. 897-900.")
 
-(defconstant +simple-dna-matrix+
+(defvar *simple-dna-matrix*
   (make-array '(5 5)
               :element-type 'single-float
               :initial-contents '(( 5.0 -4.0 -4.0 -4.0 -1.0)
@@ -98,7 +98,7 @@ pp. 897-900.")
   "A DNA substitution matrix for sequences containing the bases A, C,
 G, T and N.")
 
-(defconstant +iupac-dna-matrix+
+(defvar *iupac-dna-matrix*
   (make-array '(15 15)
               :element-type 'single-float
               :initial-contents
@@ -119,7 +119,7 @@ G, T and N.")
                 (-1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0)))
   "A DNA substitution matrix for sequences containing IUPAC bases.")
 
-(defconstant +blosum50-matrix+
+(defvar *blosum50-matrix*
   (make-array '(23 23)
               :element-type 'single-float
               :initial-contents
@@ -168,23 +168,23 @@ G, T and N.")
   "Returns a substitution score from a simple DNA matrix \(permitted
 residues are A, C, G, T and N\) for 4bit encoded DNA residues X and
 Y."
-  (aref +simple-dna-matrix+ (simple-dna-index x) (simple-dna-index y)))
+  (aref *simple-dna-matrix* (simple-dna-index x) (simple-dna-index y)))
 
 (declaim (inline iupac-dna-subst))
 (defun iupac-dna-subst (x y)
   "Returns a substitution score from a IUPAC DNA matrix \(permitted
 residues are A, C, G, T, R, Y, M, W, S, K, D, H, V, B and N\) for 4bit
 encoded DNA residues X and Y."
-  (aref +iupac-dna-matrix+ (iupac-dna-index x) (iupac-dna-index y)))
+  (aref *iupac-dna-matrix* (iupac-dna-index x) (iupac-dna-index y)))
 
 (declaim (inline quality-dna-subst))
 (defun quality-dna-subst (x y qx qy)
   (if (= x y)
-      (aref +quality-match-matrix+ qx qy)
-    (aref +quality-mismatch-matrix+ qx qy)))
+      (aref *quality-match-matrix* qx qy)
+    (aref *quality-mismatch-matrix* qx qy)))
 
 (declaim (inline blosum-50-subst))
 (defun blosum-50-subst (x y)
-  (aref +blosum50-matrix+ (blosum-50-index x) (blosum-50-index y)))
+  (aref *blosum50-matrix* (blosum-50-index x) (blosum-50-index y)))
 
 

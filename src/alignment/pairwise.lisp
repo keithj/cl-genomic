@@ -276,22 +276,22 @@ Arguments:
 
 Key:
 
-- gap-open (single-float): The gap opening score, a negative
+- gap-open \(single-float\): The gap opening score, a negative
   value. Defaults to -5.0.
-- gap-extend (single-float): The gap extension score, a negative
+- gap-extend \(single-float\): The gap extension score, a negative
   value. Defaults to -1.0.
 
-- band-centre (fixnum): The band centre for banded
+- band-centre \(fixnum\): The band centre for banded
   alignments. Defaults to 0.
-- band-width (fixnum): The band width about the band centre for banded
+- band-width \(fixnum\): The band width about the band centre for banded
   alignments. Defaults to most-positive-fixnum.
 
-- alignment (generalized boolean): T if an alignment is to be
+- alignment \(generalized boolean\): T if an alignment is to be
   calculated.
 
 Returns:
 - A single-float alignment score.
-- An alignment object."
+- An alignment object, or NIL."
   (declare (optimize (speed 3) (safety 0)))
   (declare (type function subst-fn)
            (type single-float gap-open gap-extend)
@@ -604,8 +604,8 @@ the arguments.
               ;;                 #'simple-dna-subst :k 6)
               (when (> score 35.0)
                 (incf total))
-              (when (= 50000 count)
-                 (return))
+              ;; (when (= 50000 count)
+              ;;       (return))
               (when (zerop (rem count 1000))
                 (format t "~a ... ~a~%" count seqs))
               (incf count))

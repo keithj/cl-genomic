@@ -194,8 +194,26 @@
 (defmethod forward-strand-p ((strand (eql *forward-strand*)))
   t)
 
+(defmethod forward-strand-p ((strand (eql *reverse-strand*)))
+  nil)
+
+(defmethod forward-strand-p ((strand (eql *unknown-strand*)))
+  nil)
+
+(defmethod reverse-strand-p ((strand (eql *forward-strand*)))
+  nil)
+
 (defmethod reverse-strand-p ((strand (eql *reverse-strand*)))
   t)
+
+(defmethod reverse-strand-p ((strand (eql *unknown-strand*)))
+  nil)
+
+(defmethod unknown-strand-p ((strand (eql *forward-strand*)))
+  nil)
+
+(defmethod unknown-strand-p ((strand (eql *reverse-strand*)))
+  nil)
 
 (defmethod unknown-strand-p ((strand (eql *unknown-strand*)))
   t)

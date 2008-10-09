@@ -31,8 +31,10 @@ alphabet.")
           :documentation "An index of the residues in the alphabet."))
   (:documentation "Alphabets are sets of tokens."))
 
-(defconstant +gap-char+ #\-)
-(defconstant +encoded-gap-char+ #b0000)
+(defconstant +gap-char+ #\-
+  "The gap character.")
+(defconstant +encoded-gap-char+ #b0000
+  "The encoded gap character in all encoded alphabets.")
 
 (defvar *dna*
   (let ((tokens (make-array 16

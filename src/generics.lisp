@@ -241,28 +241,32 @@ values. The alignment may be banded to prune the search space.
 
 Arguments:
 
-- seqm \(vector\): A sequence to be aligned.
-- seqn \(vector\): A sequence to be aligned.
+- seqm (object): A sequence to be aligned.
+- seqn (object): A sequence to be aligned.
 - subst-fn \(function\): A substitution function that accepts two
 sequence elements as arguments and returns a single-float substitution
 score.
 
 Key:
 
-- gap-open \(single-float\): The gap opening penalty.
-- gap-extend \(single-float\): The gap extension penalty.
-- band-centre \(fixnum\): The band centre for banded searches. This
+- gap-open \(single-float\): The gap opening score, a negative value.
+
+- gap-extend \(single-float\): The gap extension score, a negative
+  value.
+
+- band-centre \(fixnum\): The band centre for banded alignments. This
 defaults to 0, the main diagonal. The desired band may be calculated
 by subtracting a j coordinate from its corresponding i coordinate.
-- band-width \(fixnum\): The band width for banded searches. This
+- band-width \(fixnum\): The band width for banded alignments. This
 defaults to most-positive-fixnum so that the search space is not
 pruned.
-- alignment \(boolean\): Flag to indicate whether an alignment should
-be returned.
+
+- alignment \(generalized boolean\): T if an alignment is to be
+  calculated.
 
 Returns:
 
-- The single-float score of the alignment.
+- A single-float alignment score.
 - An alignment object, or NIL."))
 
 (defgeneric align-local-ksh (seqm seqn subst-fn &key gap-open gap-extend k
@@ -275,8 +279,8 @@ kmers of length K and the alignment is banded to include all such kmers.
 
 Arguments:
 
-- seqm \(vector\): A sequence to be aligned.
-- seqn \(vector\): A sequence to be aligned.
+- seqm \(object\): A sequence to be aligned.
+- seqn \(object\): A sequence to be aligned.
 - subst-fn \(function\): A substitution function that accepts two
 sequence elements as arguments and returns a single-float substitution
 score.
@@ -286,10 +290,11 @@ Key:
 - gap-open \(single-float\): The gap opening penalty.
 - gap-extend \(single-float\): The gap extension penalty.
 - k \(fixnum\): The seed kmer length.
-- alignment \(boolean\): Flag to indicate whether an alignment should
-be returned.
+
+- alignment \(generalized boolean\): T if an alignment is to be
+  calculated.
 
 Returns:
 
-- The single-float score of the alignment.
+- A single-float alignment score.
 - An alignment object, or NIL."))
