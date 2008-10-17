@@ -68,8 +68,9 @@
                 (ensure (subtypep (class-name (class-of seq)) class-name))
                 (ensure-same alphabet (alphabet-of seq)))
             seqs class-names alphabets))
-  (ensure-error
-    (make-dna ""))
+  ;; We now allow empty sequences
+  ;; (ensure-error
+  ;;   (make-dna ""))
   (ensure-error
     (make-dna "u"))
   (ensure-error

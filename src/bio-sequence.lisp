@@ -17,18 +17,18 @@
 
 (in-package :bio-sequence)
 
-(deftype encoded-residues (n)
-  `(simple-array (unsigned-byte ,n) *))
-
-(deftype residues-length ()
+(deftype residue-index ()
   "Type for a sequence length."
   '(and fixnum (integer 1 *)))
+
+(deftype encoded-residues (n)
+  `(simple-array (unsigned-byte ,n) *))
 
 (deftype quality-score ()
   "Type for sequence base quality score."
   '(signed-byte 8))
 
-(defvar *sequence-print-limit* 50
+(defvar *sequence-print-limit* 60
   "Maximum length of sequence to be pretty-printed.")
 
 (defmacro define-strand-decoder (type test forward reverse unknown)
@@ -55,6 +55,8 @@
 (define-strand-decoder symbol eql :forward :reverse :unknown)
 
 (defun find-alphabet (name)
+  "Returns a standard ALPHABET designated by a NAME, such as :dna :rna
+or :aa."
   (multiple-value-bind (alphabet presentp)
       (gethash name *alphabets*)
     (unless presentp
@@ -66,6 +68,26 @@
 
 (defun make-dna (residues &rest initargs
                  &key (encode t) &allow-other-keys)
+  "Returns a new DNA sequence object.
+
+Arguments:
+
+- residues \(vector or NIL\): A vector of characters, encoded residues
+  or NIL. The latter creates a virtual sequence and requires a length
+  argument to be supplied.
+
+Rest:
+
+- initargs: Any initialization arguments.
+
+Key:
+
+- encode \(boolean\): Indicates whether the residues should be
+  encoded.
+
+Returns:
+
+- A DNA sequence object."
   (let ((initargs (remove-args '(:encode) initargs)))
     (cond ((null residues)
            (apply #'make-instance 'virtual-dna-sequence initargs))
@@ -79,6 +101,26 @@
 
 (defun make-rna (residues &rest initargs
                  &key (encode t) &allow-other-keys)
+  "Returns a new RNA sequence object.
+
+Arguments:
+
+- residues \(vector or NIL\): A vector of characters, encoded residues
+  or NIL. The latter creates a virtual sequence and requires a length
+  argument to be supplied.
+
+Rest:
+
+- initargs: Any initialization arguments.
+
+Key:
+
+- encode \(boolean\): Indicates whether the residues should be
+  encoded.
+
+Returns:
+
+- A RNA sequence object."
   (let ((initargs (remove-args '(:encode) initargs)))
     (cond ((null residues)
            (apply #'make-instance 'virtual-rna-sequence initargs))
@@ -92,6 +134,30 @@
 
 (defun make-dna-quality (residues quality &rest initargs
                          &key (encode t) (metric :phred) &allow-other-keys)
+  "Returns a new DNA sequence object with quality.
+
+Arguments:
+
+- residues \(vector or NIL\): A vector of characters, encoded residues
+  or NIL. The latter creates a virtual sequence and requires a length
+  argument to be supplied.
+- quality \(vector integer\): A vector of integers, the same length as
+  RESIDUES, containing quality data.
+
+Rest:
+
+- initargs: Any initialization arguments.
+
+Key:
+
+- encode \(boolean\): Indicates whether the residues should be
+  encoded.
+- metric \(symbol\): A symbol indicating the quality metric used in
+  QUALITY. Either :phred or :illumina.
+
+Returns:
+
+- A DNA sequence object."
   (unless (= (length residues)
              (length quality))
     (error 'invalid-argument-error
@@ -111,6 +177,26 @@
 
 (defun make-aa (residues &rest initargs
                 &key (encode t) &allow-other-keys)
+  "Returns a new AA sequence object.
+
+Arguments:
+
+- residues \(vector or NIL\): A vector of characters, encoded residues
+  or NIL. The latter creates a virtual sequence and requires a length
+  argument to be supplied.
+
+Rest:
+
+- initargs: Any initialization arguments.
+
+Key:
+
+- encode \(boolean\): Indicates whether the residues should be
+  encoded.
+
+Returns:
+
+- An AA sequence object."
   (let ((initargs (remove-args '(:encode) initargs)))
     (cond ((null residues)
            (apply #'make-instance 'virtual-aa-sequence initargs))
@@ -123,11 +209,11 @@
                                    initargs)))))
 
 (defun make-encoded-vector-seq (class residues encoder element-type initargs)
-  (unless (and (vectorp residues) (not (zerop (length residues))))
+  (unless (vectorp residues)
     (error 'invalid-argument-error
            :params 'residues
            :args residues
-           :text "expected a non-empty vector"))
+           :text "expected a vector"))
   (apply #'make-instance class
          :vector (ensure-encoded residues encoder element-type) initargs))
 

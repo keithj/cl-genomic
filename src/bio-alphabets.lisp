@@ -17,6 +17,13 @@
 
 (in-package :bio-sequence)
 
+(defconstant +gap-char+ #\-
+  "The gap character.")
+(defconstant +encoded-gap-char+ #b0000
+  "The encoded gap character in all encoded alphabets.")
+(defconstant +terminator-char+ #\*
+  "The peptide sequence terminator character.")
+
 (defclass alphabet ()
   ((name :initarg :name
          :reader name-of
@@ -30,11 +37,6 @@ alphabet.")
           :reader index-of
           :documentation "An index of the residues in the alphabet."))
   (:documentation "Alphabets are sets of tokens."))
-
-(defconstant +gap-char+ #\-
-  "The gap character.")
-(defconstant +encoded-gap-char+ #b0000
-  "The encoded gap character in all encoded alphabets.")
 
 (defvar *dna*
   (let ((tokens (make-array 16

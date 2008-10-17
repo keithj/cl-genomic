@@ -50,6 +50,8 @@
       (0.0  -1.0   6.0  -4.0  -5.0  -6.0   8.0   7.0   9.0  16.0   6.0)
       (0.0  -2.0   5.0  11.0   1.0   0.0   7.0   6.0   8.0  15.0  15.0)))
 
+(defparameter *dna-query* (make-dna "GATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG"))
+
 (defun swg-aa-test (seqm seqn subst-fn gap-open gap-extend)
   (let ((vecm (bs::vector-of seqm))
         (vecn (bs::vector-of seqn)))
@@ -86,11 +88,36 @@
             (intervaln (second (intervals-of alignment))))
         ;; Check coordinates of alignment
         (ensure (= 1 (lower-of intervalm)))
-        (ensure (= 4 (upper-of intervalm)))
-        (ensure (= 5 (lower-of intervaln)))
-        (ensure (= 9 (upper-of intervaln)))
+        (ensure (= 5 (upper-of intervalm))) ; interval like subseq
+        (ensure (= 4 (lower-of intervaln)))
+        (ensure (= 9 (upper-of intervaln))) ; interval like subseq
         ;; Check sequence and gapping
         (ensure (= 1 (num-gaps-of (aligned-of intervalm))))
         (ensure (= 0 (num-gaps-of (aligned-of intervaln))))
         (ensure (string= "AW-HE" (to-string (aligned-of intervalm))))
         (ensure (string= "AWGHE" (to-string (aligned-of intervaln))))))))
+
+(addtest (bio-sequence-alignment-tests) smith-waterman-gotoh-dna
+   (let ((subst-fn #'iupac-dna-subst)
+         (gap-open -5.0)
+         (gap-extend -1.0)
+         ;; 1000 Fasta sequences
+         (seqs (with-open-file (s (merge-pathnames
+                                   "data/alignment_test_db.fasta"))
+                 (loop
+                    with gen = (make-seq-input
+                                (make-line-input-stream s) :fasta)
+                    as seq = (next gen)
+                    while (has-more-p gen)
+                    collect seq)))
+         ;; Scores from aligning with EMBOSS 5.0 water
+         (scores (with-open-file
+                     (s (merge-pathnames "data/alignment-test-scores.sexp"))
+                   (read s))))
+     (mapc (lambda (seq score)
+             (multiple-value-bind (s a)
+                 (align-local *dna-query* seq subst-fn
+                              :gap-open gap-open
+                              :gap-extend gap-extend)
+               (ensure (= score s))))
+           seqs scores)))

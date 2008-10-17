@@ -43,7 +43,7 @@
   ())
 
 (addtest (bio-sequence-io-tests) fasta/dna-simple
-  (with-test-file (stream "data/simple-dna1.fa")
+  (with-test-file (stream "data/simple-dna1.fasta")
     (let* ((gen (make-seq-input stream :fasta :alphabet :dna))
            (cur (current gen))
            (seq (next gen)))
@@ -55,7 +55,7 @@
       (ensure (string= "Test1" (identity-of seq))))))
 
 (addtest (bio-sequence-io-tests) fasta/dna-simple/virtual
-  (with-test-file (stream "data/simple-dna1.fa")
+  (with-test-file (stream "data/simple-dna1.fasta")
     (let* ((gen (make-seq-input stream :fasta :alphabet :dna :virtual t))
            (cur (current gen))
            (seq (next gen)))
@@ -67,7 +67,7 @@
       (ensure (string= "Test1" (identity-of seq))))))
 
 (addtest (bio-sequence-io-tests) fasta/dna-iupac
-  (with-test-file (stream "data/iupac-dna1.fa")
+  (with-test-file (stream "data/iupac-dna1.fasta")
     (let* ((gen (make-seq-input stream :fasta :alphabet :dna))
            (seq (next gen)))
       (ensure (subtypep (type-of seq) 'dna-sequence))
@@ -76,7 +76,7 @@
       (ensure (string= "Test1" (identity-of seq))))))
 
 (addtest (bio-sequence-io-tests) multifasta/dna-simple
-  (with-test-file (stream "data/simple-dna2.fa")
+  (with-test-file (stream "data/simple-dna2.fasta")
     (let ((gen (make-seq-input stream :fasta :alphabet :dna)))
       (dotimes (n 2)
         (let ((cur (current gen))
@@ -89,7 +89,7 @@
       (ensure-null (next gen)))))
 
 (addtest (bio-sequence-io-tests) multifasta/dna-simple/virtual
-  (with-test-file (stream "data/simple-dna2.fa")
+  (with-test-file (stream "data/simple-dna2.fasta")
     (let ((gen (make-seq-input stream :fasta :alphabet :dna :virtual t)))
       (dotimes (n 2)
         (let ((cur (current gen))
@@ -103,7 +103,7 @@
       (ensure-null (next gen)))))
 
 (addtest (bio-sequence-io-tests) multifasta/dna-iupac
-  (with-test-file (stream "data/iupac-dna2.fa")
+  (with-test-file (stream "data/iupac-dna2.fasta")
     (let ((gen (make-seq-input stream :fasta :alphabet :dna)))
       (dotimes (n 2)
         (let ((cur (current gen))
@@ -116,7 +116,7 @@
       (ensure-null (next gen)))))
 
 (addtest (bio-sequence-io-tests) multifasta/raw
-  (with-test-file (stream "data/iupac-dna2.fa")
+  (with-test-file (stream "data/iupac-dna2.fasta")
     (let ((gen (make-seq-input stream :fasta :alphabet :dna
                                :parser (make-instance 'raw-sequence-parser))))
       (dotimes (n 2)
@@ -128,7 +128,7 @@
       (ensure-null (next gen)))))
 
 (addtest (bio-sequence-io-tests) fastq/simple
-  (with-test-file (stream "data/phred.fq")
+  (with-test-file (stream "data/phred.fastq")
     (let ((gen (make-seq-input stream :fastq :alphabet :dna)))
       (do ((cur (current gen) (current gen))
            (seq (next gen) (next gen)))
@@ -140,7 +140,7 @@
         (ensure (string= "IL13" (identity-of seq) :start2 0 :end2 4))))))
 
 (addtest (bio-sequence-io-tests) fastq/raw
-  (with-test-file (stream "data/phred.fq")
+  (with-test-file (stream "data/phred.fastq")
     (let ((gen (make-seq-input stream :fastq :alphabet :dna
                                :parser (make-instance 'raw-sequence-parser))))
        (do ((cur (current gen) (current gen))
@@ -154,13 +154,13 @@
                           :start2 0 :end2 4))))))
 
 (addtest (bio-sequence-io-tests) fasta/error
-  (with-test-file (stream "data/phred.fq") ; fastq!
+  (with-test-file (stream "data/phred.fastq") ; fastq!
     (ensure-condition bio-sequence-io-error
         (make-seq-input (make-line-input-stream stream) :fasta
                         :alphabet :dna))))
 
 (addtest (bio-sequence-io-tests) fastq/error
-  (with-test-file (stream "data/simple-dna1.fa") ; fasta!
+  (with-test-file (stream "data/simple-dna1.fasta") ; fasta!
     (ensure-condition bio-sequence-io-error
       (make-seq-input (make-line-input-stream stream) :fastq
                       :alphabet :dna
@@ -207,38 +207,38 @@
       (delete-file tmp-filespec))))
 
 (addtest (bio-sequence-io-tests) split-sequence-file/fastq
-  (let ((filespec (namestring (merge-pathnames "data/phred.fq"))))
+  (let ((filespec (namestring (merge-pathnames "data/phred.fastq"))))
     (split-sequence-file filespec :fastq
                          (make-pathname-ext filespec
-                                            :type "fq" :separator #\.)
+                                            :type "fastq" :separator #\.)
                          :chunk-size 2))
-  (dolist (args '(("data/phred.0.fq" 2)
-                  ("data/phred.1.fq" 2)
-                  ("data/phred.2.fq" 2)
-                  ("data/phred.3.fq" 1)))
+  (dolist (args '(("data/phred.0.fastq" 2)
+                  ("data/phred.1.fastq" 2)
+                  ("data/phred.2.fastq" 2)
+                  ("data/phred.3.fastq" 1)))
     (let ((chunk (merge-pathnames (first args))))
       (ensure (= (second args) (count-seq-records chunk :fastq)))
       (delete-file chunk))))
 
 (addtest (bio-sequence-io-tests) split-sequence-file/fasta
-  (let ((filespec (namestring (merge-pathnames "data/split-test-dna1.fa"))))
+  (let ((filespec (namestring (merge-pathnames "data/split-test-dna1.fasta"))))
     (split-sequence-file filespec :fasta
                          (make-pathname-ext filespec
-                                            :type "fa" :separator #\.)
+                                            :type "fasta" :separator #\.)
                          :chunk-size 2))
-  (dolist (args '(("data/split-test-dna1.0.fa" 2)
-                  ("data/split-test-dna1.1.fa" 2)
-                  ("data/split-test-dna1.2.fa" 2)
-                  ("data/split-test-dna1.3.fa" 1)))
+  (dolist (args '(("data/split-test-dna1.0.fasta" 2)
+                  ("data/split-test-dna1.1.fasta" 2)
+                  ("data/split-test-dna1.2.fasta" 2)
+                  ("data/split-test-dna1.3.fasta" 1)))
     (let ((chunk (merge-pathnames (first args))))
       (ensure (= (second args) (count-seq-records chunk :fasta)))
       (delete-file chunk))))
 
 (addtest (bio-sequence-io-tests) convert-sequence-file/fastq->fasta
-  (let ((in-filespec (merge-pathnames "data/phred.fq"))
+  (let ((in-filespec (merge-pathnames "data/phred.fastq"))
         (out-filespec (namestring (iou:make-tmp-pathname
                                    :tmpdir (merge-pathnames "data")
-                                   :type "fa"))))
+                                   :type "fasta"))))
     (convert-sequence-file in-filespec :fastq out-filespec :fasta)
     (with-open-file (fqs in-filespec :direction :input)
       (with-open-file (fas out-filespec :direction :input)

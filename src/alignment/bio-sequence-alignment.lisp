@@ -93,3 +93,4 @@
 (defmethod ninvert-complement :before ((interval na-alignment-interval))
   (error 'bio-sequence-op-error
          :text "Alignment intervals may not be destructively modified."))
+

@@ -34,21 +34,25 @@
 
 (defvar *forward-strand*
   (make-instance 'sequence-strand :name "forward" :symbol :forward
-                 :token #\+ :number 1))
+                 :token #\+ :number 1)
+  "The forward nucleotide strand.")
 
 (defvar *reverse-strand*
   (make-instance 'sequence-strand :name "reverse" :symbol :reverse
-                 :token #\- :number -1))
+                 :token #\- :number -1)
+  "The reverse nucleotide strand.")
 
 (defvar *unknown-strand*
   (make-instance 'sequence-strand :name "unknown" :symbol :unknown
-                 :token #\? :number nil))
+                 :token #\? :number nil)
+  "An unknown nucleotide strand.")
 
 (defclass stranded-mixin ()
   ((strand :type sequence-strand
            :initform *unknown-strand*
            :initarg :strand
-           :accessor strand-of)))
+           :accessor strand-of
+           :documentation "The nucleotide strand.")))
 
 (defclass identity-mixin ()
   ((identity :initform nil
@@ -75,14 +79,39 @@ be the same length as the array of residues."))
   (:documentation "A mixin with support for bio-sequences that have a
 numeric quality value for each residue."))
 
+;; (defclass nth-order-mixin ()
+;;   ((n :initarg n
+;;       :initform 1
+;;       :reader n-of
+;;       :documentation "The length of n-mers in a reference sequence
+;;       that are to be treated as elements of this sequence view.")))
+
+;; (defmethod element-of ((seq encoded-vector-sequence) (index fixnum)
+;;                        &key (order 1))
+;;   ;; Check that length of order fits into vector a whole number of times
+;;   (with-slots (vector)
+;;       seq
+;;     (cond ((and (> order 1)
+;;                 (plusp (rem (length vector) order)))
+;;            (error "Invalid order for sequence of length ~a"
+;;                   (length vector)))
+;;           ((multiple-value-bind (quotient remainder)
+;;                (floor (length vector) order)
+;;              (when (plusp remainder)
+;;                (error "Invalid order for sequence of length ~a"
+;;                       (length vector))))
+;;            (error "Invalid index for ")))))
+
 (defclass token-sequence ()
   ((alphabet :initarg :alphabet
-             :reader alphabet-of))
+             :reader alphabet-of
+             :documentation "The alphabet of the sequence."))
   (:documentation "A sequence of tokens belonging to an alphabet."))
 
 (defclass virtual-token-sequence (token-sequence)
   ((length :initarg :length
-           :accessor length-of)))
+           :accessor length-of
+           :documentation "The length of the sequence.")))
 
 (defclass simple-token-sequence (token-sequence)
   ())
@@ -95,7 +124,8 @@ numeric quality value for each residue."))
 
 (defclass vector-sequence ()
   ((vector :initarg :vector
-           :accessor vector-of)))
+           :accessor vector-of
+           :documentation "The token vector of the sequence.")))
 
 (defclass simple-vector-sequence (simple-token-sequence vector-sequence)
   ())

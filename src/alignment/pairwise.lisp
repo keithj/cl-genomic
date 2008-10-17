@@ -175,26 +175,26 @@ alignment."
            (,col ,start-col))
       (declare (type (simple-array path-pointer (* *)) ,btrace))
       (loop
-         while (and (plusp (aref ,btrace ,row ,col))
+         while (and (plusp (aref ,btrace ,row ,col)) ; checks for +none+
                 (or (plusp (aref ,score ,row ,col))
                     (plusp (aref ,insertx ,row ,col))
                     (plusp (aref ,inserty ,row ,col))))
          do (let ((,ptr (aref ,btrace ,row ,col)))
-            (cond ((= +match+ ,ptr)
-                   (vector-push-extend (aref ,vecm (1- ,row)) ,alm)
-                   (vector-push-extend (aref ,vecn (1- ,col)) ,aln)
-                   (decf ,row)
-                   (decf ,col))
-                  ((= +insertx+ ,ptr)
-                   (vector-push-extend (aref ,vecn (1- ,col)) ,aln)
-                   (vector-push-extend ,gap ,alm)
-                   (decf ,col))
-                  ((= +inserty+ ,ptr)
-                   (vector-push-extend (aref ,vecm (1- ,row)) ,alm)
-                   (vector-push-extend ,gap ,aln)
-                   (decf ,row))
-                  (t
-                   (error "Unknown backtrace pointer ~a" ,ptr)))))
+              (cond ((= +match+ ,ptr)
+                     (vector-push-extend (aref ,vecm (1- ,row)) ,alm)
+                     (vector-push-extend (aref ,vecn (1- ,col)) ,aln)
+                     (decf ,row)
+                     (decf ,col))
+                    ((= +insertx+ ,ptr)
+                     (vector-push-extend (aref ,vecn (1- ,col)) ,aln)
+                     (vector-push-extend ,gap ,alm)
+                     (decf ,col))
+                    ((= +inserty+ ,ptr)
+                     (vector-push-extend (aref ,vecm (1- ,row)) ,alm)
+                     (vector-push-extend ,gap ,aln)
+                     (decf ,row))
+                    (t
+                     (error "Unknown backtrace pointer ~a" ,ptr)))))
       ,@body)))
 
 ;;; The alignment return values will be refined when we have a proper
@@ -296,7 +296,7 @@ Returns:
   (declare (type function subst-fn)
            (type single-float gap-open gap-extend)
            (type fixnum band-centre band-width)
-           (type (simple-array (unsigned-byte 4) (*)) vecm vecn))
+           (type (encoded-residues 4) vecm vecn))
   (flet ((subn (x y) ; local fn to avoid boxing of returned floats
            (funcall subst-fn x y)))
     (let ((m (length vecm))
@@ -363,7 +363,7 @@ Returns:
   (declare (type function subst-fn)
            (type single-float gap-open gap-extend)
            (type fixnum band-centre band-width)
-           (type (simple-array (unsigned-byte 7) (*)) vecm vecn))
+           (type (encoded-residues 7) vecm vecn))
   (flet ((subn (x y) ; local fn to avoid boxing of returned floats
            (funcall subst-fn x y)))
     (let ((m (length vecm))
@@ -415,7 +415,7 @@ Returns:
 (defun dp-backtrace-4bit (vecm vecn score insertx inserty
                           btrace start-row start-col)
   (declare (optimize (speed 3) (safety 1)))
-  (declare (type (simple-array (unsigned-byte 4) (*)) vecm vecn)
+  (declare (type (encoded-residues 4) vecm vecn)
            (type (simple-array single-float (* *)) score insertx inserty))
   (let ((alm (make-array 100 :element-type '(unsigned-byte 4)
                          :adjustable t :fill-pointer 0))
@@ -424,12 +424,13 @@ Returns:
     (define-backtrace ((vecm vecn alm aln :gap 0)
                        (score insertx inserty)
                        (btrace (start-row start-col) (row col)))
-      (values (nreverse alm) row col (nreverse aln) start-row start-col))))
+       (values (nreverse alm) row start-row
+               (nreverse aln) col start-col))))
 
 (defun dp-backtrace-7bit (vecm vecn score insertx inserty
                           btrace start-row start-col)
   (declare (optimize (speed 3) (safety 1)))
-  (declare (type (simple-array (unsigned-byte 7) (*)) vecm vecn)
+  (declare (type (encoded-residues 7) vecm vecn)
            (type (simple-array single-float (* *)) score insertx inserty))
   (let ((alm (make-array 100 :element-type '(unsigned-byte 7)
                              :adjustable t :fill-pointer 0))
@@ -438,7 +439,8 @@ Returns:
     (define-backtrace ((vecm vecn alm aln :gap 0)
                        (score insertx inserty)
                        (btrace (start-row start-col) (row col)))
-      (values (nreverse alm) row col (nreverse aln) start-row start-col))))
+      (values (nreverse alm) row start-row
+              (nreverse aln) col start-col))))
 
 (defun make-na-align-interval (vec lower upper
                                &optional (strand *forward-strand*))
@@ -465,7 +467,7 @@ A EQUAL hash-table of the kmers of length K in vector VEC. The hash
 keys are the kmers, while the hash values are lists of the coordinates
 at which those kmers occur."
   (declare (optimize (speed 3) (safety 0)))
-  (declare (type (simple-array (unsigned-byte 4) (*)) vec)
+  (declare (type (encoded-residues 4) vec)
            (type fixnum k))
   (let ((end (- (length vec) k))
         (table (make-hash-table :size size :test #'equalp)))
@@ -494,7 +496,7 @@ The returned lists each contain the a number of elements equal to the
 number of unique, shared kmers found. The coordinate lists at the nth
 position in each list refer to the same kmer."
   (declare (optimize (speed 3) (safety 0)))
-  (declare (type (simple-array (unsigned-byte 4) (*)) vecm vecn)
+  (declare (type (encoded-residues 4) vecm vecn)
            (type fixnum k))
   (let ((end (- (length vecm) k))
         (kmern (make-kmer-table vecn k size))
@@ -581,40 +583,3 @@ the arguments.
                           (first w)) 2)) a b)
     (princ x)
     (terpri)))
-
-(defun test-align (fastq-filespec)
-  (with-open-file (in fastq-filespec
-                   :direction :input
-                   :element-type 'base-char
-                   :external-format :ascii)
-    (let ((adapter (make-dna "GATCGGAAGAGCTCGTATGCCGTCTTCTGCTTG"))
-          (gen  (make-seq-input (make-line-input-stream in) :fastq
-                                :alphabet :dna :metric :phred
-                                :parser (make-instance 'raw-sequence-parser))))
-      (loop
-         with total = 0
-         with count = 0
-         as fq = (next gen)
-         while fq
-         do (multiple-value-bind (score seqs)
-                (align-local adapter
-                             (make-dna (assocdr :residues fq))
-                             #'simple-dna-subst)
-              ;; (align-local-ksh adapter (make-dna (assocdr :residues fq))
-              ;;                 #'simple-dna-subst :k 6)
-              (when (> score 35.0)
-                (incf total))
-              ;; (when (= 50000 count)
-              ;;       (return))
-              (when (zerop (rem count 1000))
-                (format t "~a ... ~a~%" count seqs))
-              (incf count))
-         finally (return total)))))
-
-(defun read-fasta (filespec)
-  (with-open-file (fs filespec
-                   :direction :input
-                   :element-type 'base-char
-                   :external-format :ascii)
-    (next (make-seq-input (make-line-input-stream fs) :fasta
-                          :alphabet :dna))))

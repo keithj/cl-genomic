@@ -230,7 +230,8 @@ PATHNAME-GEN. See iou:pathname-generator and iou:pathname-extender
                                    out-filespec out-format)
   (:documentation "Converts the sequence data in the file identified
 by IN-FILESPEC in format IN-FORMAT, to OUT-FORMAT, writing the data to
-a new file identified by OUT-FILESPEC."))
+a new file identified by OUT-FILESPEC. Returns the number of records
+converted."))
 
 (defgeneric align-local (seqm seqn subst-fn &key gap-open gap-extend
                          band-centre band-width alignment)

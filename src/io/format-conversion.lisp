@@ -39,4 +39,5 @@
         (loop
            as raw = (next gen)
            while raw
+           count raw
            do (write-raw-fasta raw out))))))
