@@ -69,6 +69,18 @@ represented by CAHR in ALPHABET."))
 (defgeneric unknown-strand-p (sequence-strand)
   (:documentation ""))
 
+(defgeneric element-of (bio-sequence index)
+  (:documentation "Returns the element at INDEX of BIO-SEQUENCE.  As
+these are interbase coordinates, a residue actually occupies a range
+from INDEX to 1+ INDEX. However, as the end index of the range is
+always 1+ the start index, it is implied for convenience. The first
+base of a sequence is therefore index 0 to index 1, with 0 being the
+argument passed to the INDEX-OF method."))
+
+(defgeneric (setf element-of) (value bio-sequence index)
+  (:documentation "Sets the residue at INDEX of BIO-SEQUENCE to
+VALUE."))
+
 (defgeneric virtualp (bio-sequence)
   (:documentation "Returns T if BIO-SEQUENCE has no concrete token
 sequence representation, merely a length, or NIL otherwise."))
@@ -81,18 +93,6 @@ sequence representation, merely a length, or NIL otherwise."))
 
 (defgeneric num-gaps-of (bio-sequence &key start end)
   (:documentation ""))
-
-(defgeneric residue-of (bio-sequence index)
-  (:documentation "Returns the residue at INDEX of BIO-SEQUENCE. As
-these are interbase coordinates, a residue actually occupies a range
-from INDEX to 1+ INDEX. However, as the end index of the range is
-always 1+ the start index, it is implied for convenience. The first
-base of a sequence is therefore index 0 to index 1, with 0 being the
-argument passed to the RESIDUE-OF method."))
-
-(defgeneric (setf residue-of) (value bio-sequence index)
-  (:documentation "Sets the residue at INDEX of BIO-SEQUENCE to
-VALUE."))
 
 (defgeneric residue-frequencies (bio-sequence alphabet)
   (:documentation ""))

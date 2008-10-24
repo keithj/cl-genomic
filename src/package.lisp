@@ -113,6 +113,7 @@
    #:encoded-index-of
    #:decoded-index-of
    #:alphabet-of
+   #:element-of
    #:residue-of
    #:residues-of
    #:length-of

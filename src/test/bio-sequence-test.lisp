@@ -29,7 +29,7 @@
 
 (addtest (bio-sequence-tests) standard-alphabets
   (mapc #'(lambda (alphabet tokens)
-            (ensure (eq (length tokens) (size-of alphabet)))
+            (ensure (= (length tokens) (size-of alphabet)))
             (ensure
              (loop
                 for token in tokens
@@ -46,9 +46,9 @@
                      (name-of (make-instance 'alphabet :name name))))))
 
 (addtest (bio-sequence-tests) tokens-of/alphabet
-  (let ((tokens "abcd"))
-    (ensure (string= tokens
-                     (tokens-of (make-instance 'alphabet :tokens tokens))))))
+  (let ((tokens '(#\a #\b #\c #\d)))
+    (ensure (equal tokens
+                   (tokens-of (make-instance 'alphabet :tokens tokens))))))
 
 ;;; Sequence constructors
 (addtest (bio-sequence-tests) make-dna/rna

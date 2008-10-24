@@ -35,59 +35,86 @@
 alphabet.")
    (index :initarg :index
           :reader index-of
-          :documentation "An index of the residues in the alphabet."))
+          :documentation "An index of the tokens in the alphabet."))
   (:documentation "Alphabets are sets of tokens."))
 
-(defvar *dna*
-  (let ((tokens (make-array 16
-                            :element-type 'base-char
-                            :initial-contents "acgtrykmswbdhvn-")))
+(defun make-alphabet (name tokens encoder)
+  (make-instance 'alphabet
+                 :name name
+                 :tokens tokens
+                 :index (loop
+                           with index = (make-hash-table)
+                           for i from 0 below (length tokens)
+                           do (setf (gethash
+                                     (funcall encoder (elt tokens i)) index) i)
+                           finally (return index))))
+
+(defun make-nth-order-alphabet (name alphabet n encoder)
+  (let ((tokens (permutations-of-n (tokens-of alphabet) n)))
     (make-instance 'alphabet
-                   :name :dna
+                   :name name
                    :tokens tokens
-                   :index
-                   (loop
-                      with index = (make-hash-table)
-                      for i from 0 below (length tokens)
-                      do (setf (gethash
-                                (encode-dna-4bit (aref tokens i)) index) i)
-                      finally (return index))))
+                   :index (loop
+                             with index = (make-hash-table :test #'equal)
+                             for i from 0 below (length tokens)
+                             do (setf (gethash
+                                       (mapcar encoder (elt tokens i)) index) i)
+                             finally (return index)))))
+
+(defun permutations-of-n (elements &optional (n 1))
+  (let ((m (1- n)))
+    (if (zerop m)
+        (mapcar #'list elements)
+      (let ((perms ()))
+        (dolist (e elements)
+          (dolist (p (permutations-of-n elements m))
+            (push (cons e p) perms)))
+        (nreverse perms)))))
+
+(defvar *simple-dna*
+  (let ((tokens '(#\a #\c #\g #\t)))
+    (make-alphabet :simple-dna tokens #'encode-dna-4bit))
+  "The simple DNA alphabet.")
+
+(defvar *simple-rna*
+  (let ((tokens '(#\a #\c #\g #\u)))
+    (make-alphabet :simple-dna tokens #'encode-rna-4bit))
+  "The simple RNA alphabet.")
+
+(defvar *dna*
+  (let ((tokens `(#\a #\c #\g #\t #\r #\y #\k #\m #\s #\w
+                  #\b #\d #\h #\v #\n ,+gap-char+)))
+    (make-alphabet :dna tokens #'encode-dna-4bit))
   "The IUPAC DNA alphabet.")
 
 (defvar *rna*
-  (let ((tokens (make-array 16
-                            :element-type 'base-char
-                            :initial-contents "acgurykmswbdhvn-")))
-    (make-instance 'alphabet
-                   :name :rna
-                   :tokens tokens
-                   :index
-                   (loop
-                      with index = (make-hash-table)
-                      for i from 0 below (length tokens)
-                      do (setf (gethash
-                                (encode-rna-4bit (aref tokens i)) index) i)
-                      finally (return index))))
+  (let ((tokens `(#\a #\c #\g #\u #\r #\y #\k #\m #\s #\w
+                  #\b #\d #\h #\v #\n ,+gap-char+)))
+    (make-alphabet :rna tokens #'encode-rna-4bit))
   "The IUPAC RNA alphabet.")
 
 (defvar *aa*
-  (let ((tokens (make-array 28
-                            :element-type 'base-char
-                            :initial-contents "ABCDEFGHIJKLMNOPQRSTUVWXYZ*-")))
-    (make-instance 'alphabet
-                   :name :aa
-                   :tokens tokens
-                   :index
-                   (loop
-                      with index = (make-hash-table)
-                      for i from 0 below (length tokens)
-                      do (setf (gethash
-                                (encode-aa-7bit (aref tokens i)) index) i)
-                      finally (return index)))))
+  (let ((tokens `(#\A #\B #\C #\D #\E #\F #\G #\H #\I #\J #\K
+                  #\L #\M #\N #\O #\P #\Q #\R #\S #\T #\U #\V
+                  #\W #\X #\Y #\Z ,+terminator-char+ ,+gap-char+)))
+    (make-alphabet :aa tokens #'encode-aa-7bit))
+  "The amino acid alphabet.")
+
+(defvar *dna-codons*
+  (make-nth-order-alphabet :dna-codons *simple-dna* 3 #'encode-dna-4bit)
+  "The alphabet of 64 standard codons.")
+
+(defvar *rna-codons*
+  (make-nth-order-alphabet :rna-codons *simple-rna* 3 #'encode-rna-4bit)
+  "The alphabet of 64 standard codons.")
 
 (defvar *alphabets* (make-hash-table)
   "The standard biological alphabets.")
 
+(setf (gethash :simple-dna *alphabets*) *simple-dna*)
+(setf (gethash :simple-rna *alphabets*) *simple-rna*)
 (setf (gethash :dna *alphabets*) *dna*)
 (setf (gethash :rna *alphabets*) *rna*)
 (setf (gethash :aa *alphabets*) *aa*)
+(setf (gethash :dna-codons *alphabets*) *dna-codons*)
+(setf (gethash :rna-codons *alphabets*) *rna-codons*)

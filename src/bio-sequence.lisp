@@ -252,7 +252,7 @@ Returns:
   (gethash encoded-token (index-of alphabet)))
 
 (defmethod memberp ((alphabet alphabet) (char character))
-  (contains-char-p (tokens-of alphabet) char))
+  (find char (tokens-of alphabet) :test #'char=))
 
 (defmethod explode-ambiguity ((alphabet (eql *dna*)) (char character))
   (explode-ambiguity-aux char #'encode-dna-4bit #'decode-dna-4bit))
@@ -341,25 +341,23 @@ Returns:
       seq
     (= 2 num-strands)))
 
-(defmethod residue-of ((seq encoded-dna-sequence) (index fixnum))
+(defmethod element-of ((seq encoded-dna-sequence) (index fixnum))
   (decode-dna-4bit (aref (vector-of seq) index)))
 
-(defmethod (setf residue-of) (value (seq encoded-dna-sequence) (index fixnum))
+(defmethod (setf element-of) (value (seq encoded-dna-sequence) (index fixnum))
   (with-slots (vector)
       seq
     (setf (aref vector index) (encode-dna-4bit value))))
 
-(defmethod residue-of ((seq encoded-rna-sequence) (index fixnum))
-  (with-slots (vector)
-      seq
-    (decode-rna-4bit (aref vector index))))
+(defmethod element-of ((seq encoded-rna-sequence) (index fixnum))
+  (decode-rna-4bit (aref (vector-of seq) index)))
 
-(defmethod (setf residue-of) (value (seq encoded-rna-sequence) (index fixnum))
+(defmethod (setf element-of) (value (seq encoded-rna-sequence) (index fixnum))
   (with-slots (vector)
       seq
     (setf (aref vector index) (encode-rna-4bit value))))
 
-(defmethod residue-of ((seq virtual-token-sequence) (index fixnum))
+(defmethod element-of ((seq virtual-token-sequence) (index fixnum))
   (with-slots (length)
       seq
     (if (or (< index 0) (>= index length))
@@ -368,6 +366,15 @@ Returns:
                :args index
                :text "index must be >0 and < sequence length")
       +gap-char+)))
+
+(defun residue-of (seq index)
+  "Returns the residue of SEQ at INDEX. This is a synonym for ELEMENT-OF."
+  (element-of seq index))
+
+(defun (setf residue-of) (value seq index)
+  "Sets the residue of SEQ at INDEX to VALUE. This is a synonym for
+\(SETF ELEMENT-OF\)."
+  (setf (element-of seq index) value))
 
 (defmethod num-gaps-of ((seq encoded-vector-sequence)
                         &key (start 0) (end (length-of seq)))
@@ -583,12 +590,12 @@ Returns:
 (defmethod residue-frequencies ((seq vector-sequence) (alphabet alphabet))
   (with-slots (vector)
       seq
-    (let ((frequencies (make-array (length (tokens-of alphabet))
+    (let ((frequencies (make-array (size-of alphabet)
                                    :element-type 'fixnum :initial-element 0)))
       (loop
          for elt across vector
          do (incf (aref frequencies (token-index alphabet elt))))
-      (pairlis (coerce (copy-seq (tokens-of alphabet)) 'list)
+      (pairlis (copy-list (tokens-of alphabet))
                (coerce frequencies 'list)))))
 
 ;;; Utility functions

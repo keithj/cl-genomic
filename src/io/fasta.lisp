@@ -60,7 +60,7 @@ becomes full of chunks of sequence tokens.")
        #'write-raw-fasta
        chunk-size pathname-gen))))
 
-(defmethod read-fasta-sequence ((stream character-line-input-stream)
+(defmethod read-fasta-sequence ((stream line-input-stream)
                                 (alphabet symbol)
                                 (parser bio-sequence-parser))
   (let ((seq-header (find-line stream #'content-string-p))) ; skip whitespace

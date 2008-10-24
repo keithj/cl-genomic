@@ -79,12 +79,6 @@ be the same length as the array of residues."))
   (:documentation "A mixin with support for bio-sequences that have a
 numeric quality value for each residue."))
 
-;; (defclass nth-order-mixin ()
-;;   ((n :initarg n
-;;       :initform 1
-;;       :reader n-of
-;;       :documentation "The length of n-mers in a reference sequence
-;;       that are to be treated as elements of this sequence view.")))
 
 ;; (defmethod element-of ((seq encoded-vector-sequence) (index fixnum)
 ;;                        &key (order 1))
@@ -102,6 +96,18 @@ numeric quality value for each residue."))
 ;;                       (length vector))))
 ;;            (error "Invalid index for ")))))
 
+;; (defmethod k-element-of ((seq encoded-vector-sequence) (k fixnum)
+;;                          (index fixnum))
+  
+;;   )
+
+;; (defun nth-order-bounds-check (vector index order)
+;;   (when (>= index (floor (length vector) order))
+;;     (error 'invalid-argument-error
+;;            :args '(vector index order)
+;;            :params (list vector index order)
+;;            :text "vector index too large for nth order element")))
+  
 (defclass token-sequence ()
   ((alphabet :initarg :alphabet
              :reader alphabet-of
