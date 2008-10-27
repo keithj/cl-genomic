@@ -51,12 +51,10 @@ becomes full of chunks of sequence tokens.")
 (defmethod split-sequence-file (filespec (format (eql :fasta))
                                 pathname-gen &key (chunk-size 1))
   (let ((file-pathname (pathname filespec)))
-    (with-open-file (stream file-pathname :direction :input
-                     :element-type 'base-char
-                     :external-format :ascii)
+    (with-ascii-li-stream (stream file-pathname)
       (split-from-generator
-       (make-seq-input (make-line-input-stream stream) :fasta
-                       :parser (make-instance 'raw-sequence-parser))
+       (make-seq-input stream :fasta
+                              :parser (make-instance 'raw-sequence-parser))
        #'write-raw-fasta
        chunk-size pathname-gen))))
 

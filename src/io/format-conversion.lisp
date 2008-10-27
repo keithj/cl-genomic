@@ -26,14 +26,12 @@
 
 (defmethod convert-sequence-file (in-filespec (in-format (eql :fastq))
                                   out-filespec (out-format (eql :fasta)))
-  (with-open-file (in in-filespec :direction :input
-                   :element-type 'base-char
-                   :external-format :ascii)
+  (with-ascii-li-stream (in in-filespec)
     (with-open-file (out out-filespec :direction :output
                      :element-type 'base-char
                      :external-format :ascii
                      :if-exists :supersede)
-      (let ((gen (make-seq-input (make-line-input-stream in) in-format
+      (let ((gen (make-seq-input in in-format
                                  :parser (make-instance
                                           'raw-sequence-parser))))
         (loop

@@ -79,34 +79,6 @@ be the same length as the array of residues."))
   (:documentation "A mixin with support for bio-sequences that have a
 numeric quality value for each residue."))
 
-
-;; (defmethod element-of ((seq encoded-vector-sequence) (index fixnum)
-;;                        &key (order 1))
-;;   ;; Check that length of order fits into vector a whole number of times
-;;   (with-slots (vector)
-;;       seq
-;;     (cond ((and (> order 1)
-;;                 (plusp (rem (length vector) order)))
-;;            (error "Invalid order for sequence of length ~a"
-;;                   (length vector)))
-;;           ((multiple-value-bind (quotient remainder)
-;;                (floor (length vector) order)
-;;              (when (plusp remainder)
-;;                (error "Invalid order for sequence of length ~a"
-;;                       (length vector))))
-;;            (error "Invalid index for ")))))
-
-;; (defmethod k-element-of ((seq encoded-vector-sequence) (k fixnum)
-;;                          (index fixnum))
-  
-;;   )
-
-;; (defun nth-order-bounds-check (vector index order)
-;;   (when (>= index (floor (length vector) order))
-;;     (error 'invalid-argument-error
-;;            :args '(vector index order)
-;;            :params (list vector index order)
-;;            :text "vector index too large for nth order element")))
   
 (defclass token-sequence ()
   ((alphabet :initarg :alphabet

@@ -24,10 +24,8 @@
    #:quality-score
    
    ;; Specials
-   #:*dna*
-   #:*rna*
-   #:*aa*
-
+   #:*sequence-print-limit*
+   
    #:*forward-strand*
    #:*reverse-strand*
    #:*unknown-strand*

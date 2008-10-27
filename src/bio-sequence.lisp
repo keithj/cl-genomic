@@ -368,11 +368,11 @@ Returns:
       +gap-char+)))
 
 (defun residue-of (seq index)
-  "Returns the residue of SEQ at INDEX. This is a synonym for ELEMENT-OF."
+  "Returns the residue of SEQ at INDEX. This is a synonym of ELEMENT-OF."
   (element-of seq index))
 
 (defun (setf residue-of) (value seq index)
-  "Sets the residue of SEQ at INDEX to VALUE. This is a synonym for
+  "Sets the residue of SEQ at INDEX to VALUE. This is a synonym of
 \(SETF ELEMENT-OF\)."
   (setf (element-of seq index) value))
 

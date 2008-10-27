@@ -18,12 +18,9 @@
 (in-package :cl-genomic-test)
 
 (defun count-seq-records (filespec format)
-  (with-open-file (stream filespec :direction :input
-                   :element-type 'base-char
-                   :external-format :ascii)
-    (let ((gen (make-seq-input (make-line-input-stream stream) format
-                               :alphabet :dna
-                               :metric :phred)))
+  (with-ascii-li-stream (stream filespec)
+    (let ((gen (make-seq-input stream format :alphabet :dna
+                                             :metric :phred)))
       (loop
          as seq = (next gen)
          count 1 into total
@@ -32,12 +29,9 @@
 
 (defmacro with-test-file ((stream filespec) &body body)
   (with-gensyms (fs)
-    `(with-open-file (,fs (merge-pathnames ,filespec)
-                      :direction :input
-                      :element-type 'base-char
-                      :external-format :ascii)
-       (let ((stream (make-line-input-stream ,fs)))
-         ,@body))))
+    `(let ((,fs (merge-pathnames ,filespec)))
+      (with-ascii-li-stream (,stream ,fs)
+        ,@body))))
 
 (deftestsuite bio-sequence-io-tests (cl-genomic-tests)
   ())
@@ -240,13 +234,11 @@
                                    :tmpdir (merge-pathnames "data")
                                    :type "fasta"))))
     (convert-sequence-file in-filespec :fastq out-filespec :fasta)
-    (with-open-file (fqs in-filespec :direction :input)
-      (with-open-file (fas out-filespec :direction :input)
-        (let ((fq-gen (make-seq-input (make-line-input-stream fqs) :fastq
-                                      :alphabet :dna
-                                      :metric :phred))
-              (fa-gen (make-seq-input (make-line-input-stream fas) :fasta
-                                      :alphabet :dna)))
+    (with-ascii-li-stream (fqs in-filespec)
+      (with-ascii-li-stream (fas out-filespec)
+        (let ((fq-gen (make-seq-input fqs :fastq :alphabet :dna
+                                                 :metric :phred))
+              (fa-gen (make-seq-input fas :fasta :alphabet :dna)))
           (ensure (loop
                      as fq = (next fq-gen)
                      while fq

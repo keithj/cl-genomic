@@ -41,11 +41,9 @@
 (defmethod split-sequence-file (filespec (format (eql :fastq))
                                 pathname-gen &key (chunk-size 1))
   (let ((file-pathname (pathname filespec)))
-    (with-open-file (stream file-pathname :direction :input
-                     :element-type 'base-char
-                     :external-format :ascii)
+    (with-ascii-li-stream (stream file-pathname)
       (split-from-generator
-       (make-seq-input (make-line-input-stream stream) :fastq
+       (make-seq-input stream :fastq
                        :parser (make-instance 'raw-sequence-parser))
        #'write-raw-fastq
        chunk-size pathname-gen))))

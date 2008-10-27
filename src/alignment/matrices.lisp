@@ -119,12 +119,6 @@ G, T and N.")
                 (-2.0 -2.0 -2.0 -2.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0 -1.0)))
   "A DNA substitution matrix for sequences containing IUPAC bases.")
 
-
-
-
-
-
-
 (defvar *blosum50-matrix*
   (make-array '(23 23)
               :element-type 'single-float
@@ -192,5 +186,3 @@ encoded DNA residues X and Y."
 (declaim (inline blosum-50-subst))
 (defun blosum-50-subst (x y)
   (aref *blosum50-matrix* (blosum-50-index x) (blosum-50-index y)))
-
-

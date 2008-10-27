@@ -39,6 +39,21 @@ alphabet.")
   (:documentation "Alphabets are sets of tokens."))
 
 (defun make-alphabet (name tokens encoder)
+  "Returns a new simple alphabet where the tokens are atomic. Use this
+function for creating alphabets such as DNA and RNA. Use
+{defun make-nth-order-alphabet} to create alphabets of compound tokens,
+such as the codon alphabet.
+
+Arguments:
+
+- name (symbol): The alphabet symbolic name.
+- tokens (list atoms): The alphabet tokens.
+- encoder (function): A function that accepts a single alphabet token
+  and returns its encoded value.
+
+Returns:
+
+- An {defclass alphabet} ."
   (make-instance 'alphabet
                  :name name
                  :tokens tokens
@@ -50,6 +65,23 @@ alphabet.")
                            finally (return index))))
 
 (defun make-nth-order-alphabet (name alphabet n encoder)
+  "Returns a new alphabet where the tokens are lists of tokens from a
+simple alphabet. Use this function for creating alphabets of compound
+tokens, such as the codon alphabet.
+
+Arguments:
+
+- name (symbol): The alphabet symbolic name.
+- alphabet ( {defclass alphabet} ): The alphabet whose tokens will
+  be grouped to form the tokens of the new alphabet.
+- n (integer): The number of tokens of the simple alphabet that
+  combine to form a token of the new alphabet.
+- encoder (function): A function that accepts a single simple alphabet
+  token and returns its encoded value.
+
+Returns:
+
+- An {defclass alphabet} ."
   (let ((tokens (permutations-of-n (tokens-of alphabet) n)))
     (make-instance 'alphabet
                    :name name
@@ -62,6 +94,7 @@ alphabet.")
                              finally (return index)))))
 
 (defun permutations-of-n (elements &optional (n 1))
+  "Returns a list of permutations of N ELEMENTS."
   (let ((m (1- n)))
     (if (zerop m)
         (mapcar #'list elements)
