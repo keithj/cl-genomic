@@ -43,7 +43,7 @@
   (:documentation "An interval within a reference sequence. If a
   reference is defined, this must be within the bounds of the
   reference sequence. The basic interval has no notion of sequence
-  strandedness; the bounds always refer to the "))
+  strandedness; the bounds always refer to the forward strand."))
 
 (defclass bio-sequence-interval (bio-sequence interval)
   ()
