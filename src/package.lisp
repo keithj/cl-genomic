@@ -43,6 +43,14 @@
    #:make-rna
    #:make-dna-quality
    #:make-aa
+   #:bio-sequence-p
+   #:na-sequence-p
+   #:dna-sequence-p
+   #:rna-sequence-p
+   #:aa-sequence-p
+   #:same-biotype-p
+   #:same-strand-num-p
+   #:concat-sequence
    #:complement-dna
    #:complement-rna
    #:find-alphabet

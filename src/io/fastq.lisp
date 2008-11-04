@@ -74,7 +74,9 @@
                                  &key token-case)
   (let ((*print-pretty* nil))
     (write-char #\@ stream)
-    (write-line (identity-of seq) stream)
+    (write-line (if (anonymousp seq)
+                    ""
+                  (identity-of seq)) stream)
     (write-line (to-string seq :token-case token-case) stream)
     (write-line "+" stream)
     (write-line (quality-string (quality-of seq) (metric-of seq)) stream)))

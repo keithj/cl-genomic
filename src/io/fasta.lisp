@@ -93,7 +93,9 @@ becomes full of chunks of sequence tokens.")
   (let ((*print-pretty* nil)
         (len (length-of seq)))
     (write-char #\> stream)
-    (write-line (identity-of seq) stream)
+    (write-line (if (anonymousp seq)
+                    ""
+                  (identity-of seq)) stream)
     (loop
        for i from 0 below len by *fasta-line-width*
        do (write-line

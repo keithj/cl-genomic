@@ -72,7 +72,7 @@ or :aa."
 
 Arguments:
 
-- residues \(vector or NIL\): A vector of characters, encoded residues
+- residues (vector or NIL): A vector of characters, encoded residues
   or NIL. The latter creates a virtual sequence and requires a length
   argument to be supplied.
 
@@ -82,7 +82,7 @@ Rest:
 
 Key:
 
-- encode \(boolean\): Indicates whether the residues should be
+- encode (boolean): Indicates whether the residues should be
   encoded.
 
 Returns:
@@ -105,7 +105,7 @@ Returns:
 
 Arguments:
 
-- residues \(vector or NIL\): A vector of characters, encoded residues
+- residues (vector or NIL): A vector of characters, encoded residues
   or NIL. The latter creates a virtual sequence and requires a length
   argument to be supplied.
 
@@ -115,7 +115,7 @@ Rest:
 
 Key:
 
-- encode \(boolean\): Indicates whether the residues should be
+- encode (boolean): Indicates whether the residues should be
   encoded.
 
 Returns:
@@ -138,10 +138,10 @@ Returns:
 
 Arguments:
 
-- residues \(vector or NIL\): A vector of characters, encoded residues
+- residues (vector or NIL): A vector of characters, encoded residues
   or NIL. The latter creates a virtual sequence and requires a length
   argument to be supplied.
-- quality \(vector integer\): A vector of integers, the same length as
+- quality (vector integer): A vector of integers, the same length as
   RESIDUES, containing quality data.
 
 Rest:
@@ -150,9 +150,9 @@ Rest:
 
 Key:
 
-- encode \(boolean\): Indicates whether the residues should be
+- encode (boolean): Indicates whether the residues should be
   encoded.
-- metric \(symbol\): A symbol indicating the quality metric used in
+- metric (symbol): A symbol indicating the quality metric used in
   QUALITY. Either :phred or :illumina.
 
 Returns:
@@ -181,7 +181,7 @@ Returns:
 
 Arguments:
 
-- residues \(vector or NIL\): A vector of characters, encoded residues
+- residues (vector or NIL): A vector of characters, encoded residues
   or NIL. The latter creates a virtual sequence and requires a length
   argument to be supplied.
 
@@ -191,7 +191,7 @@ Rest:
 
 Key:
 
-- encode \(boolean\): Indicates whether the residues should be
+- encode (boolean): Indicates whether the residues should be
   encoded.
 
 Returns:
@@ -220,6 +220,82 @@ Returns:
 (defun make-simple-vector-seq (class residues initargs)
   (declare (ignore class residues initargs))
   (error "Not implemented."))
+
+(defun bio-sequence-p (obj)
+  "Returns T if OBJ is a subtype of {defclass bio-sequence} , or NIL
+otherwise."
+  (subtypep (class-of obj) 'bio-sequence))
+
+(defun na-sequence-p (obj)
+   "Returns T if OBJ is a subtype of {defclass na-sequence} , or NIL
+otherwise."
+  (subtypep (class-of obj) 'na-sequence))
+
+(defun dna-sequence-p (obj)
+  "Returns T if OBJ is a subtype of {defclass dna-sequence} , or NIL
+otherwise."
+  (subtypep (class-of obj) 'dna-sequence))
+
+(defun rna-sequence-p (obj)
+  "Returns T if OBJ is a subtype of {defclass rna-sequence} , or NIL
+otherwise."
+  (subtypep (class-of obj) 'rna-sequence))
+
+(defun aa-sequence-p (obj)
+  "Returns T if OBJ is a subtype of {defclass aa-sequence} , or NIL
+otherwise."
+  (subtypep (class-of obj) 'aa-sequence))
+
+(defun same-biotype-p (&rest seqs)
+  "Returns T if SEQS are {defclass bio-sequence } s that share exactly
+the same alphabet, or NIL otherwise."
+  (cond ((null seqs)
+         nil)
+        ((not (bio-sequence-p (first seqs)))
+         nil)
+        (t
+         (loop
+            with alphabet = (alphabet-of (first seqs))
+            for seq in (rest seqs)
+            always (and (bio-sequence-p seq)
+                        (eql alphabet (alphabet-of seq)))))))
+
+(defun same-strand-num-p (&rest seqs)
+  "Returns T if SEQS are {defclass na-sequence } s that share the same
+number of strands, or NIL otherwise."
+  (cond ((null seqs)
+         nil)
+        ((not (na-sequence-p (first seqs)))
+         nil)
+        (t
+         (loop
+            with num-strands = (num-strands-of (first seqs))
+            for seq in (rest seqs)
+            always (= num-strands (num-strands-of seq))))))
+
+(defun concat-sequence (&rest seqs)
+  (if (apply #'same-biotype-p seqs)
+      (let ((construct (cond ((dna-sequence-p (first seqs))
+                              #'make-dna)
+                             ((rna-sequence-p (first seqs))
+                              #'make-rna)
+                             ((aa-sequence-p (first seqs))
+                              #'make-aa)
+                             (t
+                              (error 'invalid-argument-error
+                                     :params 'seqs
+                                     :args seqs
+                                     :text (msg "expected all sequences to be"
+                                                "one of DNA, RNA or AA"))))))
+        ;; We use to-string to avoid a special case for virtual
+        ;; sequences. We can't simply concatenate the encoded residue
+        ;; vectors because virtual sequences do not have them
+        (funcall construct (apply #'concatenate 'string
+                                  (mapcar #'to-string seqs))))
+    (error 'invalid-argument-error
+           :params 'seqs
+           :args seqs
+           :text "expected all sequences to be one of DNA, RNA or AA")))
 
 ;;; Printing methods
 (defmethod print-object ((alphabet alphabet) stream)
@@ -384,11 +460,29 @@ Returns:
        for i from start below end
        count (= +encoded-gap-char+ (aref vector i)))))
 
-(defmethod to-string ((seq virtual-token-sequence) &key
+(defmethod to-string ((seq virtual-dna-sequence) &key
                       (start 0) (end (length-of seq)) token-case)
-  (declare (ignore token-case))
   (make-string (- end start) :element-type 'base-char
-               :initial-element +gap-char+))
+               :initial-element (ecase token-case
+                                  ((nil) #\n)
+                                  (:lowercase #\n)
+                                  (:uppercase #\N))))
+
+(defmethod to-string ((seq virtual-rna-sequence) &key
+                      (start 0) (end (length-of seq)) token-case)
+  (make-string (- end start) :element-type 'base-char
+               :initial-element (ecase token-case
+                                  ((nil) #\n)
+                                  (:lowercase #\n)
+                                  (:uppercase #\N))))
+
+(defmethod to-string ((seq virtual-aa-sequence) &key
+                      (start 0) (end (length-of seq)) token-case)
+  (make-string (- end start) :element-type 'base-char
+               :initial-element (ecase token-case
+                                  ((nil) #\X)
+                                  (:lowercase #\x)
+                                  (:uppercase #\X))))
 
 (defmethod to-string ((seq encoded-dna-sequence) &key
                       (start 0) (end (length-of seq)) token-case)
