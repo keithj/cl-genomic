@@ -45,7 +45,8 @@
 
 ;;; Initialization methods
 (defmethod initialize-instance :after ((interval na-alignment-interval) &key)
-  (with-slots (lower upper reference aligned)
+  (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of)
+                   (aligned aligned-of))
       interval
     (when reference
       (unless (= (- (length-of interval)
@@ -59,34 +60,34 @@
 
 ;;; Printing methods
 (defmethod print-object ((interval na-alignment-interval) stream)
-  (with-slots (lower upper strand)
+  (with-accessors ((lower lower-of) (upper upper-of) (strand strand-of))
       interval
     (format stream "#<NA-ALIGNMENT-INTERVAL ~a ~a ~a" lower upper strand)))
 
 (defmethod print-object ((interval aa-alignment-interval) stream)
-  (with-slots (lower upper)
+  (with-accessors ((lower lower-of) (upper upper-of))
       interval
     (format stream "#<AA-ALIGNMENT-INTERVAL ~a ~a " lower upper)))
 
 (defmethod print-object ((alignment alignment) stream)
-  (with-slots (intervals)
+  (with-accessors ((intervals intervals-of))
       alignment
     (write-line "#<ALIGNMENT" stream)
     (dolist (interval intervals)
-      (with-slots (lower upper aligned)
+      (with-accessors ((lower lower-of) (upper upper-of) (aligned aligned-of))
           interval
         (format stream "~7d ~a ~7a~%" lower (to-string aligned) upper)))
     (write-line ">" stream)))
 
 ;;; Implementation methods
 (defmethod aligned-length-of ((aligned aligned-mixin))
-  (with-slots (aligned)
+  (with-accessors ((aligned aligned-of))
       aligned
     (length-of aligned)))
 
 (defmethod to-string ((interval na-alignment-interval) &key
                       (start 0) (end (aligned-length-of interval)) token-case)
-  (with-slots (aligned)
+  (with-accessors ((aligned aligned-of))
       interval
     (to-string aligned :start start :end end :token-case token-case)))
 

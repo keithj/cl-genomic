@@ -74,76 +74,77 @@
 
 ;;; Initialization methods
 (defmethod initialize-instance :after ((interval bio-sequence-interval) &key)
-  (with-slots (lower upper reference)
+  (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of))
       interval
     (check-interval-range lower upper reference)))
   
 (defmethod initialize-instance :after
     ((interval na-sequence-interval) &key)
-  (with-slots (reference lower upper strand num-strands)
+  (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of)
+                   (strand strand-of) (num-strands num-strands-of))
       interval
     (check-interval-range lower upper reference)
     (check-interval-strands strand num-strands reference)))
 
 ;;; Printing methods
 (defmethod print-object ((interval interval) stream)
-  (with-slots (lower upper)
+  (with-accessors ((lower lower-of) (upper upper-of))
       interval
     (format stream "#<INTERVAL ~a ~a>" lower upper)))
 
 (defmethod print-object ((interval bio-sequence-interval) stream)
-  (with-slots (lower upper)
+  (with-accessors ((lower lower-of) (upper upper-of))
       interval
     (format stream "#<BIO-SEQUENCE-INTERVAL ~a ~a>" lower upper)))
 
 (defmethod print-object ((interval na-sequence-interval) stream)
-  (with-slots (lower upper strand)
+  (with-accessors ((lower lower-of) (upper upper-of) (strand strand-of))
       interval
     (format stream "#<NA-SEQUENCE-INTERVAL ~a ~a ~a>" lower upper strand)))
 
 ;;; Implementation methods
 (defmethod (setf reference-of) :before (value (interval interval))
-  (with-slots (lower upper)
+  (with-accessors ((lower lower-of) (upper upper-of))
       interval
     (check-interval-range lower upper value)))
 
 (defmethod (setf upper-of) :before (value (interval interval))
-  (with-slots (reference lower)
+  (with-accessors ((lower lower-of) (reference reference-of))
       interval
     (check-interval-range lower value reference)))
 
 (defmethod (setf lower-of) :before (value (interval interval))
-  (with-slots (reference upper)
+  (with-accessors ((upper upper-of) (reference reference-of))
       interval
     (check-interval-range value upper reference)))
 
 (defmethod (setf reference-of) :before
     (value (interval na-sequence-interval))
-  (with-slots (strand num-strands)
+  (with-accessors ((strand strand-of) (num-strands num-strands-of))
       interval
     (check-interval-strands strand num-strands value)))
 
 (defmethod (setf strand-of) :before
     (value (interval na-sequence-interval))
-   (with-slots (reference num-strands)
+  (with-accessors ((reference reference-of) (num-strands num-strands-of))
        interval
-     (check-interval-strands value num-strands reference)))
+    (check-interval-strands value num-strands reference)))
 
 (defmethod (setf num-strands-of) :before
     (value (interval na-sequence-interval))
-  (with-slots (reference strand)
+  (with-accessors ((reference reference-of) (strand strand-of))
       interval
     (check-interval-strands strand value reference)))
 
 (defmethod length-of ((interval interval))
-  (with-slots (lower upper)
+  (with-accessors ((lower lower-of) (upper upper-of))
       interval
     (- upper lower)))
 
 (defmethod to-string :around ((interval interval) &key
                               start end token-case)
   (declare (ignore start end token-case))
-  (with-slots (reference lower upper)
+  (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of))
       interval
     (if reference
         (call-next-method)
@@ -152,16 +153,17 @@
 
 (defmethod to-string ((interval interval) &key
                       (start 0) (end (length-of interval)) token-case)
-  (with-slots (reference lower upper)
+  (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of))
       interval
     (to-string reference :start (+ lower start) :end (+ lower end)
                :token-case token-case)))
 
 (defmethod to-string ((interval na-sequence-interval) &key
                       (start 0) (end (length-of interval)) token-case)
-  (with-slots (reference lower upper strand)
+  (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of)
+                   (strand strand-of))
       interval
-    (with-slots (num-strands)
+    (with-accessors ((num-strands num-strands-of))
         reference
       (cond ((or (eql *unknown-strand* strand)
                  (eql *forward-strand* strand))
@@ -178,7 +180,7 @@
 (defmethod subsequence ((interval bio-sequence-interval) (start fixnum)
                         &optional end)
   (let ((end (or end (length-of interval))))
-    (with-slots (reference lower upper)
+    (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of))
         interval
       (subsequence reference (+ lower start) (+ lower end)))))
 
@@ -199,7 +201,8 @@
                       :text "a reverse-strand interval may not be applied to a single-stranded sequence.")))))))
 
 (defmethod invert-complement ((interval na-sequence-interval))
-  (with-slots (reference lower upper strand)
+  (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of)
+                   (strand strand-of))
       interval
     (let ((ref-length (length-of reference))
           (int-length (- upper lower)))
@@ -210,14 +213,17 @@
                      :reference reference))))
 
 (defmethod ninvert-complement ((interval na-sequence-interval))
-  (with-slots (reference lower upper strand num-strands)
+  (with-accessors ((reference reference-of)
+                   (strand strand-of) (num-strands num-strands-of))
       interval
     (check-interval-strands (invert-strand strand) num-strands reference)
-    (let ((ref-length (length-of reference))
-          (int-length (- upper lower)))
-      (setf lower (- ref-length upper)
-            upper (+ lower int-length)
-            strand (invert-strand strand))))
+    (with-slots (lower upper) ; direct slot access to allow inversion in place
+        interval
+      (let ((ref-length (length-of reference))
+            (int-length (- upper lower)))
+        (setf lower (- ref-length upper)
+              upper (+ lower int-length)
+              strand (invert-strand strand)))))
   interval)
 
 ;;; Utility functions

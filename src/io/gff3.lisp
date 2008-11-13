@@ -286,8 +286,8 @@ STR."
              (format nil (msg "Invalid GFF line having ~a fields"
                               "instead of 9: (~a).")
                      (length field-starts) str)))
-    (let ((fields (mapcar #'(lambda (fn x y)
-                              (funcall (symbol-function fn) str x y))
+    (let ((fields (mapcar (lambda (fn x y)
+                            (funcall (symbol-function fn) str x y))
                           *parse-fn-symbols* field-starts field-ends)))
       (pairlis *gff3-field-tags* fields))))
 
@@ -415,9 +415,8 @@ END."
              (format nil "Invalid type ~a." (subseq str start end))))
     (multiple-value-bind (attr-starts attr-ends)
         (vector-split-indices #\; str :start start :end end)
-      (mapcar #'(lambda (x y)
-                  (excise-attribute str x y))
-              attr-starts attr-ends))))
+      (mapcar (lambda (x y)
+                (excise-attribute str x y)) attr-starts attr-ends))))
 
 (defun excise-attribute (str start end)
   "Returns a list containing a single GFF attribute extracted from

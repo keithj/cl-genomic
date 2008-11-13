@@ -41,7 +41,7 @@
       (0.0 -10.0 -10.0  -4.0   1.0   8.0   7.0   6.0   5.0   4.0   5.0)))
 
 (defparameter *swg-aa-inserty*
-  #2A((0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0)
+  #2A((0.0   0.0   0.0   0.0   0.0   0.0   0.0   0.0   0.0   0.0   0.0)
       (0.0 -10.0 -10.0 -10.0 -10.0 -10.0 -10.0 -10.0 -10.0 -10.0 -10.0)
       (0.0 -10.0 -10.0 -10.0 -10.0 -10.0 -10.0 -10.0 -10.0 -10.0 -10.0)
       (0.0 -10.0 -10.0  -5.0 -10.0  -5.0 -10.0 -10.0 -10.0 -10.0 -10.0)
@@ -102,11 +102,10 @@
          (gap-open -5.0)
          (gap-extend -1.0)
          ;; 1000 Fasta sequences
-         (seqs (with-open-file (s (merge-pathnames
-                                   "data/alignment_test_db.fasta"))
+         (seqs (with-ascii-li-stream (stream (merge-pathnames
+                                              "data/alignment_test_db.fasta"))
                  (loop
-                    with gen = (make-seq-input
-                                (make-line-input-stream s) :fasta)
+                    with gen = (make-seq-input stream :fasta)
                     as seq = (next gen)
                     while (has-more-p gen)
                     collect seq)))

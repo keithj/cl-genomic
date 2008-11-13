@@ -26,7 +26,7 @@ no-ops, ignoring any data and returning NIL."))
 (defclass quality-parser-mixin ()
   ((metric :initform nil
            :initarg :metric
-           :reader parsed-metric
+           :accessor parsed-metric-of
            :documentation "The quality metric, e.g. :phred, :illumina,
 parsed from the input stream."))
   (:documentation "A parser specialised for processing biological
@@ -35,7 +35,7 @@ sequence data with additional residue quality information."))
 (defclass raw-sequence-parser (bio-sequence-parser
                                quality-parser-mixin)
   ((raw :initform ()
-        :accessor parsed-raw
+        :accessor parsed-raw-of
         :documentation "The raw sequence data parsed from the input
 stream."))
   (:documentation "A parser specialised for processing raw biological
@@ -45,19 +45,19 @@ desirable."))
 
 (defclass simple-sequence-parser (bio-sequence-parser)
   ((alphabet :initform nil
-             :accessor parsed-alphabet
+             :accessor parsed-alphabet-of
              :documentation "The sequence alphabet designator,
 e.g. :dna, :rna, parsed from the input stream.")
    (identity :initform nil
-             :accessor parsed-identity
+             :accessor parsed-identity-of
              :documentation "The sequence identity parsed from the
 input stream.")
    (description :initform nil
-                :accessor parsed-description
+                :accessor parsed-description-of
                 :documentation "The sequence documentation parsed from
 the input stream.")
    (residues :initform (make-array 0 :adjustable t :fill-pointer 0)
-             :accessor parsed-residues
+             :accessor parsed-residues-of
              :documentation "The sequence residues parsed from the
 input stream."))
   (:documentation "A parser specialised for processing biological
@@ -66,7 +66,7 @@ sequence data to build CLOS objects."))
 (defclass quality-sequence-parser (simple-sequence-parser
                                    quality-parser-mixin)
   ((quality :initform (make-array 0 :adjustable t :fill-pointer 0)
-            :reader parsed-quality
+            :accessor parsed-quality-of
             :documentation "The sequence quality data parsed from the
 input stream."))
   (:documentation "A parser specialised for processing biological
@@ -74,7 +74,7 @@ sequence data with quality to build CLOS objects."))
 
 (defclass virtual-sequence-parser (simple-sequence-parser)
   ((length :initform 0
-           :accessor parsed-length
+           :accessor parsed-length-of
            :documentation "The sequence length parsed from the input
 stream."))
   (:documentation "A parser specialised for processing biological

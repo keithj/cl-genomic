@@ -139,6 +139,21 @@ matches bio-sequence-1."))
   (:documentation "Returns a list of integers which are the
 cumulative total lengths of RANGES."))
 
+(defgeneric translate (nucleic-acid-sequence genetic-code
+                       &key start end initiator-codon partial-codon))
+
+(defgeneric translate-codon (codon genetic-code &key initiator)
+  (:documentation "Returns an amino acid for CODON using
+  GENETIC-CODE."))
+
+(defgeneric start-codon-p (codon genetic-code)
+  (:documentation "Returns T if CODON may be a start codon in
+  GENETIC-CODE."))
+
+(defgeneric term-codon-p (codon genetic-code)
+  (:documentation "Returns T if CODON may be a terminator in
+  GENETIC-CODE."))
+
 
 ;;; bio-sequence io generics
 (defgeneric begin-object (parser)
@@ -244,25 +259,25 @@ Arguments:
 
 - seqm (object): A sequence to be aligned.
 - seqn (object): A sequence to be aligned.
-- subst-fn \(function\): A substitution function that accepts two
+- subst-fn (function): A substitution function that accepts two
 sequence elements as arguments and returns a single-float substitution
 score.
 
 Key:
 
-- gap-open \(single-float\): The gap opening score, a negative value.
+- gap-open (single-float): The gap opening score, a negative value.
 
-- gap-extend \(single-float\): The gap extension score, a negative
+- gap-extend (single-float): The gap extension score, a negative
   value.
 
-- band-centre \(fixnum\): The band centre for banded alignments. This
+- band-centre (fixnum): The band centre for banded alignments. This
 defaults to 0, the main diagonal. The desired band may be calculated
 by subtracting a j coordinate from its corresponding i coordinate.
-- band-width \(fixnum\): The band width for banded alignments. This
+- band-width (fixnum): The band width for banded alignments. This
 defaults to most-positive-fixnum so that the search space is not
 pruned.
 
-- alignment \(generalized boolean\): T if an alignment is to be
+- alignment (generalized boolean): T if an alignment is to be
   calculated.
 
 Returns:
@@ -280,19 +295,19 @@ kmers of length K and the alignment is banded to include all such kmers.
 
 Arguments:
 
-- seqm \(object\): A sequence to be aligned.
-- seqn \(object\): A sequence to be aligned.
-- subst-fn \(function\): A substitution function that accepts two
+- seqm (object): A sequence to be aligned.
+- seqn (object): A sequence to be aligned.
+- subst-fn (function): A substitution function that accepts two
 sequence elements as arguments and returns a single-float substitution
 score.
 
 Key:
 
-- gap-open \(single-float\): The gap opening penalty.
-- gap-extend \(single-float\): The gap extension penalty.
-- k \(fixnum\): The seed kmer length.
+- gap-open (single-float): The gap opening penalty.
+- gap-extend (single-float): The gap extension penalty.
+- k (fixnum): The seed kmer length.
 
-- alignment \(generalized boolean\): T if an alignment is to be
+- alignment (generalized boolean): T if an alignment is to be
   calculated.
 
 Returns:

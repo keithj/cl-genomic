@@ -50,27 +50,32 @@
 
 ;;; Collecting raw data into Lisp objects
 (defmethod begin-object ((parser raw-sequence-parser))
-  (with-slots (raw) parser
-    (setf raw '())))
+  (with-accessors ((raw parsed-raw-of))
+      parser
+    (setf raw ())))
 
 (defmethod object-alphabet ((parser raw-sequence-parser)
                             alphabet)
-  (with-slots (raw) parser
+  (with-accessors ((raw parsed-raw-of))
+      parser
     (setf raw (acons :alphabet alphabet raw))))
 
 (defmethod object-identity ((parser raw-sequence-parser)
                             (identity string))
-  (with-slots (raw) parser
+  (with-accessors ((raw parsed-raw-of))
+      parser
     (setf raw (acons :identity identity raw))))
 
 (defmethod object-description ((parser raw-sequence-parser)
                                (description string))
-  (with-slots (raw) parser
+  (with-accessors ((raw parsed-raw-of))
+      parser
     (setf raw (acons :description description raw))))
 
 (defmethod object-residues ((parser raw-sequence-parser)
                             (residues string))
-  (with-slots (raw) parser
+  (with-accessors ((raw parsed-raw-of))
+      parser
     (let ((vec (assocdr :residues raw))) 
       (if vec
           (vector-push-extend residues vec)
@@ -80,7 +85,8 @@
 
 (defmethod object-quality ((parser raw-sequence-parser)
                            (quality string))
-  (with-slots (raw) parser
+  (with-accessors ((raw parsed-raw-of))
+      parser
     (let ((vec (assocdr :quality raw))) 
       (if vec
           (vector-push-extend quality vec)
@@ -89,7 +95,8 @@
                                      :initial-element quality) raw))))))
 
 (defmethod end-object ((parser raw-sequence-parser))
-  (with-slots (raw) parser
+  (with-accessors ((raw parsed-raw-of))
+      parser
     (dolist (key '(:residues :quality))
       (let ((val (assocdr key raw)))
         (when (and val (not (stringp val)))
@@ -99,58 +106,63 @@
 
 ;;; Collecting data into CLOS instances
 (defmethod begin-object ((parser simple-sequence-parser))
-  (with-slots (identity description residues) parser
-      (setf identity nil
-            description nil
-            residues (make-array 0 :adjustable t :fill-pointer 0))))
+  (with-accessors ((identity parsed-identity-of)
+                   (description parsed-description-of)
+                   (residues parsed-residues-of))
+      parser
+    (setf identity nil
+          description nil
+          residues (make-array 0 :adjustable t :fill-pointer 0))))
 
 (defmethod object-alphabet ((parser simple-sequence-parser)
                             alphabet)
-  (setf (parsed-alphabet parser) alphabet))
+  (setf (parsed-alphabet-of parser) alphabet))
 
 (defmethod object-identity ((parser simple-sequence-parser)
                             (identity string))
-  (setf (parsed-identity parser) identity))
+  (setf (parsed-identity-of parser) identity))
 
 (defmethod object-description ((parser simple-sequence-parser)
                                (description string))
-  (setf (parsed-description parser) description))
+  (setf (parsed-description-of parser) description))
 
 (defmethod object-residues ((parser simple-sequence-parser)
                             (residues vector))
-  (vector-push-extend residues (parsed-residues parser)))
+  (vector-push-extend residues (parsed-residues-of parser)))
 
 (defmethod end-object ((parser simple-sequence-parser))
   (make-bio-sequence parser))
 
 ;;; Collecting data into CLOS instances with quality
 (defmethod begin-object ((parser quality-sequence-parser))
-  (with-slots (quality) parser
-      (setf quality (make-array 0 :adjustable t :fill-pointer 0)))
+  (with-accessors ((quality parsed-quality-of))
+      parser
+    (setf quality (make-array 0 :adjustable t :fill-pointer 0)))
   (call-next-method))
 
 (defmethod object-quality ((parser quality-sequence-parser)
                            (quality vector))
-  (vector-push-extend quality (parsed-quality parser)))
+  (vector-push-extend quality (parsed-quality-of parser)))
 
 
 ;;; Collecting data into CLOS instances without explicit residues
 (defmethod begin-object ((parser virtual-sequence-parser))
-  (with-slots (length) parser
-      (setf length 0))
+  (with-accessors ((length parsed-length-of))
+      parser
+    (setf length 0))
   (call-next-method))
 
 (defmethod object-residues ((parser virtual-sequence-parser)
                             (residues vector))
-  (incf (parsed-length parser) (length residues)))
+  (incf (parsed-length-of parser) (length residues)))
 
 
 ;;; CLOS instance constructors
 (defmethod make-bio-sequence ((parser simple-sequence-parser))
-  (let ((constructor (ecase (parsed-alphabet parser)
+  (let ((constructor (ecase (parsed-alphabet-of parser)
                        (:dna #'make-dna)
                        (:rna #'make-rna)))
-        (chunks (parsed-residues parser)))
+        (chunks (parsed-residues-of parser)))
     (when (zerop (length chunks))
       (error 'invalid-operation-error
              :text "attempt to make an empty concrete bio-sequence"))
@@ -159,24 +171,24 @@
                       ((array (unsigned-byte 8))
                        (concat-into-sb-string chunks)))))
       (funcall constructor residues
-               :identity (parsed-identity parser)
+               :identity (parsed-identity-of parser)
                ;; FIXME -- :description
                ))))
 
 (defmethod make-bio-sequence ((parser virtual-sequence-parser))
-  (let ((class (ecase (parsed-alphabet parser)
+  (let ((class (ecase (parsed-alphabet-of parser)
                  (:dna 'virtual-dna-sequence)
                  (:rna 'virtual-rna-sequence))))
     (make-instance class
-                   :identity (parsed-identity parser)
+                   :identity (parsed-identity-of parser)
                    ;; FIXME -- :description
-                   :length (parsed-length parser))))
+                   :length (parsed-length-of parser))))
 
 (defmethod make-bio-sequence ((parser quality-sequence-parser))
-  (let ((constructor (ecase (parsed-alphabet parser)
+  (let ((constructor (ecase (parsed-alphabet-of parser)
                        (:dna 'make-dna-quality)))
-        (residue-chunks (parsed-residues parser))
-        (quality-chunks (parsed-quality parser)))
+        (residue-chunks (parsed-residues-of parser))
+        (quality-chunks (parsed-quality-of parser)))
     (when (zerop (length residue-chunks))
       (error 'invalid-operation-error
              :text "no sequence residue data provided"))
@@ -194,9 +206,9 @@
                        (aref quality-chunks 0)
                      (concat-quality-arrays quality-chunks))))
       (funcall constructor residues quality
-               :identity (parsed-identity parser)
+               :identity (parsed-identity-of parser)
                ;; FIXME -- :description
-               :metric (parsed-metric parser)))))
+               :metric (parsed-metric-of parser)))))
 
 (defun split-from-generator (input-gen writer n pathname-gen)
   "Reads raw sequence records from closure INPUT-GEN and writes up to

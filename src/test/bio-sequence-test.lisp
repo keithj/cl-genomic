@@ -22,22 +22,22 @@
 
 ;;; Alphabets
 (addtest (bio-sequence-tests) find-alphabet/standard
-   (ensure-same *dna* (find-alphabet :dna))
-   (ensure-same *rna* (find-alphabet :rna))
+   (ensure-same bs::*dna* (find-alphabet :dna))
+   (ensure-same bs::*rna* (find-alphabet :rna))
    (ensure-error
      (find-alphabet :foo)))
 
 (addtest (bio-sequence-tests) standard-alphabets
-  (mapc #'(lambda (alphabet tokens)
-            (ensure (= (length tokens) (size-of alphabet)))
-            (ensure
-             (loop
-                for token in tokens
-                always (memberp alphabet token))))
+  (mapc (lambda (alphabet tokens)
+          (ensure (= (length tokens) (size-of alphabet)))
+          (ensure
+           (loop
+              for token in tokens
+              always (memberp alphabet token))))
         (mapcar #'find-alphabet '(:dna :rna))
-        (mapcar #'(lambda (str)
-                    (loop
-                       for c across str collect c))
+        (mapcar (lambda (str)
+                  (loop
+                     for c across str collect c))
                 (list dna-residues rna-residues))))
 
 (addtest (bio-sequence-tests) name-of/alphabet
@@ -60,13 +60,13 @@
                            'dna-sequence
                            'rna-sequence
                            'rna-sequence))
-        (alphabets (list *dna*
-                         *dna*
-                         *rna*
-                         *rna*)))
-    (mapcar #'(lambda (seq class-name alphabet)
-                (ensure (subtypep (class-name (class-of seq)) class-name))
-                (ensure-same alphabet (alphabet-of seq)))
+        (alphabets (list (find-alphabet :dna)
+                         (find-alphabet :dna)
+                         (find-alphabet :rna)
+                         (find-alphabet :rna))))
+    (mapcar (lambda (seq class-name alphabet)
+              (ensure (subtypep (class-name (class-of seq)) class-name))
+              (ensure-same alphabet (alphabet-of seq)))
             seqs class-names alphabets))
   ;; We now allow empty sequences
   ;; (ensure-error
@@ -85,8 +85,8 @@
   (ensure (= 2 (num-strands-of (make-rna "uagc" :num-strands 2)))))
 
 (addtest (bio-sequence-tests) make-dna/rna/virtual
-  (ensure (string= "----" (to-string (make-dna nil :length 4))))
-  (ensure (string= "----" (to-string (make-rna nil :length 4)))))
+  (ensure (string= "nnnn" (to-string (make-dna nil :length 4))))
+  (ensure (string= "nnnn" (to-string (make-rna nil :length 4)))))
 
 (addtest (bio-sequence-tests) phred-quality
   (let ((pvals '(0.1 0.01 0.001 0.0001 0.00001))
@@ -107,8 +107,8 @@
                      :metric :phred)))
         (class-names (list 'dna-quality-sequence
                            'dna-quality-sequence)))
-    (mapcar #'(lambda (seq class-name)
-                (ensure (subtypep (class-name (class-of seq)) class-name)))
+    (mapcar (lambda (seq class-name)
+              (ensure (subtypep (class-name (class-of seq)) class-name)))
             seqs class-names))
   (ensure-error
     (make-dna-quality
@@ -123,10 +123,10 @@
 
 ;;; Utility methods
 (addtest (bio-sequence-tests) simplep/string
-  (ensure (simplep "acgt" (find-alphabet :dna)))
-  (ensure (not (simplep "acgn" (find-alphabet :dna))))
-  (ensure (simplep "acgu" (find-alphabet :rna)))
-  (ensure (not (simplep "acgn" (find-alphabet :rna)))))
+  (ensure (simplep (find-alphabet :dna) "acgt"))
+  (ensure (not (simplep (find-alphabet :dna) "acgn")))
+  (ensure (simplep (find-alphabet :rna) "acgu"))
+  (ensure (not (simplep (find-alphabet :rna) "acgn"))))
 
 (addtest (bio-sequence-tests) anonymousp
   (ensure (anonymousp (make-dna "tagc")))
@@ -172,7 +172,7 @@
   (let* ((len 10)
          (seq (make-dna nil :length 10)))
     (dotimes (n len)
-      (ensure (char= #\- (residue-of seq n))))
+      (ensure (char= #\n (residue-of seq n))))
     (ensure-error 'invalid-argument-error
       (residue-of seq -1))
     (ensure-error 'invalid-argument-error
@@ -348,11 +348,11 @@
 
 (addtest (bio-sequence-tests) residue-frequencies/bio-sequence
   (let ((seq (make-dna "aacccgggt")))
-    (mapc #'(lambda (token freq)
-              (ensure (eq (cdr (assoc token (residue-frequencies
-                                             seq
-                                             (find-alphabet :dna))
-                                      :test #'char= )) freq)))
+    (mapc (lambda (token freq)
+            (ensure (eq (cdr (assoc token (residue-frequencies
+                                           seq
+                                           (find-alphabet :dna))
+                                    :test #'char= )) freq)))
           '(#\a #\c #\g #\t)
           '(2 3 3 1))))
 

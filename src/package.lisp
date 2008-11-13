@@ -37,6 +37,7 @@
    #:bio-sequence-warning
    #:bio-sequence-io-error
    #:bio-sequence-op-error
+   #:initiator-codon-error
 
    ;; Functions
    #:make-dna
@@ -54,6 +55,10 @@
    #:complement-dna
    #:complement-rna
    #:find-alphabet
+   #:register-alphabet
+   #:registered-alphabets
+   #:find-genetic-code
+   #:registered-genetic-codes
    #:phred-quality
    #:encode-phred-quality
    #:decode-phred-quality
@@ -72,6 +77,7 @@
 
    ;; Classes
    #:alphabet
+   #:genetic-code
    #:sequence-strand
    #:bio-sequence
    #:na-sequence
@@ -116,6 +122,9 @@
    #:memberp
    #:tokens-of
    #:explode-ambiguity
+   #:translate-codon
+   #:start-codon-p
+   #:term-codon-p
    #:encoded-index-of
    #:decoded-index-of
    #:alphabet-of

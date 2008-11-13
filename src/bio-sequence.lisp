@@ -28,7 +28,7 @@
   "Type for sequence base quality score."
   '(signed-byte 8))
 
-(defvar *sequence-print-limit* 60
+(defparameter *sequence-print-limit* 160
   "Maximum length of sequence to be pretty-printed.")
 
 (defmacro define-strand-decoder (type test forward reverse unknown)
@@ -53,18 +53,6 @@
 (define-strand-decoder fixnum = 1 -1 0)
 (define-strand-decoder character char= #\+ #\- #\?)
 (define-strand-decoder symbol eql :forward :reverse :unknown)
-
-(defun find-alphabet (name)
-  "Returns a standard ALPHABET designated by a NAME, such as :dna :rna
-or :aa."
-  (multiple-value-bind (alphabet presentp)
-      (gethash name *alphabets*)
-    (unless presentp
-      (error 'invalid-argument-error
-             :params 'name
-             :args name
-             :text "no such alphabet"))
-    alphabet))
 
 (defun make-dna (residues &rest initargs
                  &key (encode t) &allow-other-keys)
@@ -302,8 +290,9 @@ number of strands, or NIL otherwise."
   (format stream "#<ALPHABET ~a>" (slot-value alphabet 'name)))
 
 (defmethod print-object ((strand sequence-strand) stream)
-  (with-slots (name token number) strand
-      (format stream "#<SEQUENCE-STRAND ~a/~a/~a>" name token number)))
+  (with-accessors ((name name-of) (token token-of) (number number-of))
+      strand
+    (format stream "#<SEQUENCE-STRAND ~a/~a/~a>" name token number)))
 
 (defmethod print-object ((seq dna-sequence) stream)
   (print-seq-aux "DNA-SEQUENCE" seq stream))
@@ -339,7 +328,7 @@ number of strands, or NIL otherwise."
 (defmethod ambiguousp ((alphabet alphabet) (char character))
   (> (length (explode-ambiguity alphabet char)) 1))
 
-(defmethod simplep ((residues string) (alphabet alphabet))
+(defmethod simplep ((alphabet alphabet) (residues string))
   (loop
      for residue across residues
      never (ambiguousp alphabet residue)))
@@ -429,19 +418,27 @@ number of strands, or NIL otherwise."
   (decode-rna-4bit (aref (vector-of seq) index)))
 
 (defmethod (setf element-of) (value (seq encoded-rna-sequence) (index fixnum))
-  (with-slots (vector)
+  (with-accessors ((vector vector-of))
       seq
     (setf (aref vector index) (encode-rna-4bit value))))
 
-(defmethod element-of ((seq virtual-token-sequence) (index fixnum))
-  (with-slots (length)
+(defmethod element-of ((seq virtual-dna-sequence) (index fixnum))
+  (with-accessors ((length length-of))
       seq
-    (if (or (< index 0) (>= index length))
-        (error 'invalid-argument-error
-               :params 'index
-               :args index
-               :text "index must be >0 and < sequence length")
-      +gap-char+)))
+    (check-token-range length index index)
+    #\n))
+
+(defmethod element-of ((seq virtual-rna-sequence) (index fixnum))
+  (with-accessors ((length length-of))
+      seq
+    (check-token-range length index index)
+    #\n))
+
+(defmethod element-of ((seq virtual-aa-sequence) (index fixnum))
+  (with-accessors ((length length-of))
+      seq
+    (check-token-range length index index)
+    #\X))
 
 (defun residue-of (seq index)
   "Returns the residue of SEQ at INDEX. This is a synonym of ELEMENT-OF."
@@ -454,7 +451,7 @@ number of strands, or NIL otherwise."
 
 (defmethod num-gaps-of ((seq encoded-vector-sequence)
                         &key (start 0) (end (length-of seq)))
-  (with-slots (vector)
+  (with-accessors ((vector vector-of))
       seq
     (loop
        for i from start below end
@@ -486,7 +483,7 @@ number of strands, or NIL otherwise."
 
 (defmethod to-string ((seq encoded-dna-sequence) &key
                       (start 0) (end (length-of seq)) token-case)
-  (with-slots (vector)
+  (with-accessors ((vector vector-of))
       seq
     (let ((str (make-string (- end start) :element-type 'base-char))
           (seq-end (1- end))
@@ -501,7 +498,7 @@ number of strands, or NIL otherwise."
 
 (defmethod to-string ((seq encoded-rna-sequence) &key
                       (start 0) (end (length-of seq)) token-case)
-  (with-slots (vector)
+  (with-accessors ((vector vector-of))
       seq
     (let ((str (make-string (- end start) :element-type 'base-char))
           (seq-end (1- end))
@@ -516,7 +513,7 @@ number of strands, or NIL otherwise."
 
 (defmethod to-string ((seq encoded-aa-sequence) &key
                       (start 0) (end (length-of seq)) token-case)
-  (with-slots (vector)
+  (with-accessors ((vector vector-of))
       seq
     (let ((str (make-string (- end start) :element-type 'base-char))
           (seq-end (1- end))
@@ -531,14 +528,14 @@ number of strands, or NIL otherwise."
 
 (defmethod subsequence ((seq vector-sequence) (start fixnum)
                         &optional end)
-  (with-slots (vector)
+  (with-accessors ((vector vector-of))
       seq
     (make-instance (class-of seq)
                    :vector (token-subsequence vector start end))))
 
 (defmethod subsequence  ((seq dna-quality-sequence) (start fixnum)
                          &optional end)
-  (with-slots (vector quality metric)
+  (with-accessors ((vector vector-of) (quality quality-of) (metric metric-of))
       seq
     (make-instance 'dna-quality-sequence
                    :vector (token-subsequence vector start end)
@@ -547,19 +544,19 @@ number of strands, or NIL otherwise."
 
 (defmethod subsequence ((seq virtual-token-sequence) (start fixnum)
                         &optional end)
-  (with-slots (length)
+  (with-accessors ((length length-of))
       seq
     (let ((end (or end length)))
       (check-token-range length start end)
       (make-instance (class-of seq) :length (- end start)))))
 
 (defmethod reverse-sequence ((seq vector-sequence))
-  (with-slots (vector)
+  (with-accessors ((vector vector-of))
       seq 
     (make-instance (class-of seq) :vector (reverse vector))))
 
 (defmethod reverse-sequence ((seq dna-quality-sequence))
-  (with-slots (vector quality metric)
+  (with-accessors ((vector vector-of) (quality quality-of) (metric metric-of))
       seq
     (make-instance 'dna-quality-sequence
                    :vector (reverse vector)
@@ -567,18 +564,18 @@ number of strands, or NIL otherwise."
                    :metric metric)))
 
 (defmethod reverse-sequence ((seq virtual-token-sequence))
-  (with-slots (length)
+  (with-accessors ((length length-of))
       seq 
     (make-instance (class-of seq) :length length)))
 
 (defmethod nreverse-sequence ((seq vector-sequence))
-  (with-slots (vector)
+  (with-accessors ((vector vector-of))
       seq
     (setf vector (nreverse vector))
     seq))
 
 (defmethod nreverse-sequence ((seq dna-quality-sequence))
-  (with-slots (vector quality)
+  (with-accessors ((vector vector-of) (quality quality-of))
       seq
     (setf vector (nreverse vector)
           quality (nreverse quality))
@@ -588,26 +585,26 @@ number of strands, or NIL otherwise."
   seq)
 
 (defmethod complement-sequence ((seq encoded-dna-sequence))
-  (with-slots (vector)
+  (with-accessors ((vector vector-of))
       seq
     (make-instance 'encoded-dna-sequence :vector
                    (complement-tokens
                     (copy-seq vector) #'complement-dna-4bit))))
 
 (defmethod complement-sequence ((seq encoded-rna-sequence))
-  (with-slots (vector)
+  (with-accessors ((vector vector-of))
       seq
     (make-instance 'encoded-rna-sequence :vector
                    (complement-tokens
                     (copy-seq vector) #'complement-rna-4bit))))
 
 (defmethod complement-sequence ((seq virtual-token-sequence))
-  (with-slots (length)
+  (with-accessors ((length length-of))
       seq 
     (make-instance (class-of seq) :length length)))
 
 (defmethod ncomplement-sequence ((seq encoded-dna-sequence))
-  (with-slots (vector)
+  (with-accessors ((vector vector-of))
       seq
     (loop
        for i from 0 below (length vector)
@@ -616,7 +613,7 @@ number of strands, or NIL otherwise."
   seq)
 
 (defmethod ncomplement-sequence ((seq encoded-rna-sequence))
-  (with-slots (vector)
+  (with-accessors ((vector vector-of))
       seq
     (loop
        for i from 0 below (length vector)
@@ -628,21 +625,21 @@ number of strands, or NIL otherwise."
   seq)
 
 (defmethod reverse-complement ((seq encoded-dna-sequence))
-  (with-slots (vector)
+  (with-accessors ((vector vector-of))
       seq
     (make-instance 'encoded-dna-sequence :vector
                    (nreverse
                     (complement-tokens vector #'complement-dna-4bit)))))
 
 (defmethod reverse-complement ((seq encoded-rna-sequence))
-  (with-slots (vector)
+  (with-accessors ((vector vector-of))
       seq
     (make-instance 'encoded-rna-sequence :vector
                    (nreverse
                     (complement-tokens vector #'complement-rna-4bit)))))
 
 (defmethod reverse-complement ((seq dna-quality-sequence))
-  (with-slots (vector quality metric)
+  (with-accessors ((vector vector-of) (quality quality-of) (metric metric-of))
       seq
     (let ((s (make-instance 'dna-quality-sequence
                             :vector (copy-seq vector)
@@ -651,7 +648,7 @@ number of strands, or NIL otherwise."
       (nreverse-complement s))))
 
 (defmethod reverse-complement ((seq virtual-token-sequence))
-  (with-slots (length)
+  (with-accessors ((length length-of))
       seq 
     (make-instance (class-of seq) :length length)))
 
@@ -682,7 +679,7 @@ number of strands, or NIL otherwise."
                 :end1 end1 :end2 end2 :test #'eq)))
 
 (defmethod residue-frequencies ((seq vector-sequence) (alphabet alphabet))
-  (with-slots (vector)
+  (with-accessors ((vector vector-of))
       seq
     (let ((frequencies (make-array (size-of alphabet)
                                    :element-type 'fixnum :initial-element 0)))
@@ -691,6 +688,39 @@ number of strands, or NIL otherwise."
          do (incf (aref frequencies (token-index alphabet elt))))
       (pairlis (copy-list (tokens-of alphabet))
                (coerce frequencies 'list)))))
+
+(defmethod translate :before ((seq na-sequence) (code genetic-code)
+                              &key (start 0) end initiator-codon
+                              partial-codon)
+  (declare (ignore initiator-codon))
+  (let* ((na-len (length-of seq))
+         (end (or end na-len)))
+    (check-token-range na-len start end)
+    (if (and (plusp (rem (- end start) +codon-size+))
+             (not partial-codon))
+        (error 'translation-error :sequence seq :start start :end end
+               :genetic-code code
+               :text "the translated region includes a partial codon"))))
+
+(defmethod translate ((seq virtual-dna-sequence) (code genetic-code)
+                      &key (start 0) end (initiator-codon t) partial-codon)
+  (declare (ignore partial-codon))
+  (translate-virtual seq code start end initiator-codon))
+
+(defmethod translate ((seq virtual-rna-sequence) (code genetic-code)
+                      &key (start 0) end (initiator-codon t) partial-codon)
+  (declare (ignore partial-codon))
+  (translate-virtual seq code start end initiator-codon))
+
+(defmethod translate ((seq encoded-dna-sequence) (code genetic-code)
+                      &key (start 0) end (initiator-codon t) partial-codon)
+  (declare (ignore partial-codon))
+  (translate-encoded-4bit seq code start end initiator-codon))
+
+(defmethod translate ((seq encoded-rna-sequence) (code genetic-code)
+                      &key (start 0) end (initiator-codon t) partial-codon)
+  (declare (ignore partial-codon))
+  (translate-encoded-4bit seq code start end initiator-codon))
 
 ;;; Utility functions
 (defun print-seq-aux (name seq stream)
@@ -702,7 +732,7 @@ number of strands, or NIL otherwise."
 
 (defun print-quality-seq-aux (name seq stream)
   "Helper function for printing bio-sequence objects."
-  (with-slots (quality metric)
+  (with-accessors ((quality quality-of) (metric metric-of))
       seq
     (let ((len (length-of seq)))
       (if (<= len *sequence-print-limit*)
@@ -715,7 +745,7 @@ number of strands, or NIL otherwise."
 (defun quality-string (quality metric)
   "Wrapper for ENCODE-QUALITY that encodes QUALITY, an array of bytes
 representing base quality scores, as a string using an encoder
-appropriate for METRIC, a quality metric \(:PHRED or :ILLUMINA\)."
+appropriate for METRIC, a quality metric ( :PHRED or :ILLUMINA )."
   (let ((encoder (ecase metric
                    (:phred #'encode-phred-quality)
                    (:illumina #'encode-illumina-quality))))
@@ -795,8 +825,8 @@ when decoding."
         (t t)))
 
 (defun complement-tokens (tokens comp-fn &optional (start 0) end)
-  "Returns a complemented copy of RESIDUES populated with elements
-from RESIDUES that have been transformed by COMP-FN, starting at the
+  "Returns a complemented copy of TOKENS populated with elements
+from TOKENS that have been transformed by COMP-FN, starting at the
 first element, or index START, and continuing to the last residue, or
 index END."
   (let* ((end (or end (length tokens)))
@@ -809,9 +839,64 @@ index END."
 
 (defun explode-ambiguity-aux (char encoder decoder)
   "Returns a list of the ambiguity characters represented by CHAR."
-  (let ((encoded (funcall encoder char)))
-   (loop
-      for b from 0 below (integer-length encoded)
-      when (logbitp b encoded)
-      collect (funcall decoder (ash 1 b)) into exploded
-      finally (return (sort exploded #'char<=)))))
+  (sort (mapcar decoder (explode-encoded-base (funcall encoder char)))
+        #'char<=))
+
+(defun explode-encoded-base (encoded-base)
+  (loop
+     for b from 0 below (integer-length encoded-base)
+     when (logbitp b encoded-base)
+     collect (ash 1 b)))
+
+(defun explode-encoded-codon (codon)
+  (if (null (rest codon))
+      (mapcar #'list (explode-encoded-base (first codon)))
+    (loop for x in (explode-encoded-base (first codon))
+       nconc (loop
+                for y in (explode-encoded-codon (rest codon))
+                collect (cons x y)))))
+
+(defun codon-start-p (base-pos)
+  (zerop (mod base-pos +codon-size+)))
+
+(defun codon-end-p (base-pos)
+  (= 2 (mod base-pos +codon-size+)))
+
+(defun translate-virtual (seq code start end initiator-codon)
+  (let* ((na-len (length-of seq))
+         (end (or end na-len))
+         (aa-len (floor (- end start) +codon-size+)))
+    (loop
+       for i from start below end
+       for j = 0 then (1+ j)
+       for initiator = (and initiator-codon (< j +codon-size+))
+       with codon = (mapcar #'encode-dna-4bit '(#\n #\n #\n))
+       when (codon-end-p j)
+       collect (translate-codon codon code
+                                :initiator initiator) into aa
+       finally (return (make-aa
+                        (make-array aa-len
+                                    :element-type '(unsigned-byte 7)
+                                    :initial-contents aa))))))
+
+(defun translate-encoded-4bit (seq code start end initiator-codon)
+  (with-accessors ((vector vector-of))
+      seq
+    (let* ((na-len (length vector))
+           (end (or end na-len))
+           (aa-len (floor (- end start) +codon-size+)))
+      (loop
+         for i from start below end
+         for j = 0 then (1+ j)
+         for initiator = (and initiator-codon (< j +codon-size+))
+         for codon = () then (if (codon-start-p j)
+                                 ()
+                               codon)
+         do (push (aref vector i) codon)
+         when (codon-end-p j)
+         collect (translate-codon (nreverse codon) code
+                                  :initiator initiator) into aa
+         finally (return (make-aa
+                          (make-array aa-len
+                                      :element-type '(unsigned-byte 7)
+                                      :initial-contents aa)))))))

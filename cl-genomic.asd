@@ -56,6 +56,10 @@
                                                "bio-sequence-classes"))
                            (:file "generics"
                                   :depends-on ("package"))
+                           (:file "genetic-codes"
+                                  :depends-on ("package"
+                                               "bio-alphabets"
+                                               "bio-sequence-encoding"))
                            (:file "bio-sequence"
                                   :depends-on ("package"
                                                "generics"

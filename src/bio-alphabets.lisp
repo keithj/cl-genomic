@@ -17,12 +17,20 @@
 
 (in-package :bio-sequence)
 
+(defstruct nucleotide-base
+  (name "" :type string)
+  (description "" :type string)
+  (token #\n :type base-char))
+
 (defconstant +gap-char+ #\-
   "The gap character.")
 (defconstant +encoded-gap-char+ #b0000
   "The encoded gap character in all encoded alphabets.")
-(defconstant +terminator-char+ #\*
-  "The peptide sequence terminator character.")
+(defconstant +codon-size+ 3
+  "The number of bases in a codon.")
+
+(defvar *alphabets* (make-hash-table)
+  "The standard biological alphabets.")
 
 (defclass alphabet ()
   ((name :initarg :name
@@ -93,6 +101,31 @@ Returns:
                                        (mapcar encoder (elt tokens i)) index) i)
                              finally (return index)))))
 
+(defun register-alphabet (alphabet)
+  "Registers a global standard ALPHABET."
+  (setf (gethash (name-of alphabet) *alphabets*) alphabet))
+
+(defun find-alphabet (name)
+  "Returns a standard ALPHABET designated by a symbol NAME, such
+as :dna :rna or :aa."
+  (multiple-value-bind (alphabet presentp)
+      (gethash name *alphabets*)
+    (unless presentp
+      (error 'invalid-argument-error
+             :params 'name
+             :args name
+             :text "no such alphabet"))
+    alphabet))
+
+(defun registered-alphabets ()
+  "Returns a list of all registered alphabets."
+  (loop
+     for alphabet being the hash-values of *alphabets*
+     collect alphabet into alphabets
+     finally (return (sort alphabets #'string<=
+                           :key (lambda (alpha)
+                                  (symbol-name (name-of alpha)))))))
+
 (defun permutations-of-n (elements &optional (n 1))
   "Returns a list of permutations of N ELEMENTS."
   (let ((m (1- n)))
@@ -129,7 +162,7 @@ Returns:
 (defvar *aa*
   (let ((tokens `(#\A #\B #\C #\D #\E #\F #\G #\H #\I #\J #\K
                   #\L #\M #\N #\O #\P #\Q #\R #\S #\T #\U #\V
-                  #\W #\X #\Y #\Z ,+terminator-char+ ,+gap-char+)))
+                  #\W #\X #\Y #\Z #\* ,+gap-char+)))
     (make-alphabet :aa tokens #'encode-aa-7bit))
   "The amino acid alphabet.")
 
@@ -141,13 +174,10 @@ Returns:
   (make-nth-order-alphabet :rna-codons *simple-rna* 3 #'encode-rna-4bit)
   "The alphabet of 64 standard codons.")
 
-(defvar *alphabets* (make-hash-table)
-  "The standard biological alphabets.")
-
-(setf (gethash :simple-dna *alphabets*) *simple-dna*)
-(setf (gethash :simple-rna *alphabets*) *simple-rna*)
-(setf (gethash :dna *alphabets*) *dna*)
-(setf (gethash :rna *alphabets*) *rna*)
-(setf (gethash :aa *alphabets*) *aa*)
-(setf (gethash :dna-codons *alphabets*) *dna-codons*)
-(setf (gethash :rna-codons *alphabets*) *rna-codons*)
+(register-alphabet *simple-dna*)
+(register-alphabet *simple-rna*)
+(register-alphabet *dna*)
+(register-alphabet *rna*)
+(register-alphabet *aa*)
+(register-alphabet *dna-codons*)
+(register-alphabet *rna-codons*)

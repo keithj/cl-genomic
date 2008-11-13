@@ -49,3 +49,43 @@ file IO on bio-sequences."))
   (:documentation "An error that is raised when performing operations
 on bio-sequences."))
 
+(define-condition initiator-codon-error (bio-sequence-op-error)
+  ((codon :initform nil
+          :initarg :codon
+          :reader codon-of
+          :documentation "The invalid codon.")
+   (genetic-code :initform nil
+                 :initarg :genetic-code
+                 :reader genetic-code-of
+                 :documentation "The genetic code used to translate."))
+  (:report (lambda (condition stream)
+             (format stream "Codon ~a is not an initiator in ~a"
+                     (codon-of condition)
+                     (genetic-code-of condition))))
+  (:documentation "An error that is raised when attempting to translate
+a non-initiator codon as an initiator."))
+
+(define-condition translation-error (bio-sequence-op-error)
+  ((seq :initform nil
+        :initarg :sequence
+        :reader sequence-of
+        :documentation "The translated sequence.")
+   (start :initform nil
+          :initarg :start
+          :reader start-of
+          :documentation "The translation start position.")
+   (end :initform nil
+        :initarg :end
+        :reader end-of
+        :documentation "The translation end position.")
+   (genetic-code :initform nil
+                 :initarg :genetic-code
+                 :reader genetic-code-of
+                 :documentation "The genetic code used to translate."))
+  (:report (lambda (condition stream)
+             (format stream "Invalid translation of ~a~@[: ~a~]"
+                     (sequence-of condition)
+                     (text-of condition))))
+  (:documentation "An error that is raised when attempting an invalid
+  translation of a sequence."))
+
