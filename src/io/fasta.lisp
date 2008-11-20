@@ -55,7 +55,7 @@ becomes full of chunks of sequence tokens.")
       (split-from-generator
        (make-seq-input stream :fasta
                               :parser (make-instance 'raw-sequence-parser))
-       #'write-raw-fasta
+       #'write-fasta-sequence
        chunk-size pathname-gen))))
 
 (defmethod read-fasta-sequence ((stream line-input-stream)
@@ -88,8 +88,7 @@ becomes full of chunks of sequence tokens.")
                                 "~s is not recognised as as Fasta header"
                                 seq-header))))))
 
-(defmethod write-fasta-sequence ((seq bio-sequence) stream
-                                 &key token-case) 
+(defmethod write-fasta-sequence ((seq bio-sequence) stream &key token-case) 
   (let ((*print-pretty* nil)
         (len (length-of seq)))
     (write-char #\> stream)
@@ -104,14 +103,31 @@ becomes full of chunks of sequence tokens.")
                       :token-case token-case)
            stream))))
 
-(defun write-raw-fasta (raw stream)
-  "Writes sequence data RAW to STREAM in Fasta format. The alist RAW
-must contain keys and values as created by {defclass raw-sequence-parser} ."
+(defmethod write-fasta-sequence ((alist list) stream &key token-case)
+  (let ((*print-pretty* nil)
+        (residues (let ((str (or (assocdr :residues alist) "")))
+                    (ecase token-case
+                      ((nil) str)
+                      (:lowercase (nstring-downcase str))
+                      (:uppercase (nstring-upcase str)))))
+        (identity (or (assocdr :identity alist) "")))
+    (write-char #\> stream)
+    (write-line identity stream)
+    (let ((len (length residues)))
+      (loop
+         for i from 0 below len by *fasta-line-width*
+         do (write-line residues stream
+                        :start i
+                        :end (min len (+ i *fasta-line-width*)))))))
+
+(defun write-raw-fasta (alist stream)
+  "Writes sequence data ALIST to STREAM in Fasta format. ALIST must
+contain keys and values as created by {defclass raw-sequence-parser} ."
   (let* ((*print-pretty* nil)
-         (residues (assocdr :residues raw))
+         (residues (or (assocdr :residues alist) ""))
          (len (length residues)))
     (write-char #\> stream)
-    (write-line (assocdr :identity raw) stream)
+    (write-line (or (assocdr :identity alist) "") stream)
     (loop
        for i from 0 below len by *fasta-line-width*
        do (write-line residues stream

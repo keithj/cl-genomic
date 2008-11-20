@@ -60,6 +60,8 @@
    #:find-genetic-code
    #:registered-genetic-codes
    #:phred-quality
+   #:encode-quality
+   #:decode-quality
    #:encode-phred-quality
    #:decode-phred-quality
    #:illumina-quality
@@ -70,10 +72,9 @@
    #:simple-dna-subst
    #:iupac-dna-subst
    #:blosum-50-subst
-   
-   #:split-fastq-file
-   #:write-raw-fastq
+
    #:write-n-fastq
+   #:split-fastq-file
 
    ;; Classes
    #:alphabet
@@ -150,7 +151,9 @@
    #:to-string
    #:invert-complement
    #:ninvert-complement
-
+   #:residue-position
+   #:quality-position
+   
    #:aligned-of
    #:intervals-of
    #:aligned-length-of
@@ -168,6 +171,11 @@
    #:object-quality
    #:end-object
 
+   #:read-fasta-sequence
+   #:write-fasta-sequence
+   #:read-fastq-sequence
+   #:write-fastq-sequence
+   
    #:split-sequence-file
    #:convert-sequence-file
    

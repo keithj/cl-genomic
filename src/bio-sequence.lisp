@@ -17,9 +17,9 @@
 
 (in-package :bio-sequence)
 
-(deftype residue-index ()
-  "Type for a sequence length."
-  '(and fixnum (integer 1 *)))
+;; (deftype residue-index ()
+;;   "Type for a sequence length."
+;;   '(and fixnum (integer 1 *)))
 
 (deftype encoded-residues (n)
   `(simple-array (unsigned-byte ,n) *))
@@ -295,16 +295,16 @@ number of strands, or NIL otherwise."
     (format stream "#<SEQUENCE-STRAND ~a/~a/~a>" name token number)))
 
 (defmethod print-object ((seq dna-sequence) stream)
-  (print-seq-aux "DNA-SEQUENCE" seq stream))
+  (%print-seq "DNA-SEQUENCE" seq stream))
 
 (defmethod print-object ((seq rna-sequence) stream)
-  (print-seq-aux "RNA-SEQUENCE" seq stream))
+  (%print-seq "RNA-SEQUENCE" seq stream))
 
 (defmethod print-object ((seq dna-quality-sequence) stream)
-  (print-quality-seq-aux "DNA-QUALITY-SEQUENCE" seq stream))
+  (%print-quality-seq "DNA-QUALITY-SEQUENCE" seq stream))
 
 (defmethod print-object ((seq aa-sequence) stream)
-  (print-seq-aux "AA-SEQUENCE" seq stream))
+  (%print-seq "AA-SEQUENCE" seq stream))
 
 ;;; Implementation methods
 (defmethod anonymousp ((seq identity-mixin))
@@ -320,10 +320,10 @@ number of strands, or NIL otherwise."
   (find char (tokens-of alphabet) :test #'char=))
 
 (defmethod explode-ambiguity ((alphabet (eql *dna*)) (char character))
-  (explode-ambiguity-aux char #'encode-dna-4bit #'decode-dna-4bit))
+  (%explode-ambiguity char #'encode-dna-4bit #'decode-dna-4bit))
 
 (defmethod explode-ambiguity ((alphabet (eql *rna*)) (char character))
-  (explode-ambiguity-aux char #'encode-rna-4bit #'decode-rna-4bit))
+  (%explode-ambiguity char #'encode-rna-4bit #'decode-rna-4bit))
 
 (defmethod ambiguousp ((alphabet alphabet) (char character))
   (> (length (explode-ambiguity alphabet char)) 1))
@@ -425,19 +425,19 @@ number of strands, or NIL otherwise."
 (defmethod element-of ((seq virtual-dna-sequence) (index fixnum))
   (with-accessors ((length length-of))
       seq
-    (check-token-range length index index)
+    (%check-token-range length index index)
     #\n))
 
 (defmethod element-of ((seq virtual-rna-sequence) (index fixnum))
   (with-accessors ((length length-of))
       seq
-    (check-token-range length index index)
+    (%check-token-range length index index)
     #\n))
 
 (defmethod element-of ((seq virtual-aa-sequence) (index fixnum))
   (with-accessors ((length length-of))
       seq
-    (check-token-range length index index)
+    (%check-token-range length index index)
     #\X))
 
 (defun residue-of (seq index)
@@ -459,72 +459,27 @@ number of strands, or NIL otherwise."
 
 (defmethod to-string ((seq virtual-dna-sequence) &key
                       (start 0) (end (length-of seq)) token-case)
-  (make-string (- end start) :element-type 'base-char
-               :initial-element (ecase token-case
-                                  ((nil) #\n)
-                                  (:lowercase #\n)
-                                  (:uppercase #\N))))
+  (%to-string-virtual seq #\n start end token-case))
 
 (defmethod to-string ((seq virtual-rna-sequence) &key
                       (start 0) (end (length-of seq)) token-case)
-  (make-string (- end start) :element-type 'base-char
-               :initial-element (ecase token-case
-                                  ((nil) #\n)
-                                  (:lowercase #\n)
-                                  (:uppercase #\N))))
+  (%to-string-virtual seq #\n start end token-case))
 
 (defmethod to-string ((seq virtual-aa-sequence) &key
                       (start 0) (end (length-of seq)) token-case)
-  (make-string (- end start) :element-type 'base-char
-               :initial-element (ecase token-case
-                                  ((nil) #\X)
-                                  (:lowercase #\x)
-                                  (:uppercase #\X))))
+  (%to-string-virtual seq #\X start end token-case))
 
 (defmethod to-string ((seq encoded-dna-sequence) &key
                       (start 0) (end (length-of seq)) token-case)
-  (with-accessors ((vector vector-of))
-      seq
-    (let ((str (make-string (- end start) :element-type 'base-char))
-          (seq-end (1- end))
-          (str-start 0))
-      (when (< 0 (length str))
-        (copy-array vector start seq-end
-                    str str-start #'decode-dna-4bit))
-      (ecase token-case
-        ((nil) str)
-        (:lowercase str)
-        (:uppercase (nstring-upcase str))))))
+  (%to-string-encoded seq #'decode-dna-4bit start end token-case))
 
 (defmethod to-string ((seq encoded-rna-sequence) &key
                       (start 0) (end (length-of seq)) token-case)
-  (with-accessors ((vector vector-of))
-      seq
-    (let ((str (make-string (- end start) :element-type 'base-char))
-          (seq-end (1- end))
-          (str-start 0))
-      (when (< 0 (length str))
-        (copy-array vector start seq-end
-                    str str-start #'decode-rna-4bit))
-      (ecase token-case
-        ((nil) str)
-        (:lowercase str)
-        (:uppercase (nstring-upcase str))))))
+  (%to-string-encoded seq #'decode-rna-4bit start end token-case))
 
 (defmethod to-string ((seq encoded-aa-sequence) &key
                       (start 0) (end (length-of seq)) token-case)
-  (with-accessors ((vector vector-of))
-      seq
-    (let ((str (make-string (- end start) :element-type 'base-char))
-          (seq-end (1- end))
-          (str-start 0))
-      (when (< 0 (length str))
-        (copy-array vector start seq-end
-                    str str-start #'decode-aa-7bit))
-      (ecase token-case
-        ((nil) str)
-        (:lowercase str)
-        (:uppercase (nstring-upcase str))))))
+  (%to-string-encoded seq #'decode-aa-7bit start end token-case))
 
 (defmethod subsequence ((seq vector-sequence) (start fixnum)
                         &optional end)
@@ -547,7 +502,7 @@ number of strands, or NIL otherwise."
   (with-accessors ((length length-of))
       seq
     (let ((end (or end length)))
-      (check-token-range length start end)
+      (%check-token-range length start end)
       (make-instance (class-of seq) :length (- end start)))))
 
 (defmethod reverse-sequence ((seq vector-sequence))
@@ -689,13 +644,45 @@ number of strands, or NIL otherwise."
       (pairlis (copy-list (tokens-of alphabet))
                (coerce frequencies 'list)))))
 
+(defmethod residue-position (character (seq encoded-dna-sequence)
+                             &key from-end test test-not (start 0) end)
+  (with-accessors ((vector vector-of))
+      seq
+    (%check-token-range (length vector) start end)
+    (position character vector :from-end from-end :test test :test-not test-not
+              :start start :end end :key #'decode-dna-4bit)))
+
+(defmethod residue-position (character (seq encoded-rna-sequence)
+                             &key from-end test test-not (start 0) end)
+  (with-accessors ((vector vector-of))
+      seq
+    (%check-token-range (length vector) start end)
+    (position character vector :from-end from-end :test test :test-not test-not
+              :start start :end end :key #'decode-rna-4bit)))
+
+(defmethod residue-position (character (seq encoded-aa-sequence)
+                             &key from-end test test-not (start 0) end)
+  (with-accessors ((vector vector-of))
+      seq
+    (%check-token-range (length vector) start end)
+    (position character vector :from-end from-end :test test :test-not test-not
+              :start start :end end :key #'decode-aa-7bit)))
+
+(defmethod quality-position ((quality fixnum) (seq dna-quality-sequence)
+                             &key from-end test test-not (start 0) end)
+  (with-accessors ((q quality-of))
+      seq
+    (%check-token-range (length q) start end)
+    (position quality q :from-end from-end :test test :test-not test-not
+              :start start :end end)))
+
 (defmethod translate :before ((seq na-sequence) (code genetic-code)
                               &key (start 0) end initiator-codon
                               partial-codon)
   (declare (ignore initiator-codon))
   (let* ((na-len (length-of seq))
          (end (or end na-len)))
-    (check-token-range na-len start end)
+    (%check-token-range na-len start end)
     (if (and (plusp (rem (- end start) +codon-size+))
              (not partial-codon))
         (error 'translation-error :sequence seq :start start :end end
@@ -723,14 +710,14 @@ number of strands, or NIL otherwise."
   (translate-encoded-4bit seq code start end initiator-codon))
 
 ;;; Utility functions
-(defun print-seq-aux (name seq stream)
+(defun %print-seq (name seq stream)
   "Helper function for printing bio-sequence objects."
   (let ((len (length-of seq)))
     (if (<= len *sequence-print-limit*)
         (format stream "#<~a \"~a\">" name (to-string seq))
       (format stream "#<~a length ~d>" name len))))
 
-(defun print-quality-seq-aux (name seq stream)
+(defun %print-quality-seq (name seq stream)
   "Helper function for printing bio-sequence objects."
   (with-accessors ((quality quality-of) (metric metric-of))
       seq
@@ -754,6 +741,9 @@ appropriate for METRIC, a quality metric ( :PHRED or :ILLUMINA )."
 (defun encode-quality (quality encoder)
   "Encodes QUALITY, an array of bytes representing base quality
 scores, as a string using function ENCODER."
+  (declare (optimize (speed 3)))
+  (declare (type (simple-array quality-score (*)) quality)
+           (type function encoder))
   (let ((quality-str (make-string (length quality)
                                   :element-type 'base-char)))
     (copy-array quality 0 (1- (length quality))
@@ -763,6 +753,9 @@ scores, as a string using function ENCODER."
 (defun decode-quality (quality decoder)
   "Decodes the QUALITY, a string, as into a new array using function
 DECODER."
+  (declare (optimize (speed 3)))
+  (declare (type simple-string quality)
+           (type function decoder))
   (let ((quality-seq (make-array (length quality)
                                  :element-type 'quality-score)))
     (copy-array quality 0 (1- (length quality))
@@ -771,9 +764,9 @@ DECODER."
 
 (defun ensure-encoded (vector encoder element-type)
   "If VECTOR is a string, returns an encoded token vector of element
-type \(unsigned-byte 4\) of the same length, otherwise returns
+type (unsigned-byte 4) of the same length, otherwise returns
 VECTOR. ENCODER is the encoding function used to convert characters to
-\(unsigned-byte 4\)."
+\(unsigned-byte 4\))."
   (if (stringp vector)
       (let ((encoded (make-array (length vector)
                                  :element-type element-type)))
@@ -798,7 +791,7 @@ when decoding."
 (defun token-subsequence (tokens start end)
   "Returns a subsequence of TOKENS between indices START and END."
   (let ((end (or end (length tokens))))
-    (check-token-range (length tokens) start end)
+    (%check-token-range (length tokens) start end)
     (let ((sub-seq (make-array (- end start)
                                :element-type
                                (array-element-type tokens))))
@@ -806,23 +799,24 @@ when decoding."
                   sub-seq 0)
       sub-seq)))
 
-(defun check-token-range (length start end)
-  (cond ((or (< start 0) (> start length))
-         (error 'invalid-argument-error
-                :params 'start
-                :args start
-                :text "start index must be >0 and <= sequence length"))
-        ((or (< end 0) (> end length))
-         (error 'invalid-argument-error
-                :params 'end
-                :args end
-                :text "end index must be >0 and <= sequence length"))
-        ((< end start)
-         (error 'invalid-argument-error
-                :params '(start end)
-                :args (list start end)
-                :text "end index must be equal to or greater than start index"))
-        (t t)))
+(defun %check-token-range (length start &optional end)
+  (let ((end (or end length)))
+    (cond ((or (< start 0) (> start length))
+           (error 'invalid-argument-error
+                  :params 'start
+                  :args start
+                  :text "start must be >0 and <= sequence length"))
+          ((or (< end 0) (> end length))
+           (error 'invalid-argument-error
+                  :params 'end
+                  :args end
+                  :text "end must be >0 and <= sequence length"))
+          ((< end start)
+           (error 'invalid-argument-error
+                  :params '(start end)
+                  :args (list start end)
+                  :text "end must be equal to or greater than start"))
+          (t t))))
 
 (defun complement-tokens (tokens comp-fn &optional (start 0) end)
   "Returns a complemented copy of TOKENS populated with elements
@@ -837,7 +831,29 @@ index END."
                 comp-seq 0 comp-fn)
     comp-seq))
 
-(defun explode-ambiguity-aux (char encoder decoder)
+(defun %to-string-virtual (seq char start end token-case)
+  (%check-token-range (length-of seq) start end)
+  (make-string (- end start) :element-type 'base-char
+               :initial-element (ecase token-case
+                                  ((nil) char)
+                                  (:lowercase (char-downcase char))
+                                  (:uppercase char))))
+
+(defun %to-string-encoded (seq decoder start end token-case)
+  (with-accessors ((vector vector-of))
+      seq
+    (let ((str (make-string (- end start) :element-type 'base-char))
+          (seq-end (1- end))
+          (str-start 0))
+      (when (< 0 (length str))
+        (copy-array vector start seq-end
+                    str str-start decoder))
+      (ecase token-case
+        ((nil) str)
+        (:lowercase str)
+        (:uppercase (nstring-upcase str))))))
+
+(defun %explode-ambiguity (char encoder decoder)
   "Returns a list of the ambiguity characters represented by CHAR."
   (sort (mapcar decoder (explode-encoded-base (funcall encoder char)))
         #'char<=))

@@ -61,7 +61,7 @@
   "Codons that do not encode for X.")
 
 (defparameter *test-amino-acids*
-  "KNKNKNTTTTTTTTTTTTTTTRSRSRSIIMIIIIIQHQHQHPPPPPPPPPPPPPPPRRRRRRRRRRRRRRRLLLLLLLLLLLLLLLEDEDEDAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGVVVVVVVVVVVVVVV*Y*Y*YSSSSSSSSSSSSSSS*CWCCLFLFLF*BBBLLLRRRZZZ"
+  "KNKNKNTTTTTTTTTTTTTTTRSRSRSIIMIIIIIQHQHQHPPPPPPPPPPPPPPPRRRRRRRRRRRRRRRLLLLLLLLLLLLLLLEDEDEDAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGVVVVVVVVVVVVVVV*Y*Y*YSSSSSSSSSSSSSSS*CWCCLFLFLF*ZZZLLLRRRBBB"
   "Corresponding translations of codons that do not encode for X.")
 
 (addtest (bio-sequence-translation-tests) translate-codon-standard
@@ -74,14 +74,14 @@
                                (mapcar #'bs::encode-dna-4bit codon) code
                                :initiator nil)))))
    (ensure (every (lambda (char)
-                    (or (char= bs::+ambiguous-aa-char+)
-                        (find char *test-codons*)))
-            (loop
-               with code = (find-genetic-code :standard)
-               for codon in (bs::permutations-of-n
-                             '(#\a #\c #\g #\t #\r #\y #\k #\m
-                               #\s #\w #\b #\d #\h #\v #\n) 3)
-               collect (bs::decode-aa-7bit
-                        (translate-codon
-                         (mapcar #'bs::encode-dna-4bit codon) code
-                         :initiator nil))))))
+                    (or (char= #\X char)
+                        (find char *test-amino-acids* :test #'char=)))
+                  (loop
+                     with code = (find-genetic-code :standard)
+                     for codon in (bs::permutations-of-n
+                                   '(#\a #\c #\g #\t #\r #\y #\k #\m
+                                     #\s #\w #\b #\d #\h #\v #\n) 3)
+                     collect (bs::decode-aa-7bit
+                              (translate-codon
+                               (mapcar #'bs::encode-dna-4bit codon) code
+                               :initiator nil))))))

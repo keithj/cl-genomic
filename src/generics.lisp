@@ -154,6 +154,14 @@ cumulative total lengths of RANGES."))
   (:documentation "Returns T if CODON may be a terminator in
   GENETIC-CODE."))
 
+(defgeneric residue-position (character bio-sequence
+                              &key from-end test test-not start end)
+  (:documentation ""))
+
+(defgeneric quality-position (quality bio-sequence
+                              &key from-end test test-not start end)
+  (:documentation ""))
+
 
 ;;; bio-sequence io generics
 (defgeneric begin-object (parser)

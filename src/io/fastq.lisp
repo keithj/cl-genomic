@@ -45,7 +45,7 @@
       (split-from-generator
        (make-seq-input stream :fastq
                        :parser (make-instance 'raw-sequence-parser))
-       #'write-raw-fastq
+       #'write-fastq-sequence
        chunk-size pathname-gen))))
 
 (defmethod read-fastq-sequence ((stream character-line-input-stream)
@@ -81,21 +81,38 @@
     (write-line "+" stream)
     (write-line (quality-string (quality-of seq) (metric-of seq)) stream)))
 
+(defmethod write-fastq-sequence ((alist list) stream &key token-case)
+  (let ((*print-pretty* nil)
+        (residues (let ((str (or (assocdr :residues alist) "")))
+                    (ecase token-case
+                      ((nil) str)
+                      (:lowercase (nstring-downcase str))
+                      (:uppercase (nstring-upcase str)))))
+        (quality (or (assocdr :quality alist) ""))
+        (identity (or (assocdr :identity alist) "")))
+    (write-char #\@ stream)
+    (write-line identity stream)
+    (write-line residues stream)
+    (write-line "+" stream)
+    (write-line quality stream)))
+
 (defun write-raw-fastq (raw stream)
   "Writes sequence data RAW to STREAM in Fastq format. The alist RAW
 must contain keys and values as created by {defclass raw-sequence-parser} ."
   (let ((*print-pretty* nil))
     (write-char #\@ stream)
-    (write-line (assocdr :identity raw) stream)
-    (write-line (assocdr :residues raw) stream)
+    (write-line (or (assocdr :identity raw) "") stream)
+    (write-line (or (assocdr :residues raw) "") stream)
     (write-line "+" stream)
-    (write-line (assocdr :quality raw) stream)))
+    (write-line (or (assocdr :quality raw) "") stream)))
 
 (defun parse-fastq-record (stream qual-header-validate-fn)
   "Reads the body of a Fastq record that follows the header from
 STREAM, validates the quality header with the predicate
 QUAL-HEADER-VALIDATE-FN and returns three vector values: the sequence,
 the quality header and the quality."
+  (declare (optimize (speed 3)))
+  (declare (type function qual-header-validate-fn))
   (let ((residues (stream-read-line stream))
         (quality-header (stream-read-line stream))
         (quality (stream-read-line stream)))
