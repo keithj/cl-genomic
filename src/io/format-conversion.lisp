@@ -28,9 +28,25 @@
                                   out-filespec (out-format (eql :fasta)))
   (with-ascii-li-stream (in in-filespec)
     (with-open-file (out out-filespec :direction :output
-                     :element-type 'base-char
-                     :external-format :ascii
-                     :if-exists :supersede)
+                         :element-type 'base-char
+                         :external-format :ascii
+                         :if-exists :supersede)
+      (let ((gen (make-seq-input in in-format
+                                 :parser (make-instance
+                                          'raw-sequence-parser))))
+        (loop
+           as raw = (next gen)
+           while raw
+           count raw
+           do (write-raw-fasta raw out))))))
+
+(defmethod convert-sequence-file (in-filespec (in-format (eql :fasta))
+                                  out-filespec (out-format (eql :fasta)))
+  (with-ascii-li-stream (in in-filespec)
+    (with-open-file (out out-filespec :direction :output
+                         :element-type 'base-char
+                         :external-format :ascii
+                         :if-exists :supersede)
       (let ((gen (make-seq-input in in-format
                                  :parser (make-instance
                                           'raw-sequence-parser))))

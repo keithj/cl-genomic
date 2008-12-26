@@ -20,23 +20,23 @@
 (defmethod make-seq-input ((stream line-input-stream)
                            (format (eql :fastq))
                            &key (alphabet :dna) (metric :phred) parser)
-  (let* ((parser (or parser
+  (let ((parser (or parser
                     (make-instance 'quality-sequence-parser
-                                   :metric metric)))
-         (current (read-fastq-sequence stream alphabet parser)))
-    (lambda (op)
-      (ecase op
-        (:current current)
-        (:next (prog1
-                   current
-                 (setf current (read-fastq-sequence stream alphabet parser))))
-        (:more (not (null current)))))))
+                                   :metric metric))))
+     (multiple-value-bind (current more)
+         (read-fastq-sequence stream alphabet parser)
+       (define-generator
+           :current current
+           :next (prog1
+                     current
+                   (multiple-value-setq (current more)
+                     (read-fastq-sequence stream alphabet parser)))
+           :more more))))
 
 (defmethod make-seq-output ((stream stream) (format (eql :fastq))
                             &key token-case)
   (lambda (bio-sequence)
     (write-fastq-sequence bio-sequence stream :token-case token-case)))
-
 
 (defmethod split-sequence-file (filespec (format (eql :fastq))
                                 pathname-gen &key (chunk-size 1))
@@ -51,24 +51,26 @@
 (defmethod read-fastq-sequence ((stream character-line-input-stream)
                                 (alphabet symbol)
                                 (parser quality-parser-mixin))
-  (let ((seq-header (find-line stream #'content-string-p))) ; skip whitespace
-    (cond ((eql :eof seq-header)
-           nil)
-          ((char-fastq-header-p seq-header)
-           (multiple-value-bind (residues quality-header quality)
-               (parse-fastq-record stream #'char-fastq-quality-header-p)
-             (declare (ignore quality-header))
-             (begin-object parser)
-             (object-alphabet parser alphabet)
-             (object-identity parser (string-left-trim '(#\@) seq-header))
-             (object-residues parser residues)
-             (object-quality parser quality)
-             (end-object parser)))
-          (t
-           (error 'bio-sequence-io-error
-                  :text (format nil
-                                "~s is not recognised as as Fastq header"
-                                seq-header))))))
+  (restart-case
+      (let ((seq-header (find-line stream #'content-string-p)))
+        (cond ((eql :eof seq-header)
+               (values nil nil))
+              ((char-fastq-header-p seq-header)
+               (multiple-value-bind (residues quality-header quality)
+                   (parse-fastq-record stream #'char-fastq-quality-header-p)
+                 (declare (ignore quality-header))
+                 (begin-object parser)
+                 (object-alphabet parser alphabet)
+                 (object-identity parser (string-left-trim '(#\@) seq-header))
+                 (object-residues parser residues)
+                 (object-quality parser quality)
+                 (values (end-object parser) t)))
+              (t
+               (error 'bio-sequence-io-error
+                      :text (format nil
+                                    "~s is not recognised as as Fastq header"
+                                    seq-header)))))
+    (skip-bio-sequence () (values nil t))))
 
 (defmethod write-fastq-sequence ((seq dna-quality-sequence) stream
                                  &key token-case)
@@ -77,17 +79,14 @@
     (write-line (if (anonymousp seq)
                     ""
                   (identity-of seq)) stream)
-    (write-line (to-string seq :token-case token-case) stream)
+    (write-line (nadjust-case (coerce-sequence seq 'string) token-case) stream)
     (write-line "+" stream)
     (write-line (quality-string (quality-of seq) (metric-of seq)) stream)))
 
 (defmethod write-fastq-sequence ((alist list) stream &key token-case)
   (let ((*print-pretty* nil)
         (residues (let ((str (or (assocdr :residues alist) "")))
-                    (ecase token-case
-                      ((nil) str)
-                      (:lowercase (nstring-downcase str))
-                      (:uppercase (nstring-upcase str)))))
+                    (nadjust-case str token-case)))
         (quality (or (assocdr :quality alist) ""))
         (identity (or (assocdr :identity alist) "")))
     (write-char #\@ stream)
@@ -119,8 +118,7 @@ the quality header and the quality."
     (unless (and (vectorp residues)
                  (funcall qual-header-validate-fn quality-header)
                  (vectorp quality))
-      (error 'malformed-record-error :text
-             "Incomplete Fastq record."))
+      (error 'malformed-record-error :text "Incomplete Fastq record."))
     (values residues quality-header quality)))
 
 (defun char-fastq-header-p (str)

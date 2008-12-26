@@ -17,6 +17,9 @@
 
 (in-package :bio-sequence)
 
+;;; Possible TODO: convert all matrices from 2D arrays to vector
+;;; implementations - allegedly faster. Test this first.
+
 (deftype path-pointer ()
   "Dynamic programming backtrace pointer."
   '(unsigned-byte 2))
@@ -55,11 +58,11 @@ Body:
 
 Forms to be executed in the context of these bindings."
   `(let ((,score (make-array (list ,m ,n) :element-type 'single-float
-                                          :initial-element 0.0))
+                                          :initial-element 0.0f0))
          (,insertx (make-array (list ,m ,n) :element-type 'single-float
-                                            :initial-element 0.0))
+                                            :initial-element 0.0f0))
          (,inserty (make-array (list ,m ,n) :element-type 'single-float
-                                            :initial-element 0.0))
+                                            :initial-element 0.0f0))
          (,backtrace (make-array (list ,m ,n) :element-type 'path-pointer
                                               :initial-element 0)))
     (declare (type (simple-array single-float (* *)) ,score ,insertx ,inserty)
@@ -119,7 +122,7 @@ alignment."
                         ix1 ix2 ix3 iy1 iy2 iy3 s1 s2 s3 ms)
       `(let ((,rows (array-dimension ,score 0))
              (,cols (array-dimension ,score 1))
-             (,max-score 0.0)
+             (,max-score 0.0f0)
              (,max-row 0)
              (,max-col 0))
         (loop
@@ -148,7 +151,7 @@ alignment."
                             (,iy-score (if (= 1 ,row)
                                            ,iy1
                                          (max ,iy1 ,iy2 ,iy3)))
-                            (,cell-score (max 0.0 ,s1 ,s2 ,s3)))
+                            (,cell-score (max 0.0f0 ,s1 ,s2 ,s3)))
                         (setf (aref ,insertx ,row ,col) ,ix-score
                               (aref ,inserty ,row ,col) ,iy-score
                               (aref ,score ,row ,col) ,cell-score)
@@ -201,7 +204,7 @@ alignment."
 ;;; sequence alignment representation
 (defmethod align-local ((seqm encoded-dna-sequence)
                         (seqn encoded-dna-sequence) subst-fn
-                        &key (gap-open -5.0) (gap-extend -1.0)
+                        &key (gap-open -5.0f0) (gap-extend -1.0f0)
                         (band-centre 0)
                         (band-width most-positive-fixnum) alignment)
   (multiple-value-bind (align-score align)
@@ -225,7 +228,7 @@ alignment."
 
 (defmethod align-local ((seqm encoded-aa-sequence)
                         (seqn encoded-aa-sequence) subst-fn
-                        &key (gap-open -10.0) (gap-extend -1.0)
+                        &key (gap-open -10.0f0) (gap-extend -1.0f0)
                         (band-centre 0)
                         (band-width most-positive-fixnum) alignment)
   (multiple-value-bind (align-score align)
@@ -240,11 +243,11 @@ alignment."
 ;; kmer seeded heuristic
 (defmethod align-local-ksh ((seqm encoded-dna-sequence)
                             (seqn encoded-dna-sequence) subst-fn
-                            &key (k 6) (gap-open -5.0) (gap-extend -1.0)
+                            &key (k 6) (gap-open -5.0f0) (gap-extend -1.0f0)
                             alignment)
   (let ((vecm (vector-of seqm))
         (vecn (vector-of seqn))
-        (align-score 0.0)
+        (align-score 0.0f0)
         (align nil))
     (multiple-value-bind (bwidth bcentre)
         (multiple-value-call #'pairwise-band-width
@@ -258,8 +261,8 @@ alignment."
     (values align-score align)))
 
 (defun smith-waterman-gotoh-4bit (vecm vecn subst-fn
-                                  &key (gap-open -5.0)
-                                  (gap-extend -1.0)
+                                  &key (gap-open -5.0f0)
+                                  (gap-extend -1.0f0)
                                   (band-centre 0)
                                   (band-width most-positive-fixnum)
                                   alignment)
@@ -292,7 +295,9 @@ Key:
 Returns:
 - A single-float alignment score.
 - An alignment object, or NIL."
-  (declare (optimize (speed 3) (safety 0)))
+  (declare (optimize (speed 3) (safety 0)
+                      ;; #+:lispworks (hcl:fixnum-safety 0)
+                     #+:lispworks (float 0)))
   (declare (type function subst-fn)
            (type single-float gap-open gap-extend)
            (type fixnum band-centre band-width)
@@ -325,8 +330,8 @@ Returns:
                                                   aln startn endn)))))))))))
 
 (defun smith-waterman-gotoh-7bit (vecm vecn subst-fn
-                                  &key (gap-open -10.0)
-                                  (gap-extend -1.0)
+                                  &key (gap-open -10.0f0)
+                                  (gap-extend -1.0f0)
                                   (band-centre 0)
                                   (band-width most-positive-fixnum)
                                   alignment)
@@ -359,7 +364,9 @@ Key:
 Returns:
 - A single-float alignment score.
 - An alignment object."
-  (declare (optimize (speed 3) (safety 0)))
+  (declare (optimize (speed 3) (safety 0)
+                     ;; #+:lispworks (hcl:fixnum-safety 0)
+                     #+:lispworks (float 0)))
   (declare (type function subst-fn)
            (type single-float gap-open gap-extend)
            (type fixnum band-centre band-width)
@@ -418,7 +425,7 @@ Returns:
   (declare (type (encoded-residues 4) vecm vecn)
            (type (simple-array single-float (* *)) score insertx inserty))
   (let ((alm (make-array 100 :element-type '(unsigned-byte 4)
-                         :adjustable t :fill-pointer 0))
+                             :adjustable t :fill-pointer 0))
         (aln (make-array 100 :element-type '(unsigned-byte 4)
                              :adjustable t :fill-pointer 0)))
     (define-backtrace ((vecm vecn alm aln :gap 0)
@@ -577,9 +584,9 @@ the arguments.
                     (setf (aref x i j) 1))
                   (when (= band-centre diag)
                     (setf (aref x i j) 8)))))
-    (mapc #'(lambda (z w)
-              (setf (aref x
-                          (first z)
-                          (first w)) 2)) a b)
+    (mapc (lambda (z w)
+            (setf (aref x
+                        (first z)
+                        (first w)) 2)) a b)
     (princ x)
     (terpri)))

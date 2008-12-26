@@ -26,7 +26,8 @@
   (:documentation "The parent type of all bio-sequence warning
 conditions."))
 
-(define-condition bio-sequence-io-error (io-error bio-sequence-error)
+(define-condition bio-sequence-io-error (io-error
+                                         bio-sequence-error)
   ((text :initform nil
          :initarg :text
          :reader text-of
@@ -34,8 +35,20 @@ conditions."))
   (:report (lambda (condition stream)
              (format stream "IO error~@[: ~a~]"
                      (text-of condition))))
-  (:documentation "An error that is raised when performing stream of
-file IO on bio-sequences."))
+  (:documentation "An error that is raised when performing stream IO
+on bio-sequences."))
+
+(define-condition bio-sequence-parse-error (general-parse-error
+                                            bio-sequence-io-error)
+  ((text :initform nil
+         :initarg :text
+         :reader text-of
+         :documentation "Error message text."))
+  (:report (lambda (condition stream)
+             (format stream "IO error~@[: ~a~]"
+                     (text-of condition))))
+  (:documentation "An error that is raised when performing stream IO
+on bio-sequences."))
 
 (define-condition bio-sequence-op-error (invalid-operation-error
                                          bio-sequence-error)
@@ -88,4 +101,3 @@ a non-initiator codon as an initiator."))
                      (text-of condition))))
   (:documentation "An error that is raised when attempting an invalid
   translation of a sequence."))
-

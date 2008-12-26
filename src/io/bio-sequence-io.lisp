@@ -164,7 +164,7 @@
                        (:rna #'make-rna)))
         (chunks (parsed-residues-of parser)))
     (when (zerop (length chunks))
-      (error 'invalid-operation-error
+      (error 'bio-sequence-io-error
              :text "attempt to make an empty concrete bio-sequence"))
     (let ((residues (etypecase (aref chunks 0)
                       (string (concat-strings chunks))
@@ -249,3 +249,10 @@ for example, {defun write-raw-fasta} and {defun write-raw-fastq} ."
     (when (zerop num-written)
       (delete-file pathname))
     num-written))
+
+(declaim (inline nadjust-case))
+(defun nadjust-case (string token-case)
+  (ecase token-case
+    ((nil) string)
+    (:lowercase (nstring-downcase string))
+    (:uppercase (nstring-upcase string))))

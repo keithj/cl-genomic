@@ -17,10 +17,6 @@
 
 (in-package :bio-sequence)
 
-;; (deftype residue-index ()
-;;   "Type for a sequence length."
-;;   '(and fixnum (integer 1 *)))
-
 (deftype encoded-residues (n)
   `(simple-array (unsigned-byte ,n) *))
 
@@ -249,7 +245,7 @@ the same alphabet, or NIL otherwise."
                         (eql alphabet (alphabet-of seq)))))))
 
 (defun same-strand-num-p (&rest seqs)
-  "Returns T if SEQS are {defclass na-sequence } s that share the same
+  "Returns T if SEQS are {defclass na-sequence} s that share the same
 number of strands, or NIL otherwise."
   (cond ((null seqs)
          nil)
@@ -275,11 +271,13 @@ number of strands, or NIL otherwise."
                                      :args seqs
                                      :text (msg "expected all sequences to be"
                                                 "one of DNA, RNA or AA"))))))
-        ;; We use to-string to avoid a special case for virtual
+        ;; We use coerce-sequence to avoid a special case for virtual
         ;; sequences. We can't simply concatenate the encoded residue
         ;; vectors because virtual sequences do not have them
         (funcall construct (apply #'concatenate 'string
-                                  (mapcar #'to-string seqs))))
+                                  (mapcar (lambda (s)
+                                            (coerce-sequence s 'string))
+                                          seqs))))
     (error 'invalid-argument-error
            :params 'seqs
            :args seqs
@@ -457,29 +455,55 @@ number of strands, or NIL otherwise."
        for i from start below end
        count (= +encoded-gap-char+ (aref vector i)))))
 
-(defmethod to-string ((seq virtual-dna-sequence) &key
-                      (start 0) (end (length-of seq)) token-case)
-  (%to-string-virtual seq #\n start end token-case))
+(defmethod coerce-sequence ((seq virtual-dna-sequence) (type (eql 'string))
+                            &key (start 0) (end (length-of seq)))
+  (%to-string-virtual seq #\n start end :lowercase))
 
-(defmethod to-string ((seq virtual-rna-sequence) &key
-                      (start 0) (end (length-of seq)) token-case)
-  (%to-string-virtual seq #\n start end token-case))
+(defmethod coerce-sequence ((seq virtual-rna-sequence) (type (eql 'string))
+                            &key (start 0) (end (length-of seq)))
+  (%to-string-virtual seq #\n start end :lowercase))
 
-(defmethod to-string ((seq virtual-aa-sequence) &key
-                      (start 0) (end (length-of seq)) token-case)
-  (%to-string-virtual seq #\X start end token-case))
+(defmethod coerce-sequence ((seq virtual-aa-sequence) (type (eql 'string))
+                            &key (start 0) (end (length-of seq)))
+  (%to-string-virtual seq #\n start end :uppercase))
 
-(defmethod to-string ((seq encoded-dna-sequence) &key
-                      (start 0) (end (length-of seq)) token-case)
-  (%to-string-encoded seq #'decode-dna-4bit start end token-case))
+(defmethod coerce-sequence ((seq encoded-dna-sequence) (type (eql 'string))
+                            &key (start 0) (end (length-of seq)))
+  (%to-string-encoded seq #'decode-dna-4bit start end :lowercase))
 
-(defmethod to-string ((seq encoded-rna-sequence) &key
-                      (start 0) (end (length-of seq)) token-case)
-  (%to-string-encoded seq #'decode-rna-4bit start end token-case))
+(defmethod coerce-sequence ((seq encoded-rna-sequence) (type (eql 'string))
+                            &key (start 0) (end (length-of seq)))
+  (%to-string-encoded seq #'decode-rna-4bit start end :lowercase))
 
-(defmethod to-string ((seq encoded-aa-sequence) &key
-                      (start 0) (end (length-of seq)) token-case)
-  (%to-string-encoded seq #'decode-aa-7bit start end token-case))
+(defmethod coerce-sequence ((seq encoded-aa-sequence) (type (eql 'string))
+                            &key (start 0) (end (length-of seq)))
+  (%to-string-encoded seq #'decode-aa-7bit start end :uppercase))
+
+(defmethod coerce-sequence ((seq virtual-dna-sequence)
+                            (type (eql 'rna-sequence))
+                            &key (start 0) (end (length-of seq)))
+  (make-instance 'virtual-rna-sequence :length (- end start)))
+
+(defmethod coerce-sequence ((seq virtual-rna-sequence)
+                            (type (eql 'dna-sequence))
+                            &key (start 0) (end (length-of seq)))
+  (make-instance 'virtual-dna-sequence :length (- end start)))
+
+(defmethod coerce-sequence ((seq encoded-dna-sequence)
+                            (type (eql 'rna-sequence))
+                            &key (start 0) (end (length-of seq)))
+  (with-accessors ((vector vector-of))
+      seq 
+    (make-instance 'encoded-rna-sequence
+                   :vector (token-subsequence vector start end))))
+
+(defmethod coerce-sequence ((seq encoded-rna-sequence)
+                            (type (eql 'dna-sequence))
+                            &key (start 0) (end (length-of seq)))
+  (with-accessors ((vector vector-of))
+      seq 
+    (make-instance 'encoded-dna-sequence
+                   :vector (token-subsequence vector start end))))
 
 (defmethod subsequence ((seq vector-sequence) (start fixnum)
                         &optional end)
@@ -630,8 +654,8 @@ number of strands, or NIL otherwise."
         (start1 (or start1 0))
         (start2 (or start2 0)))
     (search vector1 vector2 :from-end from-end
-                :start1 start1 :start2 start2
-                :end1 end1 :end2 end2 :test #'eq)))
+            :start1 start1 :start2 start2
+            :end1 end1 :end2 end2 :test #'eq)))
 
 (defmethod residue-frequencies ((seq vector-sequence) (alphabet alphabet))
   (with-accessors ((vector vector-of))
@@ -714,7 +738,7 @@ number of strands, or NIL otherwise."
   "Helper function for printing bio-sequence objects."
   (let ((len (length-of seq)))
     (if (<= len *sequence-print-limit*)
-        (format stream "#<~a \"~a\">" name (to-string seq))
+        (format stream "#<~a \"~a\">" name (coerce-sequence seq 'string))
       (format stream "#<~a length ~d>" name len))))
 
 (defun %print-quality-seq (name seq stream)
@@ -724,7 +748,7 @@ number of strands, or NIL otherwise."
     (let ((len (length-of seq)))
       (if (<= len *sequence-print-limit*)
           (format stream "#<~a \"~a\" ~a quality \"~a\">"
-                  name (to-string seq) metric
+                  name (coerce-sequence seq 'string) metric
                   (quality-string quality metric))
         (format stream "#<~a ~a quality, length ~d>"
                 name metric len)))))

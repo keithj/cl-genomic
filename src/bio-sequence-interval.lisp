@@ -76,15 +76,15 @@
 (defmethod initialize-instance :after ((interval bio-sequence-interval) &key)
   (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of))
       interval
-    (check-interval-range lower upper reference)))
+    (%check-interval-range lower upper reference)))
   
 (defmethod initialize-instance :after
     ((interval na-sequence-interval) &key)
   (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of)
                    (strand strand-of) (num-strands num-strands-of))
       interval
-    (check-interval-range lower upper reference)
-    (check-interval-strands strand num-strands reference)))
+    (%check-interval-range lower upper reference)
+    (%check-interval-strands strand num-strands reference)))
 
 ;;; Printing methods
 (defmethod print-object ((interval interval) stream)
@@ -106,44 +106,44 @@
 (defmethod (setf reference-of) :before (value (interval interval))
   (with-accessors ((lower lower-of) (upper upper-of))
       interval
-    (check-interval-range lower upper value)))
+    (%check-interval-range lower upper value)))
 
 (defmethod (setf upper-of) :before (value (interval interval))
   (with-accessors ((lower lower-of) (reference reference-of))
       interval
-    (check-interval-range lower value reference)))
+    (%check-interval-range lower value reference)))
 
 (defmethod (setf lower-of) :before (value (interval interval))
   (with-accessors ((upper upper-of) (reference reference-of))
       interval
-    (check-interval-range value upper reference)))
+    (%check-interval-range value upper reference)))
 
 (defmethod (setf reference-of) :before
     (value (interval na-sequence-interval))
   (with-accessors ((strand strand-of) (num-strands num-strands-of))
       interval
-    (check-interval-strands strand num-strands value)))
+    (%check-interval-strands strand num-strands value)))
 
 (defmethod (setf strand-of) :before
     (value (interval na-sequence-interval))
   (with-accessors ((reference reference-of) (num-strands num-strands-of))
        interval
-    (check-interval-strands value num-strands reference)))
+    (%check-interval-strands value num-strands reference)))
 
 (defmethod (setf num-strands-of) :before
     (value (interval na-sequence-interval))
   (with-accessors ((reference reference-of) (strand strand-of))
       interval
-    (check-interval-strands strand value reference)))
+    (%check-interval-strands strand value reference)))
 
 (defmethod length-of ((interval interval))
   (with-accessors ((lower lower-of) (upper upper-of))
       interval
     (- upper lower)))
 
-(defmethod to-string :around ((interval interval) &key
-                              start end token-case)
-  (declare (ignore start end token-case))
+(defmethod coerce-sequence :around ((interval interval) (type (eql 'string))
+                                    &key start end)
+  (declare (ignore start end))
   (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of))
       interval
     (if reference
@@ -151,15 +151,15 @@
       (make-string (- upper lower) :element-type 'base-char
                    :initial-element +gap-char+))))
 
-(defmethod to-string ((interval interval) &key
-                      (start 0) (end (length-of interval)) token-case)
-  (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of))
+(defmethod coerce-sequence ((interval interval) (type (eql 'string))
+                            &key (start 0) (end (length-of interval)))
+  (with-accessors ((reference reference-of))
       interval
-    (to-string reference :start (+ lower start) :end (+ lower end)
-               :token-case token-case)))
+    (coerce-sequence reference 'string :start start :end end)))
 
-(defmethod to-string ((interval na-sequence-interval) &key
-                      (start 0) (end (length-of interval)) token-case)
+(defmethod coerce-sequence ((interval na-sequence-interval)
+                            (type (eql 'string))
+                            &key (start 0) (end (length-of interval)))
   (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of)
                    (strand strand-of))
       interval
@@ -167,12 +167,12 @@
         reference
       (cond ((or (eql *unknown-strand* strand)
                  (eql *forward-strand* strand))
-             (to-string reference :start (+ lower start) :end (+ lower end)
-                        :token-case token-case))
+             (coerce-sequence reference 'string :start (+ lower start)
+                              :end (+ lower end)))
             ((and (eql *reverse-strand* strand) (= 2 num-strands))
-             (to-string
+             (coerce-sequence
               (nreverse-complement
-               (subsequence reference (+ lower start) (+ lower end)))))
+               (subsequence reference (+ lower start) (+ lower end))) 'string))
             (t
              (error 'bio-sequence-op-error
                     :text "a reverse-strand interval may not be created on a single-stranded sequence."))))))
@@ -216,7 +216,7 @@
   (with-accessors ((reference reference-of)
                    (strand strand-of) (num-strands num-strands-of))
       interval
-    (check-interval-strands (invert-strand strand) num-strands reference)
+    (%check-interval-strands (invert-strand strand) num-strands reference)
     (with-slots (lower upper) ; direct slot access to allow inversion in place
         interval
       (let ((ref-length (length-of reference))
@@ -226,9 +226,21 @@
               strand (invert-strand strand)))))
   interval)
 
+
+;; FIXME -- circular sequences
+
+;; These may have intervals that travel around the sequence multiple
+;; times
+
+;; TODO --
+;; canonicalize negative coordinates to positive (maybe public function?)
+;; calculate numbers of rotations for intervals (maybe public function?)
+;; overlaps, intersections, unions
+
+
 ;;; Utility functions
-(declaim (inline check-interval-range))
-(defun check-interval-range (lower upper reference)
+(declaim (inline %check-interval-range))
+(defun %check-interval-range (lower upper reference)
   "Validates interval bounds LOWER and UPPER against REFERENCE to
 ensure that the interval lies within the bounds of the reference."
   (cond (reference
@@ -257,8 +269,8 @@ ensure that the interval lies within the bounds of the reference."
                          :text "lower bound must be equal to or less than upper bound"))
                  (t t)))))
 
-(declaim (inline check-interval-strands))
-(defun check-interval-strands (strand num-strands reference)
+(declaim (inline %check-interval-strands))
+(defun %check-interval-strands (strand num-strands reference)
   "Validates STRAND and NUM-STRANDS against REFERENCE to ensure that a
 double-stranded interval is not applied to a single-stranded reference
 and a reverse-strand interval is not applied to a single-stranded
@@ -277,3 +289,73 @@ reference."
                         :text "a reverse-strand interval may not be applied to a single-stranded sequence"))
               (t t))))
   t)
+
+;; Allen interval relations
+
+;; x before y, y after x
+;; ------  -----
+
+;; x meets y, y met-by x
+;; ------
+;;       -----
+
+;; x overlaps y, y overlaps x
+;; ------
+;;     -----
+
+;; x starts y, y started-by x
+;; ------
+;; -----
+
+;; x during y, y contains x
+;;  ---
+;; -----
+
+;; x finishes y, y finished-by x
+;;   ---
+;; -----
+
+;; x equals y
+;; -----
+;; -----
+
+
+(defmethod beforep ((x interval) (y interval))
+  (< (upper-of x) (lower-of y)))
+
+(defmethod afterp ((x interval) (y interval))
+  (> (lower-of x) (upper-of y)))
+
+(defmethod meetsp ((x interval) (y interval))
+  (= (upper-of x) (lower-of y)))
+
+(defmethod met-by-p ((x interval) (y interval))
+  (= (lower-of x) (upper-of y)))
+
+(defmethod startsp ((x interval) (y interval))
+  (and (= (lower-of x) (lower-of y))
+       (< (upper-of x) (upper-of y))))
+
+(defmethod started-by-p ((x interval) (y interval))
+  (and (= (lower-of x) (lower-of y))
+       (> (upper-of x) (upper-of y))))
+
+(defmethod duringp ((x interval) (y interval))
+  (and (>= (lower-of x) (lower-of y))
+       (<= (upper-of x) (upper-of y))))
+
+(defmethod containsp ((x interval) (y interval))
+  (and (<= (lower-of x) (lower-of y))
+       (>= (upper-of x) (upper-of y))))
+
+(defmethod finishesp ((x interval) (y interval))
+  (and (> (lower-of x) (lower-of y))
+       (= (upper-of x) (upper-of y))))
+
+(defmethod finished-by-p ((x interval) (y interval))
+  (and (< (lower-of x) (lower-of y))
+       (= (upper-of x) (upper-of y))))
+
+(defmethod interval-equal ((x interval) (y interval))
+  (and (= (lower-of x) (lower-of y))
+       (= (upper-of x) (upper-of y))))

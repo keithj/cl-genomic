@@ -76,7 +76,8 @@
     (dolist (interval intervals)
       (with-accessors ((lower lower-of) (upper upper-of) (aligned aligned-of))
           interval
-        (format stream "~7d ~a ~7a~%" lower (to-string aligned) upper)))
+        (format stream "~7d ~a ~7a~%" lower (coerce-sequence aligned 'string)
+                upper)))
     (write-line ">" stream)))
 
 ;;; Implementation methods
@@ -85,11 +86,12 @@
       aligned
     (length-of aligned)))
 
-(defmethod to-string ((interval na-alignment-interval) &key
-                      (start 0) (end (aligned-length-of interval)) token-case)
+(defmethod coerce-sequence ((interval na-alignment-interval)
+                            (type (eql 'string))
+                            &key (start 0) (end (aligned-length-of interval)))
   (with-accessors ((aligned aligned-of))
       interval
-    (to-string aligned :start start :end end :token-case token-case)))
+    (coerce-sequence aligned 'string :start start :end end)))
 
 (defmethod ninvert-complement :before ((interval na-alignment-interval))
   (error 'bio-sequence-op-error

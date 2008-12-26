@@ -97,10 +97,13 @@ sequence representation, merely a length, or NIL otherwise."))
 (defgeneric residue-frequencies (bio-sequence alphabet)
   (:documentation ""))
 
-(defgeneric to-string (bio-sequence &key start end token-case)
-  (:documentation "Returns the string representing BIO-SEQUENCE,
-starting at the first residue, or index START, and continuing to the
-last residue, or index END."))
+(defgeneric coerce-sequence (bio-sequence result-type &key start end)
+  (:documentation "Coerces all or part of BIO-SEQUENCE to
+RESULT-TYPE. RESULT-TYPE may be 'string or another bio-sequence
+class. For example an object of class {defclass dna-sequence} may be
+coerced to an {defclass rna-sequence} and vice versa. The coerced
+sequence starts at the first residue, or index START, and continuing
+to the last residue, or index END."))
 
 (defgeneric reverse-sequence (bio-sequence)
   (:documentation "Returns a new bio-sequence with a token-seq that is

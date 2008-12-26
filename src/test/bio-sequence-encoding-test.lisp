@@ -32,27 +32,31 @@
                             (#\a #\c #\t) (#\a #\c #\g) (#\a #\c #\g #\t))))))
 
 ;;; Complementing nucleic acids
-(addtest (bio-sequence-encoding-tests) complement-dna
+(addtest (bio-sequence-encoding-tests) complement-dna/1
   (loop
      for res across dna-residues
      for cmp across dna-complement
-     do (ensure (char= (bs::complement-dna res) cmp)))
+     do (ensure (char= (bs::complement-dna res) cmp))))
+
+(addtest (bio-sequence-encoding-tests) complement-dna/2
   (loop
      for res across dna-residues
      for cmp across dna-complement
      do (ensure (char= (bs::complement-dna (char-upcase res)) cmp))))
 
-(addtest (bio-sequence-encoding-tests) complement-rna
+(addtest (bio-sequence-encoding-tests) complement-rna/1
   (loop
      for res across rna-residues
      for cmp across rna-complement
-     do (ensure (char= (bs::complement-rna res) cmp)))
+     do (ensure (char= (bs::complement-rna res) cmp))))
+
+(addtest (bio-sequence-encoding-tests) complement-rna/2
   (loop
      for res across rna-residues
      for cmp across rna-complement
      do (ensure (char= (bs::complement-rna (char-upcase res)) cmp))))
 
-(addtest (bio-sequence-encoding-tests) complement-dna-4bit
+(addtest (bio-sequence-encoding-tests) complement-dna-4bit/1
   (loop
      for res across dna-residues
      for cmp across dna-complement
@@ -63,28 +67,30 @@
                          cmp)))))
 
 ;;; Encoding/decoding sequences
-(addtest (bio-sequence-encoding-tests) encode/decode-dna-4bit
+(addtest (bio-sequence-encoding-tests) encode/decode-dna-4bit/1
   (loop
      for res across dna-residues
      do (ensure (char= res (bs::decode-dna-4bit
                             (bs::encode-dna-4bit res))))))
 
-(addtest (bio-sequence-encoding-tests) encode/decode-rna-4bit
+(addtest (bio-sequence-encoding-tests) encode/decode-rna-4bit/1
   (loop
      for res across rna-residues
      do (ensure (char= res (bs::decode-rna-4bit
                             (bs::encode-rna-4bit res))))))
 
-(addtest (bio-sequence-encoding-tests) explode-dna-4bit
+(addtest (bio-sequence-encoding-tests) explode-dna-4bit/1
   (loop
      for res across dna-residues
      do (ensure (equal (assocdr res dna-exploded :test #'char=)
                        (explode-ambiguity (find-alphabet :dna) res)))))
 
-(addtest (bio-sequence-encoding-tests) ambiguousp/dna
+(addtest (bio-sequence-encoding-tests) ambiguousp/1
   (loop
      for res across dna-unambiguous
-     do (ensure (not (ambiguousp (find-alphabet :dna) res))))
+     do (ensure (not (ambiguousp (find-alphabet :dna) res)))))
+
+(addtest (bio-sequence-encoding-tests) ambiguousp/2
   (loop
      for res across dna-ambiguous
      do (ensure (ambiguousp (find-alphabet :dna) res))))

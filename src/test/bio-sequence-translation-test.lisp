@@ -64,7 +64,7 @@
   "KNKNKNTTTTTTTTTTTTTTTRSRSRSIIMIIIIIQHQHQHPPPPPPPPPPPPPPPRRRRRRRRRRRRRRRLLLLLLLLLLLLLLLEDEDEDAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGVVVVVVVVVVVVVVV*Y*Y*YSSSSSSSSSSSSSSS*CWCCLFLFLF*ZZZLLLRRRBBB"
   "Corresponding translations of codons that do not encode for X.")
 
-(addtest (bio-sequence-translation-tests) translate-codon-standard
+(addtest (bio-sequence-translation-tests) translate-codon-standard/1
    (ensure (every #'char= *test-amino-acids*
                   (loop
                      with code = (find-genetic-code :standard)

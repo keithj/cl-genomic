@@ -148,7 +148,9 @@
    #:nreverse-complement
    #:search-sequence
    #:residue-frequencies
-   #:to-string
+
+   #:coerce-sequence
+   
    #:invert-complement
    #:ninvert-complement
    #:residue-position

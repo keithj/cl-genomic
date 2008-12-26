@@ -69,7 +69,7 @@
                ()) ; no cell exclusion form
             (values score insertx inserty))))))) ; return matrices for checking
 
-(addtest (bio-sequence-alignment-tests) smith-waterman-gotoh-aa
+(addtest (bio-sequence-alignment-tests) smith-waterman-gotoh-aa/1
   (let ((seqm (make-aa "PAWHEAE"))
         (seqn (make-aa "HEAGAWGHEE"))
         (subst-fn #'blosum-50-subst)
@@ -94,10 +94,12 @@
         ;; Check sequence and gapping
         (ensure (= 1 (num-gaps-of (aligned-of intervalm))))
         (ensure (= 0 (num-gaps-of (aligned-of intervaln))))
-        (ensure (string= "AW-HE" (to-string (aligned-of intervalm))))
-        (ensure (string= "AWGHE" (to-string (aligned-of intervaln))))))))
+        (ensure (string= "AW-HE"
+                         (coerce-sequence (aligned-of intervalm) 'string)))
+        (ensure (string= "AWGHE"
+                         (coerce-sequence (aligned-of intervaln) 'string)))))))
 
-(addtest (bio-sequence-alignment-tests) smith-waterman-gotoh-dna
+(addtest (bio-sequence-alignment-tests) smith-waterman-gotoh-dna/1
    (let ((subst-fn #'iupac-dna-subst)
          (gap-open -5.0)
          (gap-extend -1.0)

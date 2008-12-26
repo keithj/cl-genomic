@@ -17,17 +17,19 @@
 
 (in-package :cl-user)
 
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (asdf:operate 'asdf:load-op :cl-system-utilities))
+
 (defpackage #:cl-genomic-system
-  (:use :common-lisp :asdf)
-  (:export #:testsuite))
+  (:use :common-lisp :asdf :cl-system-utilities))
 
 
 (in-package #:cl-genomic-system)
 
 (defsystem cl-genomic
-    :name "Common Lisp Bioinformatics"
+    :name "Common Lisp Genomics"
     :author "Keith James"
-    :version "0.1.1"
+    :version "0.2.1"
     :licence "GPL v3"
     :depends-on (:trivial-gray-streams
                  :split-sequence
@@ -35,52 +37,53 @@
                  :puri
                  :cl-gp-utilities
                  :cl-io-utilities)
+    :in-order-to ((test-op (load-op :cl-genomic :cl-genomic-test)))
     :components ((:module :core
                           :pathname "src/"
                           :components
                           ((:file "package")
                            (:file "conditions"
-                                  :depends-on ("package"))
+                            :depends-on ("package"))
                            (:file "bio-sequence-encoding"
-                                  :depends-on ("package"))
+                            :depends-on ("package"))
                            (:file "bio-alphabets"
-                                  :depends-on ("package"
-                                               "bio-sequence-encoding"))
+                            :depends-on ("package"
+                                         "bio-sequence-encoding"))
                            (:file "bio-sequence-classes"
-                                  :depends-on ("package"
-                                               "bio-alphabets"
-                                               "bio-sequence-encoding"))
+                            :depends-on ("package"
+                                         "bio-alphabets"
+                                         "bio-sequence-encoding"))
                            (:file "bio-sequence-interval"
-                                  :depends-on ("package"
-                                               "generics"
-                                               "bio-sequence-classes"))
+                            :depends-on ("package"
+                                         "generics"
+                                         "bio-sequence-classes"))
                            (:file "generics"
-                                  :depends-on ("package"))
+                            :depends-on ("package"))
                            (:file "genetic-codes"
-                                  :depends-on ("package"
-                                               "bio-alphabets"
-                                               "bio-sequence-encoding"))
+                            :depends-on ("package"
+                                         "bio-alphabets"
+                                         "bio-sequence-encoding"))
                            (:file "bio-sequence"
-                                  :depends-on ("package"
-                                               "generics"
-                                               "bio-alphabets"
-                                               "bio-sequence-encoding"
-                                               "bio-sequence-classes"
-                                               "genetic-codes"))))
+                            :depends-on ("package"
+                                         "generics"
+                                         "bio-alphabets"
+                                         "bio-sequence-encoding"
+                                         "bio-sequence-classes"
+                                         "genetic-codes"))))
                  (:module :io
                           :pathname "src/io/"
                           :components
                           ((:file "io-classes")
                            (:file "bio-sequence-io"
-                                  :depends-on ("io-classes"))
+                            :depends-on ("io-classes"))
                            (:file "fasta"
-                                  :depends-on ("bio-sequence-io"))
+                            :depends-on ("bio-sequence-io"))
                            (:file "fastq"
-                                  :depends-on ("bio-sequence-io"))
+                            :depends-on ("bio-sequence-io"))
                            (:file "format-conversion"
-                                  :depends-on ("bio-sequence-io"
-                                               "fasta"
-                                               "fastq"))
+                            :depends-on ("bio-sequence-io"
+                                         "fasta"
+                                         "fastq"))
                            (:file "gff3"))
                           :depends-on (:core))
                  (:module :align
@@ -89,31 +92,12 @@
                           ((:file "bio-sequence-alignment")
                            (:file "matrices")                           
                            (:file "pairwise"
-                                  :depends-on ("matrices"
-                                               "bio-sequence-alignment")))
-                          :depends-on (:core))))
-
-
-(in-package #:asdf)
-
-(defmethod perform ((op test-op) (c (eql (find-system
-                                          :cl-genomic))))
-  (operate 'load-op :cl-genomic-test)
-
-  (let ((*default-pathname-defaults* (component-pathname c)))
-    (funcall (intern (string :run-tests) (string :lift))
-             :config "cl-genomic-test.config")))
-
-(defmethod operation-done-p ((op test-op) (c (eql (find-system
-                                                   :cl-genomic))))
-  nil)
-
-(defmethod perform ((op cldoc-op) (c (eql (find-system
-                                           :cl-genomic))))
-  (unless (find-package :bio-sequence)
-    (operate 'load-op :cl-genomic))
-
-  (let ((*default-pathname-defaults* (component-pathname c))
-        (fn-sym (intern (string :extract-documentation) (string :cldoc)))
-        (op-sym (intern (string :html) (string :cldoc))))
-    (funcall fn-sym op-sym "./doc/html" c)))
+                            :depends-on ("matrices"
+                                         "bio-sequence-alignment")))
+                          :depends-on (:core))
+                 (:lift-test-config :lift-tests
+                                    :pathname "cl-genomic-test.config"
+                                    :target-system :cl-genomic)
+                 (:cldoc-config :cldoc-documentation
+                                :pathname "doc/html"
+                                :target-system :cl-genomic)))
