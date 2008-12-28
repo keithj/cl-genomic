@@ -87,7 +87,8 @@ numeric quality value for each residue."))
   (:documentation "A sequence of tokens belonging to an alphabet."))
 
 (defclass virtual-token-sequence (token-sequence)
-  ((length :initarg :length
+  ((length :initform 0
+           :initarg :length
            :accessor length-of
            :documentation "The length of the sequence.")))
 
@@ -101,7 +102,8 @@ numeric quality value for each residue."))
   ())
 
 (defclass vector-sequence ()
-  ((vector :initarg :vector
+  ((vector :initform (make-array 0 :element-type 'fixnum)
+           :initarg :vector
            :accessor vector-of
            :documentation "The token vector of the sequence.")))
 
@@ -116,7 +118,7 @@ numeric quality value for each residue."))
   (:documentation "A biological sequence."))
 
 (defclass na-sequence (bio-sequence)
-  ((num-strands :initform 1
+  ((num-strands :initform 2
                 :initarg :num-strands
                 :accessor num-strands-of
                 :documentation "The number of sequence strands."))

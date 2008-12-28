@@ -45,11 +45,6 @@
   reference sequence. The basic interval has no notion of sequence
   strandedness; the bounds always refer to the forward strand."))
 
-(defclass bio-sequence-interval (bio-sequence interval)
-  ()
-  (:documentation "A biological sequence that is an interval within a
-  reference sequence."))
-
 (defclass na-sequence-interval (na-sequence interval stranded-mixin)
   ()
   (:documentation "A nucleic acid sequence that is an interval within
@@ -72,19 +67,91 @@
   it to the position on the complementary strand of the reference
   sequence."))
 
+;;; Allen interval algebra
+;;;
+;;; x before y, y after x
+;;; ------  -----
+;;;
+;;; x meets y, y met-by x
+;;; ------
+;;;       -----
+;;;
+;;; x overlaps y, y overlaps x
+;;; ------
+;;;     -----
+;;;
+;;; x starts y, y started-by x
+;;; ------
+;;; -----
+;;;
+;;; x during y, y contains x
+;;;  ---
+;;; -----
+;;;
+;;; x finishes y, y finished-by x
+;;;   ---
+;;; -----
+;;;
+;;; x equals y
+;;; -----
+;;; -----
+
+(defgeneric beforep (x y)
+  (:documentation "Returns T if X is before Y according to Allen's
+  Interval Algebra, or NIL otherwise."))
+
+(defgeneric afterp (x y)
+  (:documentation "Returns T if X is after Y according to Allen's
+  Interval Algebra, or NIL otherwise."))
+
+(defgeneric meetsp (x y)
+  (:documentation "Returns T if X meets Y according to Allen's
+  Interval Algebra, or NIL otherwise."))
+
+(defgeneric met-by-p (x y)
+  (:documentation "Returns T if X is met by Y according to Allen's
+  Interval Algebra, or NIL otherwise."))
+
+(defgeneric startsp (x y)
+  (:documentation "Returns T if X starts Y according to Allen's
+  Interval Algebra, or NIL otherwise."))
+
+(defgeneric started-by-p (x y)
+  (:documentation "Returns T if X is started by Y according to Allen's
+  Interval Algebra, or NIL otherwise."))
+
+(defgeneric duringp (x y)
+  (:documentation "Returns T if X occurs during Y according to Allen's
+  Interval Algebra, or NIL otherwise."))
+
+(defgeneric containsp (x y)
+  (:documentation "Returns T if X contains Y according to Allen's
+  Interval Algebra, or NIL otherwise."))
+
+(defgeneric finishesp (x y)
+  (:documentation "Returns T if X finishes Y according to Allen's
+  Interval Algebra, or NIL otherwise."))
+
+(defgeneric finished-by-p (x y)
+  (:documentation "Returns T if X is finished by Y according to
+  Allen's Interval Algebra, or NIL otherwise."))
+
+(defgeneric interval-equal (x y)
+  (:documentation "Returns T if X is interval equal Y according to
+  Allen's Interval Algebra, or NIL otherwise."))
+
 ;;; Initialization methods
-(defmethod initialize-instance :after ((interval bio-sequence-interval) &key)
-  (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of))
-      interval
-    (%check-interval-range lower upper reference)))
-  
-(defmethod initialize-instance :after
-    ((interval na-sequence-interval) &key)
+(defmethod initialize-instance :after ((interval na-sequence-interval) &key)
   (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of)
                    (strand strand-of) (num-strands num-strands-of))
       interval
     (%check-interval-range lower upper reference)
     (%check-interval-strands strand num-strands reference)))
+
+(defmethod initialize-instance :after ((interval aa-sequence-interval) &key)
+  (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of))
+      interval
+    (%check-interval-range lower upper reference)))
 
 ;;; Printing methods
 (defmethod print-object ((interval interval) stream)
@@ -92,15 +159,15 @@
       interval
     (format stream "#<INTERVAL ~a ~a>" lower upper)))
 
-(defmethod print-object ((interval bio-sequence-interval) stream)
-  (with-accessors ((lower lower-of) (upper upper-of))
-      interval
-    (format stream "#<BIO-SEQUENCE-INTERVAL ~a ~a>" lower upper)))
-
 (defmethod print-object ((interval na-sequence-interval) stream)
   (with-accessors ((lower lower-of) (upper upper-of) (strand strand-of))
       interval
     (format stream "#<NA-SEQUENCE-INTERVAL ~a ~a ~a>" lower upper strand)))
+
+(defmethod print-object ((interval aa-sequence-interval) stream)
+  (with-accessors ((lower lower-of) (upper upper-of))
+      interval
+    (format stream "#<AA-SEQUENCE-INTERVAL ~a ~a>" lower upper)))
 
 ;;; Implementation methods
 (defmethod (setf reference-of) :before (value (interval interval))
@@ -135,6 +202,36 @@
   (with-accessors ((reference reference-of) (strand strand-of))
       interval
     (%check-interval-strands strand value reference)))
+
+(defmethod simplep ((interval na-sequence-interval))
+  (with-accessors ((reference reference-of))
+      interval
+    (and reference (simplep reference))))
+
+(defmethod simplep ((interval aa-sequence-interval))
+  (with-accessors ((reference reference-of))
+      interval
+    (and reference (simplep reference))))
+
+(defmethod ambiguousp ((interval na-sequence-interval))
+  (with-accessors ((reference reference-of))
+      interval
+    (or (null reference) (ambiguousp reference))))
+
+(defmethod ambiguousp ((interval aa-sequence-interval))
+  (with-accessors ((reference reference-of))
+      interval
+    (or (null reference) (ambiguousp reference))))
+
+(defmethod virtualp ((interval na-sequence-interval))
+  (with-accessors ((reference reference-of))
+      interval
+    (or (null reference) (virtualp reference))))
+
+(defmethod virtualp ((interval aa-sequence-interval))
+  (with-accessors ((reference reference-of))
+      interval
+    (or (null reference) (virtualp reference))))
 
 (defmethod length-of ((interval interval))
   (with-accessors ((lower lower-of) (upper upper-of))
@@ -177,13 +274,6 @@
              (error 'bio-sequence-op-error
                     :text "a reverse-strand interval may not be created on a single-stranded sequence."))))))
 
-(defmethod subsequence ((interval bio-sequence-interval) (start fixnum)
-                        &optional end)
-  (let ((end (or end (length-of interval))))
-    (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of))
-        interval
-      (subsequence reference (+ lower start) (+ lower end)))))
-
 (defmethod subsequence ((interval na-sequence-interval)
                         (start fixnum) &optional end)
   (let ((end (or end (length-of interval))))
@@ -199,6 +289,13 @@
               (t
                (error 'bio-sequence-op-error
                       :text "a reverse-strand interval may not be applied to a single-stranded sequence.")))))))
+
+(defmethod subsequence ((interval aa-sequence-interval) (start fixnum)
+                        &optional end)
+  (let ((end (or end (length-of interval))))
+    (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of))
+        interval
+      (subsequence reference (+ lower start) (+ lower end)))))
 
 (defmethod invert-complement ((interval na-sequence-interval))
   (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of)
@@ -225,6 +322,46 @@
               upper (+ lower int-length)
               strand (invert-strand strand)))))
   interval)
+
+(defmethod beforep ((x interval) (y interval))
+  (< (upper-of x) (lower-of y)))
+
+(defmethod afterp ((x interval) (y interval))
+  (> (lower-of x) (upper-of y)))
+
+(defmethod meetsp ((x interval) (y interval))
+  (= (upper-of x) (lower-of y)))
+
+(defmethod met-by-p ((x interval) (y interval))
+  (= (lower-of x) (upper-of y)))
+
+(defmethod startsp ((x interval) (y interval))
+  (and (= (lower-of x) (lower-of y))
+       (< (upper-of x) (upper-of y))))
+
+(defmethod started-by-p ((x interval) (y interval))
+  (and (= (lower-of x) (lower-of y))
+       (> (upper-of x) (upper-of y))))
+
+(defmethod duringp ((x interval) (y interval))
+  (and (>= (lower-of x) (lower-of y))
+       (<= (upper-of x) (upper-of y))))
+
+(defmethod containsp ((x interval) (y interval))
+  (and (<= (lower-of x) (lower-of y))
+       (>= (upper-of x) (upper-of y))))
+
+(defmethod finishesp ((x interval) (y interval))
+  (and (> (lower-of x) (lower-of y))
+       (= (upper-of x) (upper-of y))))
+
+(defmethod finished-by-p ((x interval) (y interval))
+  (and (< (lower-of x) (lower-of y))
+       (= (upper-of x) (upper-of y))))
+
+(defmethod interval-equal ((x interval) (y interval))
+  (and (= (lower-of x) (lower-of y))
+       (= (upper-of x) (upper-of y))))
 
 
 ;; FIXME -- circular sequences
@@ -290,72 +427,3 @@ reference."
               (t t))))
   t)
 
-;; Allen interval relations
-
-;; x before y, y after x
-;; ------  -----
-
-;; x meets y, y met-by x
-;; ------
-;;       -----
-
-;; x overlaps y, y overlaps x
-;; ------
-;;     -----
-
-;; x starts y, y started-by x
-;; ------
-;; -----
-
-;; x during y, y contains x
-;;  ---
-;; -----
-
-;; x finishes y, y finished-by x
-;;   ---
-;; -----
-
-;; x equals y
-;; -----
-;; -----
-
-
-(defmethod beforep ((x interval) (y interval))
-  (< (upper-of x) (lower-of y)))
-
-(defmethod afterp ((x interval) (y interval))
-  (> (lower-of x) (upper-of y)))
-
-(defmethod meetsp ((x interval) (y interval))
-  (= (upper-of x) (lower-of y)))
-
-(defmethod met-by-p ((x interval) (y interval))
-  (= (lower-of x) (upper-of y)))
-
-(defmethod startsp ((x interval) (y interval))
-  (and (= (lower-of x) (lower-of y))
-       (< (upper-of x) (upper-of y))))
-
-(defmethod started-by-p ((x interval) (y interval))
-  (and (= (lower-of x) (lower-of y))
-       (> (upper-of x) (upper-of y))))
-
-(defmethod duringp ((x interval) (y interval))
-  (and (>= (lower-of x) (lower-of y))
-       (<= (upper-of x) (upper-of y))))
-
-(defmethod containsp ((x interval) (y interval))
-  (and (<= (lower-of x) (lower-of y))
-       (>= (upper-of x) (upper-of y))))
-
-(defmethod finishesp ((x interval) (y interval))
-  (and (> (lower-of x) (lower-of y))
-       (= (upper-of x) (upper-of y))))
-
-(defmethod finished-by-p ((x interval) (y interval))
-  (and (< (lower-of x) (lower-of y))
-       (= (upper-of x) (upper-of y))))
-
-(defmethod interval-equal ((x interval) (y interval))
-  (and (= (lower-of x) (lower-of y))
-       (= (upper-of x) (upper-of y))))

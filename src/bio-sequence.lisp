@@ -231,7 +231,7 @@ otherwise."
   (subtypep (class-of obj) 'aa-sequence))
 
 (defun same-biotype-p (&rest seqs)
-  "Returns T if SEQS are {defclass bio-sequence } s that share exactly
+  "Returns T if SEQS are {defclass bio-sequence} s that share exactly
 the same alphabet, or NIL otherwise."
   (cond ((null seqs)
          nil)
@@ -247,15 +247,12 @@ the same alphabet, or NIL otherwise."
 (defun same-strand-num-p (&rest seqs)
   "Returns T if SEQS are {defclass na-sequence} s that share the same
 number of strands, or NIL otherwise."
-  (cond ((null seqs)
-         nil)
-        ((not (na-sequence-p (first seqs)))
-         nil)
-        (t
-         (loop
-            with num-strands = (num-strands-of (first seqs))
-            for seq in (rest seqs)
-            always (= num-strands (num-strands-of seq))))))
+  (if (null seqs)
+         nil
+    (loop
+       with num-strands = (num-strands-of (first seqs))
+       for seq in (rest seqs)
+       always (= num-strands (num-strands-of seq)))))
 
 (defun concat-sequence (&rest seqs)
   (if (apply #'same-biotype-p seqs)
@@ -323,14 +320,6 @@ number of strands, or NIL otherwise."
 (defmethod explode-ambiguity ((alphabet (eql *rna*)) (char character))
   (%explode-ambiguity char #'encode-rna-4bit #'decode-rna-4bit))
 
-(defmethod ambiguousp ((alphabet alphabet) (char character))
-  (> (length (explode-ambiguity alphabet char)) 1))
-
-(defmethod simplep ((alphabet alphabet) (residues string))
-  (loop
-     for residue across residues
-     never (ambiguousp alphabet residue)))
-
 (defmethod strand-designator-p (strand)
   nil)
 
@@ -338,6 +327,12 @@ number of strands, or NIL otherwise."
   (decode-strand strand))
 
 (defmethod strand-designator-p ((strand fixnum))
+  (decode-strand strand))
+
+(defmethod strand-designator-p ((strand character))
+  (decode-strand strand))
+
+(defmethod strand-designator-p ((strand symbol))
   (decode-strand strand))
 
 (defmethod forward-strand-p ((strand (eql *forward-strand*)))
@@ -381,6 +376,22 @@ number of strands, or NIL otherwise."
         (t
          (eql strand1 strand2))))
 
+(defmethod ambiguousp ((seq virtual-token-sequence))
+  t)
+
+(defmethod ambiguousp ((seq vector-sequence))
+  (with-accessors ((alphabet alphabet-of))
+      seq
+    (%ambiguousp seq alphabet)))
+
+(defmethod simplep ((seq virtual-token-sequence))
+  nil)
+
+(defmethod simplep ((seq vector-sequence))
+  (with-accessors ((alphabet alphabet-of))
+      seq
+    (not (%ambiguousp seq alphabet))))
+
 (defmethod virtualp ((seq token-sequence))
   (declare (ignore seq))
   nil)
@@ -403,6 +414,10 @@ number of strands, or NIL otherwise."
   (with-slots (num-strands)
       seq
     (= 2 num-strands)))
+
+(defmethod num-strands-of ((seq aa-sequence))
+  (error 'bio-sequence-op-error
+         :text "Amino-acid sequences are not stranded."))
 
 (defmethod element-of ((seq encoded-dna-sequence) (index fixnum))
   (decode-dna-4bit (aref (vector-of seq) index)))
@@ -465,7 +480,7 @@ number of strands, or NIL otherwise."
 
 (defmethod coerce-sequence ((seq virtual-aa-sequence) (type (eql 'string))
                             &key (start 0) (end (length-of seq)))
-  (%to-string-virtual seq #\n start end :uppercase))
+  (%to-string-virtual seq #\X start end :uppercase))
 
 (defmethod coerce-sequence ((seq encoded-dna-sequence) (type (eql 'string))
                             &key (start 0) (end (length-of seq)))
@@ -877,24 +892,31 @@ index END."
         (:lowercase str)
         (:uppercase (nstring-upcase str))))))
 
+(defmethod %ambiguousp ((seq vector-sequence) (alphabet (eql *dna*)))
+  (with-accessors ((vector vector-of))
+      seq
+    (loop
+       for elt across vector
+       thereis (< 1 (length (explode-encoded-base elt))))))
+
+(defmethod %ambiguousp ((seq vector-sequence) (alphabet (eql *rna*)))
+  (with-accessors ((vector vector-of))
+      seq
+    (loop
+       for elt across vector
+       thereis (< 1 (length (explode-encoded-base elt))))))
+
+(defmethod %ambiguousp ((seq vector-sequence) (alphabet (eql *aa*)))
+  (with-accessors ((vector vector-of))
+      seq
+    (loop
+       for elt across vector
+       thereis (< 1 (length (explode-encoded-aa elt))))))
+
 (defun %explode-ambiguity (char encoder decoder)
   "Returns a list of the ambiguity characters represented by CHAR."
   (sort (mapcar decoder (explode-encoded-base (funcall encoder char)))
         #'char<=))
-
-(defun explode-encoded-base (encoded-base)
-  (loop
-     for b from 0 below (integer-length encoded-base)
-     when (logbitp b encoded-base)
-     collect (ash 1 b)))
-
-(defun explode-encoded-codon (codon)
-  (if (null (rest codon))
-      (mapcar #'list (explode-encoded-base (first codon)))
-    (loop for x in (explode-encoded-base (first codon))
-       nconc (loop
-                for y in (explode-encoded-codon (rest codon))
-                collect (cons x y)))))
 
 (defun codon-start-p (base-pos)
   (zerop (mod base-pos +codon-size+)))

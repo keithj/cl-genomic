@@ -84,13 +84,3 @@
      for res across dna-residues
      do (ensure (equal (assocdr res dna-exploded :test #'char=)
                        (explode-ambiguity (find-alphabet :dna) res)))))
-
-(addtest (bio-sequence-encoding-tests) ambiguousp/1
-  (loop
-     for res across dna-unambiguous
-     do (ensure (not (ambiguousp (find-alphabet :dna) res)))))
-
-(addtest (bio-sequence-encoding-tests) ambiguousp/2
-  (loop
-     for res across dna-ambiguous
-     do (ensure (ambiguousp (find-alphabet :dna) res))))

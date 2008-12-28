@@ -227,6 +227,7 @@ lower case character."
 
 (declaim (inline encode-aa-7bit))
 (defun encode-aa-7bit (aa)
+  "Encodes AA standard-char as a 7-bit byte."
   (ccase aa
     ((#\a #\A) 1)
     ((#\b #\B) 2)
@@ -259,6 +260,7 @@ lower case character."
 
 (declaim (inline decode-aa-7bit))
 (defun decode-aa-7bit (encoded-aa)
+  "Decodes 7-bit byte ENCODED-AA, returning an upper case character."
   (ecase encoded-aa
     (1  #\A)
     (2  #\B)
@@ -290,6 +292,8 @@ lower case character."
     (0  #\-)))
 
 (defun symbolize-aa (aa)
+  "Returns a Lisp keyword symbol representing the amino-acid character
+AA."
   (let ((encoded-aa (encode-aa-7bit aa)))
     (ecase encoded-aa
       (1  :alanine)
@@ -322,6 +326,7 @@ lower case character."
       (0  :gap))))
 
 (defun encode-aa-symbol (aa-symbol)
+  "Encodes the symbol AA-SYMBOL as a 7-bit byte."
   (ecase aa-symbol
     (:alanine 1)
     (:aspartatic-acid/asparagine 2)
@@ -351,6 +356,36 @@ lower case character."
     (:glutamic-acid/glutamine 26)
     (:terminator 27)
     (:gap 0)))
+
+(defun explode-encoded-base (encoded-base)
+  "Returns a list of all the unambiguous encoded bases represented by
+ENCODED-BASE."
+  (loop
+     for b from 0 below (integer-length encoded-base)
+     when (logbitp b encoded-base)
+     collect (ash 1 b)))
+
+(defun explode-encoded-codon (encoded-codon)
+  "Returns a list of all the unambiguous encoded codons represented by
+ENCODED-CODON."
+  (if (null (rest encoded-codon))
+      (mapcar #'list (explode-encoded-base (first encoded-codon)))
+    (loop for x in (explode-encoded-base (first encoded-codon))
+       nconc (loop
+                for y in (explode-encoded-codon (rest encoded-codon))
+                collect (cons x y)))))
+
+(defun explode-encoded-aa (encoded-aa)
+   "Returns a list of all the unambiguous encoded amino-acids
+represented by ENCODED-AA."
+  (cond ((= 2 encoded-aa)  ; aspartatic-acid/asparagine
+         (list 4 14))
+        ((= 10 encoded-aa) ; isoleucine/leucine
+         (list 9 12))
+        ((= 26 encoded-aa) ; glutamic-acid/glutamine
+         (list 1 17))
+        (t
+         (list encoded-aa))))
 
 (defun phred-quality (p)
   "Returns the Phred score of a base where P is the error

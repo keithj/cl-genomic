@@ -4,7 +4,7 @@
 # such as texinfo documentation.
 
 
-.PHONY:	all fasl doc clean
+.PHONY:	all fasl doc coverage clean
 
 default: all
 
@@ -15,12 +15,14 @@ fasl:
 	--eval "(progn (asdf:oos 'asdf:compile-op :cl-genomic) (quit))"
 
 doc:
-	sbcl --noinform --noprint \
-	--eval "(progn (asdf:oos 'asdf:cldoc-op :cl-genomic) (quit))"
+	sbcl --noinform --noprint --load make-doc.lisp
 
 test:
 	sbcl --noinform --noprint \
 	--eval "(progn (asdf:oos 'asdf:test-op :cl-genomic) (quit))"
+
+coverage: clean
+	sbcl --noinform --noprint --load make-coverage-report.lisp
 
 clean:
 	find . -name \*.fasl -exec rm {} \;

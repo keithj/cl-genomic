@@ -18,11 +18,11 @@
 (in-package :cl-user)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (asdf:operate 'asdf:load-op :cl-system-utilities))
+  (when (asdf:find-system :cl-system-utilities nil)
+    (asdf:operate 'asdf:load-op :cl-system-utilities)))
 
 (defpackage #:cl-genomic-system
   (:use :common-lisp :asdf :cl-system-utilities))
-
 
 (in-package #:cl-genomic-system)
 

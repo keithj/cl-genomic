@@ -1,0 +1,91 @@
+\documentclass[a4paper, 12pt]{article}
+ \usepackage{xcolor}
+\usepackage{hyperref}
+\renewcommand{\familydefault}{\sfdefault} % Use default sans-serif font
+
+\usepackage{listings}
+
+\usepackage[english]{babel}
+\usepackage[latin1]{inputenc}
+
+\lstloadlanguages{Lisp}
+\lstset{frame=ltrb,framesep=5pt,
+  keywordstyle=\ttfamily\color{blue},
+  identifierstyle=\ttfamily\color{blue!70!red}\bfseries, 
+  commentstyle=\color{red!70!yellow},
+  stringstyle=\ttfamily\color{brown},
+  showstringspaces=true}
+
+\begin{document}
+
+\title{cl-genomic : A Common Lisp library for processing genomic
+  sequence data}
+\author{Keith James}
+\date{\today}
+
+\maketitle
+
+\section{Introduction}
+\label{sec:intro}
+
+cl-genomic is a portable Common Lisp library for processing genomic
+data, including DNA, RNA and amino-acid sequences, and the biological
+relationships between them.
+
+\subsection{Design goals}
+\label{sec:design}
+
+\subsubsection{Uniform representation of  sequence and annotation}
+\label{sec:seqrep}
+
+The ``sequence feature'' is a common bioinformatics meme, often
+represented in object-oriented programming by its own class hierarchy
+that exists in parallel to the sequence class hierarchy. However, the
+biological entities that these features represent are essentially
+sequences. cl-genomic avoids use of the ``sequence feature'' as a
+non-sequence type, substituting for them ``intervals'' that are
+first-class sequences.
+
+\subsubsection{Support for formalised biological concepts}
+\label{sec:biorel}
+
+A key goal for cl-genomic is support for formal representation of
+biological concepts and their relationships. While cl-genomic may be
+used without an ontology, the aim is to use the Sequence Ontology for
+all non-trivial cases. In doing so, it is important to avoid
+hard-coding biological knowledge into the API. For example, functions
+such as \lstinline!transcript-of! or \lstinline!exon-of! are avoided
+because they are only relvant and correct for a subset of biological
+use cases. Instead, functions have ontology term parameters to convey
+this information, when required.
+
+\subsubsection{Limited support for bioinformatics file formats}
+\label{sec:bioformats}
+
+cl-genomic will only support bioinformatics file formats that fall
+into one or more of the following categories:
+
+\begin{itemize}
+\item Are structurally and semantically well-defined
+\item Are simple enough to be trivial
+\item Are so ubiqitous that they cannot be avoided
+\end{itemize}
+
+There exist other toolkits (notably BioPerl) that will read and write
+many formats. Supporting file formats that have been used beyond the
+original designers' intent, or were poorly designed in the first
+place, is a significant burden. cl-genomic does not intend to
+replicate that effort.
+
+
+\subsection{Alternatives}
+\label{sec:alternate}
+
+At the time of writing, no general-purpose Common Lisp library for
+biological sequence processing was available. (however, see the 
+\href{http://common-lisp.net/project/cl-bio}{cl-bio} project).
+
+
+
+
+\end{document}

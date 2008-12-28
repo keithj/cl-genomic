@@ -1,0 +1,77 @@
+\documentclass[a4paper, 12pt]{article}
+\usepackage{a4wide}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\renewcommand{\familydefault}{\sfdefault} % Use default sans-serif font
+
+\usepackage{listings}
+
+\usepackage[english]{babel}
+\usepackage[latin1]{inputenc}
+
+\lstloadlanguages{Lisp}
+\lstset{numbers=left,numbersep=5pt,
+  numberfirstline=true,stepnumber=5,
+  backgroundcolor=\color{brown!20},
+  keywordstyle=\ttfamily\color{green},
+  identifierstyle=\ttfamily\color{blue}\bfseries, 
+  commentstyle=\color{orange},
+  stringstyle=\ttfamily\color{brown},
+  keywordsprefix=:,
+  showstringspaces=true,
+  captionpos=b}
+
+\begin{document}
+
+\title{The cl-genomic Cookbook}
+\author{Keith James}
+\date{\today}
+
+\maketitle
+
+\section{Creating bio-sequences}
+\label{sec:create-bioseq}
+
+\subsection{Creating sequences from strings}
+\label{sec:create-bioseq-str}
+
+There exist three exported functions that create sequence objects from
+strings; \lstinline!make-dna!, \lstinline!make-rna! and
+\lstinline!make-aa!, creating DNA, RNA and amino-acid sequence objects
+respectively.
+
+Unless an \lstinline[language=Lisp]!:identifer! keyword argument is
+supplied, the resulting object will be an anonymous sequence
+(i.e. will have an identifier NIL and will return T if passed to the
+\lstinline!anonymousp! predicate). A newly created nucleic-acid
+sequence object will be double-stranded unless a
+\lstinline[language=Lisp]!:num-strands! argument of 1 is supplied. The
+strandedness of a sequence affects some operations. For example, it is
+not possible to request an interval from the reverse-complement strand
+of a such a sequence (including all amino-acid sequences and
+nucleic-acid sequences explicitly marked as single-stranded).
+
+\lstset{basicstyle=\small, language=Lisp}
+\begin{lstlisting}[caption={Making DNA sequences},label=make-dna]
+  (in-package :bio-sequence)
+  
+  ;; Create an anonymous DNA sequence
+  (make-dna "gtaaaacgacggccagtg")
+  ;; Use of characters illegal in DNA will cause an error
+  (make-dna "guaaaacgacggccagug")
+  ;; Create an identified, single-stranded DNA sequence 
+  (make-dna "gtaaaacgacggccagtg" :identity 'm13-fwd :num-strands 1)
+  ;; Create a DNA sequence with ambiguities
+  (make-dna "gtanarygacggccagtg")
+  ;; Create a 30bp virtual DNA sequence
+  (make-dna nil :length 30)
+\end{lstlisting}
+
+All sequences support the full IUPAC character set. Alternatively,
+sequences may be created without any residues being explicitly stated,
+instead supplying a \lstinline[language=Lisp]!:length! initialization
+argument. The resulting object will be a virtual sequence (i.e. will
+be composed implicitly of ambiguous residues and will return T if
+passed to the \lstinline!virtualp! predicate).
+
+\end{document}

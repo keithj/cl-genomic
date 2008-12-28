@@ -24,10 +24,13 @@ identifier of NIL."))
 
 
 ;;; bio-sequence generics
-(defgeneric simplep (bio-sequence alphabet-designator)
+(defgeneric simplep (bio-sequence)
   (:documentation "Returns T if BIO-SEQUENCE contains no ambiguous
-residues according to the alphabets specified by ALPHABET-DESIGNATOR,
-or NIL otherwise."))
+residues, or NIL otherwise."))
+
+(defgeneric ambiguousp (bio-sequence)
+  (:documentation "Returns T if BIO-SEQUENCE contains ambiguous
+residues, or NIL otherwise."))
 
 (defgeneric size-of (alphabet)
   (:documentation "Returns the number of tokens in ALPHABET as a
@@ -40,13 +43,9 @@ NIL otherwise."))
 (defgeneric token-index (alphabet token)
   (:documentation ""))
 
-(defgeneric ambiguousp (alphabet char)
-  (:documentation "Returns T if CHAR is ambiguous in ALPHABET, or NIL
-otherwise."))
-
 (defgeneric explode-ambiguity (alphabet char)
-  (:documentation "Returns a list of the ambuguity characters
-represented by CAHR in ALPHABET."))
+  (:documentation "Returns a list of the ambiguity characters
+represented by CHAR in ALPHABET."))
 
 (defgeneric strand-designator-p (object)
   (:documentation ""))

@@ -71,11 +71,15 @@
     (make-dna '(#\t #\a #\g #\c))))
 
 (addtest (bio-sequence-tests) make-dna/2
-  (ensure (= 1 (num-strands-of (make-dna "tagc"))))
-  (ensure (= 2 (num-strands-of (make-dna "tagc" :num-strands 2)))))
+  (ensure (= 1 (num-strands-of (make-dna "tagc" :num-strands 1))))
+  (ensure (= 2 (num-strands-of (make-dna "tagc")))))
 
 (addtest (bio-sequence-tests) make-dna/3
   (ensure (string= "nnnn" (coerce-sequence (make-dna nil :length 4) 'string))))
+
+(addtest (bio-sequence-tests) make-dna/4
+  (ensure-error
+    (make-dna "acgt" :encode nil))) ; non-encoded dna not implemented
 
 (addtest (bio-sequence-tests) make-rna/1
   (let ((seqs (list (make-rna "uagc") ; unambiguous
@@ -84,24 +88,53 @@
                            'rna-sequence))
         (alphabets (list (find-alphabet :rna)
                          (find-alphabet :rna))))
-    (mapcar (lambda (seq class-name alphabet)
-              (ensure (subtypep (class-name (class-of seq)) class-name))
-              (ensure-same alphabet (alphabet-of seq)))
-            seqs class-names alphabets))
+    (mapc (lambda (seq class-name alphabet)
+            (ensure (subtypep (class-name (class-of seq)) class-name))
+            (ensure-same alphabet (alphabet-of seq)))
+          seqs class-names alphabets))
   ;; We now allow empty sequences
   ;; (ensure-error
   ;;   (make-dna ""))
   (ensure-error
     (make-rna "t"))
   (ensure-error
-    (make-tna '(#\u #\a #\g #\c))))
+    (make-rna '(#\u #\a #\g #\c))))
 
 (addtest (bio-sequence-tests) make-rna/2
-  (ensure (= 1 (num-strands-of (make-rna "uagc"))))
-  (ensure (= 2 (num-strands-of (make-rna "uagc" :num-strands 2)))))
+  (ensure (= 1 (num-strands-of (make-rna "uagc" :num-strands 1))))
+  (ensure (= 2 (num-strands-of (make-rna "uagc")))))
 
 (addtest (bio-sequence-tests) make-rna/3
   (ensure (string= "nnnn" (coerce-sequence (make-rna nil :length 4) 'string))))
+
+(addtest (bio-sequence-tests) make-rna/4
+  (ensure-error
+    (make-rna "acgu" :encode nil))) ; non-encoded rna not implemented
+
+(addtest (bio-sequence-tests) make-aa/1
+  (let ((seqs (list (make-aa "MAD") ; unambiguous
+                    (make-aa "MAB"))) ; ambiguous
+        (class-names (list 'aa-sequence
+                           'aa-sequence))
+        (alphabets (list (find-alphabet :aa)
+                         (find-alphabet :aa))))
+    (mapc (lambda (seq class-name alphabet)
+            (ensure (subtypep (class-name (class-of seq)) class-name))
+            (ensure-same alphabet (alphabet-of seq)))
+          seqs class-names alphabets))
+  (ensure-error
+    (make-aa "?")))
+
+(addtest (bio-sequence-tests) make-aa/2
+  (ensure-error
+    (make-aa "MAD" :num-strands 1)))
+
+(addtest (bio-sequence-tests) make-aa/3
+  (ensure (string= "XXX" (coerce-sequence (make-aa nil :length 3) 'string))))
+
+(addtest (bio-sequence-tests) make-aa/4
+  (ensure-error
+    (make-aa "MAD" :encode nil))) ; non-encoded aa not implemented
 
 (addtest (bio-sequence-tests) phred-quality/1
   (let ((pvals '(0.1 0.01 0.001 0.0001 0.00001))
@@ -137,20 +170,140 @@
      :metric :invalid-metric)))
 
 ;;; Utility methods
+(addtest (bio-sequence-tests) bio-sequence-p/1
+  (ensure (every #'bio-sequence-p (list (make-dna "acgt")
+                                        (make-rna "acgu")
+                                        (make-aa "MAD")))))
+
+(addtest (bio-sequence-tests) na-sequence-p/1
+  (ensure (na-sequence-p (make-dna "acgt")))
+  (ensure (na-sequence-p (make-rna "acgu")))
+  (ensure (not (na-sequence-p (make-aa "MAD")))))
+
+(addtest (bio-sequence-tests) dna-sequence-p/1
+  (ensure (dna-sequence-p (make-dna "acgt")))
+  (ensure (not (dna-sequence-p (make-rna "acgu"))))
+  (ensure (not (dna-sequence-p (make-aa "MAD")))))
+
+(addtest (bio-sequence-tests) rna-sequence-p/1
+  (ensure (not (rna-sequence-p (make-dna "acgt"))))
+  (ensure (rna-sequence-p (make-rna "acgu")))
+  (ensure (not (rna-sequence-p (make-aa "MAD")))))
+
+(addtest (bio-sequence-tests) aa-sequence-p/1
+  (ensure (not (aa-sequence-p (make-dna "acgt"))))
+  (ensure (not (aa-sequence-p (make-rna "acgu"))))
+  (ensure (aa-sequence-p (make-aa "MAD"))))
+
+(addtest (bio-sequence-tests) same-biotype-p/1
+  (ensure (apply #'same-biotype-p (mapcar #'make-dna
+                                          '("acgt" "acgt" "acgt")))))
+
+(addtest (bio-sequence-tests) same-biotype-p/2
+  (ensure (apply #'same-biotype-p (mapcar #'make-rna
+                                          '("acgu" "acgu" "acgu")))))
+
+(addtest (bio-sequence-tests) same-biotype-p/3
+  (ensure (apply #'same-biotype-p (mapcar #'make-aa
+                                          '("MAD" "MAD" "MAD")))))
+
+(addtest (bio-sequence-tests) same-biotype-p/4
+  (ensure (not (same-biotype-p (make-dna "acgt")
+                               (make-dna "acgt")
+                               (make-rna "acgu")))))
+
+(addtest (bio-sequence-tests) same-strand-num-p/1
+  (ensure (same-strand-num-p (make-dna "acgt" :num-strands 1)
+                             (make-dna "acgt" :num-strands 1)))
+  (ensure (same-strand-num-p (make-rna "acgu" :num-strands 1)
+                             (make-rna "acgu" :num-strands 1)))
+  (ensure (same-strand-num-p (make-dna "acgt" :num-strands 2)
+                             (make-dna "acgt" :num-strands 2)))
+  (ensure (same-strand-num-p (make-rna "acgu" :num-strands 2)
+                             (make-rna "acgu" :num-strands 2)))
+  (ensure-error
+    (same-strand-num-p (make-aa "MAD") (make-aa "MAD")))
+  (ensure (same-strand-num-p (make-dna "acgt" :num-strands 1)
+                             (make-rna "acgu" :num-strands 1)))
+  (ensure (same-strand-num-p (make-dna "acgt" :num-strands 2)
+                             (make-rna "acgu" :num-strands 2))))
+
+(addtest (bio-sequence-tests) coerce-sequence/1
+  (let ((dna (make-dna "acgt"))
+        (rna (make-rna "acgu")))
+    (ensure (rna-sequence-p (coerce-sequence dna 'rna-sequence)))
+    (ensure (dna-sequence-p (coerce-sequence rna 'dna-sequence)))
+    (ensure (string= "acgu" (coerce-sequence
+                             (coerce-sequence dna 'rna-sequence) 'string)))
+    (ensure (string= "acgt" (coerce-sequence
+                             (coerce-sequence rna 'dna-sequence) 'string)))))
+
+(addtest (bio-sequence-tests) coerce-sequence/2
+  (let ((dna (make-dna nil :length 4))
+        (rna (make-rna nil :length 4)))
+    (ensure (rna-sequence-p (coerce-sequence dna 'rna-sequence)))
+    (ensure (dna-sequence-p (coerce-sequence rna 'dna-sequence)))
+    (ensure (string= "nnnn" (coerce-sequence
+                             (coerce-sequence dna 'rna-sequence) 'string)))
+    (ensure (string= "nnnn" (coerce-sequence
+                             (coerce-sequence rna 'dna-sequence) 'string)))))
+
+(addtest (bio-sequence-tests) same-strand-num-p/2
+  (ensure (not (same-strand-num-p (make-dna "acgt" :num-strands 1)
+                                  (make-dna "acgt" :num-strands 2))))
+  (ensure (not (same-strand-num-p (make-rna "acgu" :num-strands 1)
+                                  (make-rna "acgu" :num-strands 2))))
+  (ensure-error
+    (not (same-strand-num-p (make-dna "acgt" :num-strands 2)
+                            (make-aa "MAD")))))
+
+(addtest (bio-sequence-tests) strand-designator-p/1
+  (ensure (not (strand-designator-p nil)))
+  (ensure (every #'strand-designator-p (list "+" "-" "?"
+                                             1 -1 1
+                                             #\+ #\- #\?
+                                             :forward :reverse :unknown))))
+
+(addtest (bio-sequence-tests) ambiguousp/1
+  (ensure (ambiguousp (make-dna "acgn")))
+  (ensure (not (ambiguousp (make-dna "acgt")))))
+
+(addtest (bio-sequence-tests) ambiguousp/2
+  (ensure (ambiguousp (make-rna "acgn")))
+  (ensure (not (ambiguousp (make-rna "acgu")))))
+
+(addtest (bio-sequence-tests) ambiguousp/3
+  (ensure (ambiguousp (make-aa "MAB")))
+  (ensure (not (ambiguousp (make-aa "MAD")))))
+
+(addtest (bio-sequence-tests) ambiguousp/4
+  (ensure (ambiguousp (make-dna nil)))
+  (ensure (ambiguousp (make-rna nil)))
+  (ensure (ambiguousp (make-aa nil))))
+
 (addtest (bio-sequence-tests) simplep/1
-  (ensure (simplep (find-alphabet :dna) "acgt"))
-  (ensure (not (simplep (find-alphabet :dna) "acgn"))))
+  (ensure (simplep (make-dna "acgt")))
+  (ensure (not (simplep (make-dna "acgn")))))
 
 (addtest (bio-sequence-tests) simplep/2
-  (ensure (simplep (find-alphabet :rna) "acgu"))
-  (ensure (not (simplep (find-alphabet :rna) "acgn"))))
+  (ensure (simplep (make-rna "acgu")))
+  (ensure (not (simplep (make-rna "acgn")))))
+
+(addtest (bio-sequence-tests) simplep/3
+  (ensure (simplep (make-aa "MAD")))
+  (ensure (not (simplep (make-aa "MAB")))))
+
+(addtest (bio-sequence-tests) simplep/4
+  (ensure (not (simplep (make-dna nil))))
+  (ensure (not (simplep (make-rna nil))))
+  (ensure (not (simplep (make-aa nil)))))
 
 (addtest (bio-sequence-tests) anonymousp/1
   (ensure (anonymousp (make-dna "tagc")))
   (ensure (not (anonymousp (make-dna "tagc" :identity "test")))))
 
 (addtest (bio-sequence-tests) single-stranded-p/1
-  (let ((seq (make-dna "aaaaaaaaaa")))
+  (let ((seq (make-dna "aaaaaaaaaa" :num-strands 1)))
     (ensure (single-stranded-p seq))))
 
 (addtest (bio-sequence-tests) double-stranded-p/2
@@ -184,7 +337,7 @@
           '(2 3 3 1))))
 
 (addtest (bio-sequence-tests) na-sequence/1
-  (let ((ss-seq (make-dna "aaaaaaaaaa"))
+  (let ((ss-seq (make-dna "aaaaaaaaaa" :num-strands 1))
         (ds-seq (make-dna "aaaaaaaaaa" :num-strands 2)))
     (ensure (= 1 (num-strands-of ss-seq)))
     (ensure (= 2 (num-strands-of ds-seq)))))
@@ -228,10 +381,15 @@
 
 (addtest (bio-sequence-tests) dna-sequence/6
   (let ((seq (make-dna dna-residues)))
+    (ensure (string= "atcgyrmkswvhdbn-"
+                     (coerce-sequence (ncomplement-sequence seq) 'string)))))
+
+(addtest (bio-sequence-tests) dna-sequence/7
+  (let ((seq (make-dna dna-residues)))
     (ensure (string= "-nbdhvwskmrygcta"
                      (coerce-sequence (reverse-complement seq) 'string)))))
 
-(addtest (bio-sequence-tests) dna-sequence/7
+(addtest (bio-sequence-tests) dna-sequence/8
   (let ((seq (make-dna dna-residues)))
     (ensure (string= "-nbdhvwskmrygcta"
                      (coerce-sequence (nreverse-complement seq) 'string)))))
@@ -255,6 +413,38 @@
     (dotimes (n 4)
       (ensure (string= (subseq residues 0 n)
                        (coerce-sequence seq 'string :start 0 :end n))))))
+
+(addtest (bio-sequence-tests) rna-sequence/3
+  (let* ((residues "aaccgguu")
+         (seq (make-rna residues)))
+    (ensure (string= (coerce-sequence (reverse-sequence seq) 'string)
+                     (reverse residues)))))
+
+(addtest (bio-sequence-tests) rna-sequence/4
+  (let* ((residues "aaccgguu")
+         (seq (make-rna residues)))
+    (ensure (string= (coerce-sequence (nreverse-sequence seq) 'string)
+                     (reverse residues)))))
+
+(addtest (bio-sequence-tests) rna-sequence/5
+  (let ((seq (make-rna rna-residues)))
+    (ensure (string= "aucgyrmkswvhdbn-"
+                     (coerce-sequence (complement-sequence seq) 'string)))))
+
+(addtest (bio-sequence-tests) rna-sequence/6
+  (let ((seq (make-rna rna-residues)))
+    (ensure (string= "aucgyrmkswvhdbn-"
+                     (coerce-sequence (ncomplement-sequence seq) 'string)))))
+
+(addtest (bio-sequence-tests) rna-sequence/7
+  (let ((seq (make-rna rna-residues)))
+    (ensure (string= "-nbdhvwskmrygcua"
+                     (coerce-sequence (reverse-complement seq) 'string)))))
+
+(addtest (bio-sequence-tests) rna-sequence/8
+  (let ((seq (make-rna rna-residues)))
+    (ensure (string= "-nbdhvwskmrygcua"
+                     (coerce-sequence (nreverse-complement seq) 'string)))))
 
 (addtest (bio-sequence-tests) virtual-dna-sequence/1
   (let* ((len 10)
@@ -344,8 +534,8 @@
 
 (addtest (bio-sequence-tests) virtual-token-sequence/4
   (let ((seq (make-dna nil :length 10)))
-    (ensure (eql (class-of seq) (class-of (reverse-sequence seq))))
-    (ensure (= 10 (length-of (reverse-sequence seq))))))
+    (ensure (eql (class-of seq) (class-of (nreverse-sequence seq))))
+    (ensure (= 10 (length-of (nreverse-sequence seq))))))
 
 (addtest (bio-sequence-tests) virtual-token-sequence/5
   (let ((seq (make-dna nil :length 10)))
@@ -354,15 +544,20 @@
 
 (addtest (bio-sequence-tests) virtual-token-sequence/6
   (let ((seq (make-dna nil :length 10)))
+    (ensure (eql (class-of seq) (class-of (ncomplement-sequence seq))))
+    (ensure (= 10 (length-of (ncomplement-sequence seq))))))
+
+(addtest (bio-sequence-tests) virtual-token-sequence/7
+  (let ((seq (make-dna nil :length 10)))
     (ensure (eql (class-of seq) (class-of (reverse-complement seq))))
     (ensure (= 10 (length-of (reverse-complement seq))))))
 
-(addtest (bio-sequence-tests) virtual-token-sequence/7
+(addtest (bio-sequence-tests) virtual-token-sequence/8
   (let ((seq (make-dna nil :length 10)))
     (ensure (eql (class-of seq) (class-of (nreverse-complement seq))))
     (ensure (= 10 (length-of (nreverse-complement seq))))))
 
-(addtest (bio-sequence-tests) virtual-token-sequence/8
+(addtest (bio-sequence-tests) virtual-token-sequence/9
   (let ((seq (make-dna nil :length 10)))
     (ensure (= 5 (length-of (subsequence seq 0 5))))
     (ensure (= 10 (length-of (subsequence seq 0))))))
