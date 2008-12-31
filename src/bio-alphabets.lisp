@@ -17,10 +17,12 @@
 
 (in-package :bio-sequence)
 
-(defstruct nucleotide-base
-  (name "" :type string)
-  (description "" :type string)
-  (token #\n :type base-char))
+;;; FIXME -- use this struct to wrap characters in alphabets so that
+;;; metadata can be attached
+;;; (defstruct token
+;;;   (name "" :type string)
+;;;   (description "" :type string)
+;;;   (token #\n :type base-char))
 
 (defconstant +gap-char+ #\-
   "The gap character.")
@@ -71,6 +73,17 @@ Returns:
                            do (setf (gethash
                                      (funcall encoder (elt tokens i)) index) i)
                            finally (return index))))
+
+(defun permutations-of-n (elements &optional (n 1))
+  "Returns a list of permutations of N ELEMENTS."
+  (let ((m (1- n)))
+    (if (zerop m)
+        (mapcar #'list elements)
+      (let ((perms ()))
+        (dolist (e elements)
+          (dolist (p (permutations-of-n elements m))
+            (push (cons e p) perms)))
+        (nreverse perms)))))
 
 (defun make-nth-order-alphabet (name alphabet n encoder)
   "Returns a new alphabet where the tokens are lists of tokens from a
@@ -126,17 +139,6 @@ as :dna :rna or :aa."
                            :key (lambda (alpha)
                                   (symbol-name (name-of alpha)))))))
 
-(defun permutations-of-n (elements &optional (n 1))
-  "Returns a list of permutations of N ELEMENTS."
-  (let ((m (1- n)))
-    (if (zerop m)
-        (mapcar #'list elements)
-      (let ((perms ()))
-        (dolist (e elements)
-          (dolist (p (permutations-of-n elements m))
-            (push (cons e p) perms)))
-        (nreverse perms)))))
-
 (defvar *simple-dna*
   (let ((tokens '(#\a #\c #\g #\t)))
     (make-alphabet :simple-dna tokens #'encode-dna-4bit))
@@ -173,6 +175,53 @@ as :dna :rna or :aa."
 (defvar *rna-codons*
   (make-nth-order-alphabet :rna-codons *simple-rna* 3 #'encode-rna-4bit)
   "The alphabet of 64 standard codons.")
+
+(defmethod size-of ((alphabet alphabet))
+  (length (tokens-of alphabet)))
+
+(defmethod token-index (encoded-token (alphabet alphabet))
+  (gethash encoded-token (index-of alphabet)))
+
+(defmethod memberp ((char character) (alphabet alphabet))
+  (find char (tokens-of alphabet)))
+
+(defmethod memberp ((codon list) (alphabet alphabet))
+  (find codon (tokens-of alphabet) :test #'equalp))
+
+(defmethod subsumesp ((char1 character) (char2 character) (alphabet alphabet))
+  (subsetp (enum-ambiguity char1 alphabet)
+           (enum-ambiguity char2 alphabet)))
+
+(defmethod subsumesp ((codon1 list) (codon2 list) (alphabet alphabet))
+  (subsetp (enum-ambiguity codon1 alphabet)
+           (enum-ambiguity codon2 alphabet) :test #'equalp))
+
+(defmethod enum-ambiguity (token (alphabet alphabet))
+  (error 'invalid-argument-error
+         :params '(token alphabet)
+         :args (list token alphabet)
+         :text "the token is invalid for this alphabet"))
+
+(defmethod enum-ambiguity ((char character) (alphabet (eql *simple-dna*)))
+  (list char))
+
+(defmethod enum-ambiguity ((char character) (alphabet (eql *simple-rna*)))
+  (list char))
+
+(defmethod enum-ambiguity ((char character) (alphabet (eql *dna*)))
+  (enum-dna-base char))
+
+(defmethod enum-ambiguity ((char character) (alphabet (eql *rna*)))
+  (enum-rna-base char))
+
+(defmethod enum-ambiguity ((char character) (alphabet (eql *aa*)))
+  (enum-aa char))
+
+(defmethod enum-ambiguity ((codon list) (alphabet (eql *dna-codons*)))
+  (enum-dna-codon codon))
+
+(defmethod enum-ambiguity ((codon list) (alphabet (eql *rna-codons*)))
+  (enum-rna-codon codon))
 
 (register-alphabet *simple-dna*)
 (register-alphabet *simple-rna*)

@@ -164,16 +164,16 @@
                        (:rna #'make-rna)))
         (chunks (parsed-residues-of parser)))
     (when (zerop (length chunks))
-      (error 'bio-sequence-io-error
-             :text "attempt to make an empty concrete bio-sequence"))
+      (error 'malformed-record-error
+             :record (parsed-identity-of parser)
+             :text "no sequence residue data provided"))
     (let ((residues (etypecase (aref chunks 0)
                       (string (concat-strings chunks))
                       ((array (unsigned-byte 8))
                        (concat-into-sb-string chunks)))))
       (funcall constructor residues
                :identity (parsed-identity-of parser)
-               ;; FIXME -- :description
-               ))))
+               :description (parsed-description-of parser)))))
 
 (defmethod make-bio-sequence ((parser virtual-sequence-parser))
   (let ((class (ecase (parsed-alphabet-of parser)
@@ -181,7 +181,7 @@
                  (:rna 'virtual-rna-sequence))))
     (make-instance class
                    :identity (parsed-identity-of parser)
-                   ;; FIXME -- :description
+                   :description (parsed-description-of parser)
                    :length (parsed-length-of parser))))
 
 (defmethod make-bio-sequence ((parser quality-sequence-parser))
@@ -190,10 +190,12 @@
         (residue-chunks (parsed-residues-of parser))
         (quality-chunks (parsed-quality-of parser)))
     (when (zerop (length residue-chunks))
-      (error 'invalid-operation-error
+      (error 'malformed-record-error
+             :record (parsed-identity-of parser)
              :text "no sequence residue data provided"))
     (when (zerop (length quality-chunks))
-      (error 'invalid-operation-error
+      (error 'malformed-record-error
+             :record (parsed-identity-of parser)
              :text "no quality data provided"))
     ;; FIXME -- On sbcl with-output-to-string is apparently very fast
     ;; for this sort of operation. Maybe faster than pre-allocating a
@@ -207,8 +209,24 @@
                      (concat-quality-arrays quality-chunks))))
       (funcall constructor residues quality
                :identity (parsed-identity-of parser)
-               ;; FIXME -- :description
+               :description (parsed-description-of parser)
                :metric (parsed-metric-of parser)))))
+
+(defmethod make-seq-input ((filespec string) format &rest args)
+  (with-ascii-li-stream (stream filespec)
+    (apply #'make-seq-input stream format args)))
+
+(defmethod make-seq-input ((filespec pathname) format &rest args)
+  (with-ascii-li-stream (stream filespec)
+    (apply #'make-seq-input stream format args)))
+
+(defmethod make-seq-input ((stream stream) format &rest args)
+  (let ((s (make-line-input-stream stream)))
+    (apply #'make-seq-input s format args)))
+
+(defun skip-malformed-sequence (condition)
+  (declare (ignore condition))
+  (invoke-restart 'skip-sequence-record))
 
 (defun split-from-generator (input-gen writer n pathname-gen)
   "Reads raw sequence records from closure INPUT-GEN and writes up to
@@ -254,5 +272,5 @@ for example, {defun write-raw-fasta} and {defun write-raw-fastq} ."
 (defun nadjust-case (string token-case)
   (ecase token-case
     ((nil) string)
-    (:lowercase (nstring-downcase string))
-    (:uppercase (nstring-upcase string))))
+    (:lower (nstring-downcase string))
+    (:upper (nstring-upcase string))))

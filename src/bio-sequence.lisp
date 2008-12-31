@@ -305,21 +305,6 @@ number of strands, or NIL otherwise."
 (defmethod anonymousp ((seq identity-mixin))
   (null (identity-of seq)))
 
-(defmethod size-of ((alphabet alphabet))
-  (length (tokens-of alphabet)))
-
-(defmethod token-index ((alphabet alphabet) encoded-token)
-  (gethash encoded-token (index-of alphabet)))
-
-(defmethod memberp ((alphabet alphabet) (char character))
-  (find char (tokens-of alphabet) :test #'char=))
-
-(defmethod explode-ambiguity ((alphabet (eql *dna*)) (char character))
-  (%explode-ambiguity char #'encode-dna-4bit #'decode-dna-4bit))
-
-(defmethod explode-ambiguity ((alphabet (eql *rna*)) (char character))
-  (%explode-ambiguity char #'encode-rna-4bit #'decode-rna-4bit))
-
 (defmethod strand-designator-p (strand)
   nil)
 
@@ -470,29 +455,47 @@ number of strands, or NIL otherwise."
        for i from start below end
        count (= +encoded-gap-char+ (aref vector i)))))
 
+(defmethod coerce-sequence ((seq dna-sequence) (type (eql 'dna-sequence))
+                            &key (start 0) (end (length-of seq)))
+  (if (and (zerop start) (= (length-of seq) end))
+      seq
+    (subsequence seq start end)))
+
+(defmethod coerce-sequence ((seq rna-sequence) (type (eql 'rna-sequence))
+                            &key (start 0) (end (length-of seq)))
+  (if (and (zerop start) (= (length-of seq) end))
+      seq
+    (subsequence seq start end)))
+
+(defmethod coerce-sequence ((seq aa-sequence) (type (eql 'aa-sequence))
+                            &key (start 0) (end (length-of seq)))
+  (if (and (zerop start) (= (length-of seq) end))
+      seq
+    (subsequence seq start end)))
+
 (defmethod coerce-sequence ((seq virtual-dna-sequence) (type (eql 'string))
                             &key (start 0) (end (length-of seq)))
-  (%to-string-virtual seq #\n start end :lowercase))
+  (%to-string-virtual seq #\n start end :lower))
 
 (defmethod coerce-sequence ((seq virtual-rna-sequence) (type (eql 'string))
                             &key (start 0) (end (length-of seq)))
-  (%to-string-virtual seq #\n start end :lowercase))
+  (%to-string-virtual seq #\n start end :lower))
 
 (defmethod coerce-sequence ((seq virtual-aa-sequence) (type (eql 'string))
                             &key (start 0) (end (length-of seq)))
-  (%to-string-virtual seq #\X start end :uppercase))
+  (%to-string-virtual seq #\X start end :upper))
 
 (defmethod coerce-sequence ((seq encoded-dna-sequence) (type (eql 'string))
                             &key (start 0) (end (length-of seq)))
-  (%to-string-encoded seq #'decode-dna-4bit start end :lowercase))
+  (%to-string-encoded seq #'decode-dna-4bit start end :lower))
 
 (defmethod coerce-sequence ((seq encoded-rna-sequence) (type (eql 'string))
                             &key (start 0) (end (length-of seq)))
-  (%to-string-encoded seq #'decode-rna-4bit start end :lowercase))
+  (%to-string-encoded seq #'decode-rna-4bit start end :lower))
 
 (defmethod coerce-sequence ((seq encoded-aa-sequence) (type (eql 'string))
                             &key (start 0) (end (length-of seq)))
-  (%to-string-encoded seq #'decode-aa-7bit start end :uppercase))
+  (%to-string-encoded seq #'decode-aa-7bit start end :upper))
 
 (defmethod coerce-sequence ((seq virtual-dna-sequence)
                             (type (eql 'rna-sequence))
@@ -678,8 +681,8 @@ number of strands, or NIL otherwise."
     (let ((frequencies (make-array (size-of alphabet)
                                    :element-type 'fixnum :initial-element 0)))
       (loop
-         for elt across vector
-         do (incf (aref frequencies (token-index alphabet elt))))
+         for token across vector
+         do (incf (aref frequencies (token-index token alphabet))))
       (pairlis (copy-list (tokens-of alphabet))
                (coerce frequencies 'list)))))
 
@@ -767,6 +770,27 @@ number of strands, or NIL otherwise."
                   (quality-string quality metric))
         (format stream "#<~a ~a quality, length ~d>"
                 name metric len)))))
+
+(defmethod %ambiguousp ((seq vector-sequence) (alphabet (eql *dna*)))
+  (with-accessors ((vector vector-of))
+      seq
+    (loop
+       for elt across vector
+       thereis (< 1 (length (enum-encoded-base elt))))))
+
+(defmethod %ambiguousp ((seq vector-sequence) (alphabet (eql *rna*)))
+  (with-accessors ((vector vector-of))
+      seq
+    (loop
+       for elt across vector
+       thereis (< 1 (length (enum-encoded-base elt))))))
+
+(defmethod %ambiguousp ((seq vector-sequence) (alphabet (eql *aa*)))
+  (with-accessors ((vector vector-of))
+      seq
+    (loop
+       for elt across vector
+       thereis (< 1 (length (enum-encoded-aa elt))))))
 
 (defun quality-string (quality metric)
   "Wrapper for ENCODE-QUALITY that encodes QUALITY, an array of bytes
@@ -875,8 +899,8 @@ index END."
   (make-string (- end start) :element-type 'base-char
                :initial-element (ecase token-case
                                   ((nil) char)
-                                  (:lowercase (char-downcase char))
-                                  (:uppercase char))))
+                                  (:lower (char-downcase char))
+                                  (:upper char))))
 
 (defun %to-string-encoded (seq decoder start end token-case)
   (with-accessors ((vector vector-of))
@@ -889,34 +913,8 @@ index END."
                     str str-start decoder))
       (ecase token-case
         ((nil) str)
-        (:lowercase str)
-        (:uppercase (nstring-upcase str))))))
-
-(defmethod %ambiguousp ((seq vector-sequence) (alphabet (eql *dna*)))
-  (with-accessors ((vector vector-of))
-      seq
-    (loop
-       for elt across vector
-       thereis (< 1 (length (explode-encoded-base elt))))))
-
-(defmethod %ambiguousp ((seq vector-sequence) (alphabet (eql *rna*)))
-  (with-accessors ((vector vector-of))
-      seq
-    (loop
-       for elt across vector
-       thereis (< 1 (length (explode-encoded-base elt))))))
-
-(defmethod %ambiguousp ((seq vector-sequence) (alphabet (eql *aa*)))
-  (with-accessors ((vector vector-of))
-      seq
-    (loop
-       for elt across vector
-       thereis (< 1 (length (explode-encoded-aa elt))))))
-
-(defun %explode-ambiguity (char encoder decoder)
-  "Returns a list of the ambiguity characters represented by CHAR."
-  (sort (mapcar decoder (explode-encoded-base (funcall encoder char)))
-        #'char<=))
+        (:lower str)
+        (:upper (nstring-upcase str))))))
 
 (defun codon-start-p (base-pos)
   (zerop (mod base-pos +codon-size+)))

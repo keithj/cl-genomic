@@ -22,14 +22,14 @@
    (rna-complement"aucgyrmkswvhdbn-")
    (dna-unambiguous "tagc")
    (dna-ambiguous "rykmswbdhvn")
-   (dna-exploded (pairlis '(#\t #\a #\g #\c
-                            #\r #\y #\k #\m
-                            #\s #\w #\b #\d
-                            #\h #\v #\n)
-                          '((#\t) (#\a) (#\g) (#\c)
-                            (#\a #\g) (#\c #\t) (#\g #\t) (#\a #\c)
-                            (#\c #\g) (#\a #\t) (#\c #\g #\t) (#\a #\g #\t)
-                            (#\a #\c #\t) (#\a #\c #\g) (#\a #\c #\g #\t))))))
+   (dna-enum (pairlis '(#\t #\a #\g #\c
+                        #\r #\y #\k #\m
+                        #\s #\w #\b #\d
+                        #\h #\v #\n)
+                      '((#\t) (#\a) (#\g) (#\c)
+                        (#\a #\g) (#\c #\t) (#\g #\t) (#\a #\c)
+                        (#\c #\g) (#\a #\t) (#\c #\g #\t) (#\a #\g #\t)
+                        (#\a #\c #\t) (#\a #\c #\g) (#\a #\c #\g #\t))))))
 
 ;;; Complementing nucleic acids
 (addtest (bio-sequence-encoding-tests) complement-dna/1
@@ -79,8 +79,8 @@
      do (ensure (char= res (bs::decode-rna-4bit
                             (bs::encode-rna-4bit res))))))
 
-(addtest (bio-sequence-encoding-tests) explode-dna-4bit/1
+(addtest (bio-sequence-encoding-tests) enumerate-ambiguity/1
   (loop
      for res across dna-residues
-     do (ensure (equal (assocdr res dna-exploded :test #'char=)
-                       (explode-ambiguity (find-alphabet :dna) res)))))
+     do (ensure (equal (assocdr res dna-enum :test #'char=)
+                       (enumerate-ambiguity res (find-alphabet :dna))))))

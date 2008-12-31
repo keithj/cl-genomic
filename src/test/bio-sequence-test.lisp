@@ -33,7 +33,7 @@
           (ensure
            (loop
               for token in tokens
-              always (memberp alphabet token))))
+              always (memberp token alphabet))))
         (mapcar #'find-alphabet '(:dna :rna))
         (mapcar (lambda (str)
                   (loop

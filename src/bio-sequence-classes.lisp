@@ -63,6 +63,14 @@
 local identifier to an object. An identity of NIL signifies an
 anonymous object."))
 
+(defclass description-mixin ()
+  ((description :initform nil
+                :initarg :description
+                :accessor description-of
+                :documentation "A free text description."))
+  (:documentation "A mixin which allows assignment of a free text
+description to an object."))
+
 (defclass quality-mixin ()
   ((metric :initform (error "A metric is required.")
            :initarg :metric
@@ -141,31 +149,38 @@ bases."))
              :initform *aa*)))
 
 (defclass encoded-dna-sequence (dna-sequence encoded-vector-sequence
-                                             identity-mixin)
+                                             identity-mixin
+                                             description-mixin)
   ())
 
 (defclass encoded-rna-sequence (rna-sequence encoded-vector-sequence
-                                             identity-mixin)
+                                             identity-mixin
+                                             description-mixin)
   ())
 
 (defclass dna-quality-sequence (encoded-dna-sequence quality-mixin
-                                                     identity-mixin)
+                                                     identity-mixin
+                                                     description-mixin)
   ())
 
 (defclass virtual-dna-sequence (dna-sequence virtual-token-sequence
-                                             identity-mixin)
+                                             identity-mixin
+                                             description-mixin)
   ())
 
 (defclass virtual-rna-sequence (rna-sequence virtual-token-sequence
-                                             identity-mixin)
+                                             identity-mixin
+                                             description-mixin)
   ())
 
 (defclass encoded-aa-sequence (aa-sequence encoded-vector-sequence
-                                           identity-mixin)
+                                           identity-mixin
+                                           description-mixin)
   ())
 
 (defclass virtual-aa-sequence (aa-sequence virtual-token-sequence
-                                           identity-mixin)
+                                           identity-mixin
+                                           description-mixin)
   ())
 
 

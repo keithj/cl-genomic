@@ -35,7 +35,6 @@
    ;; Conditions
    #:bio-sequence-error
    #:bio-sequence-warning
-   #:bio-sequence-io-error
    #:bio-sequence-op-error
    #:initiator-codon-error
 
@@ -68,6 +67,7 @@
    #:encode-illumina-quality
    #:decode-illumina-quality
    #:illumina-to-phred-quality
+   #:skip-malformed-sequence
 
    #:simple-dna-subst
    #:iupac-dna-subst
@@ -101,6 +101,7 @@
    ;; Generic functions
    #:anonymousp
    #:identity-of
+   #:description-of
    #:name-of
    #:symbol-of
    #:token-of
@@ -121,8 +122,9 @@
    #:num-gaps-of
    #:size-of
    #:memberp
+   #:subsumesp
    #:tokens-of
-   #:explode-ambiguity
+   #:enum-ambiguity
    #:translate-codon
    #:start-codon-p
    #:term-codon-p

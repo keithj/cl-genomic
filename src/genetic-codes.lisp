@@ -86,13 +86,15 @@ Key:
                                       &key initiator)
             (flet ((trn (c)
                      (gethash c ,trans-table)))
-              (let ((encoded-aa (delete-duplicates
-                                 (mapcar #'trn (explode-encoded-codon codon)))))
+              (let ((encoded-aa
+                     (delete-duplicates
+                      (mapcar #'trn (enum-encoded-codon codon)))))
                 (cond ((= 1 (length encoded-aa))
                        (cond ((and initiator (gethash codon ,start-table))
                               (encode-aa-7bit #\M))
                              (initiator
-                              (error 'initiator-codon-error :codon codon
+                              (error 'initiator-codon-error
+                                     :codon (mapcar #'decode-rna-4bit codon)
                                      :genetic-code code))
                              (t
                               (first encoded-aa))))

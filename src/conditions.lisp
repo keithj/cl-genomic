@@ -26,29 +26,29 @@
   (:documentation "The parent type of all bio-sequence warning
 conditions."))
 
-(define-condition bio-sequence-io-error (io-error
-                                         bio-sequence-error)
-  ((text :initform nil
-         :initarg :text
-         :reader text-of
-         :documentation "Error message text."))
-  (:report (lambda (condition stream)
-             (format stream "IO error~@[: ~a~]"
-                     (text-of condition))))
-  (:documentation "An error that is raised when performing stream IO
-on bio-sequences."))
+;; (define-condition bio-sequence-io-error (io-error
+;;                                          bio-sequence-error)
+;;   ((text :initform nil
+;;          :initarg :text
+;;          :reader text-of
+;;          :documentation "Error message text."))
+;;   (:report (lambda (condition stream)
+;;              (format stream "IO error~@[: ~a~]"
+;;                      (text-of condition))))
+;;   (:documentation "An error that is raised when performing stream IO
+;; on bio-sequences."))
 
-(define-condition bio-sequence-parse-error (general-parse-error
-                                            bio-sequence-io-error)
-  ((text :initform nil
-         :initarg :text
-         :reader text-of
-         :documentation "Error message text."))
-  (:report (lambda (condition stream)
-             (format stream "IO error~@[: ~a~]"
-                     (text-of condition))))
-  (:documentation "An error that is raised when performing stream IO
-on bio-sequences."))
+;; (define-condition bio-sequence-parse-error (general-parse-error
+;;                                             bio-sequence-io-error)
+;;   ((text :initform nil
+;;          :initarg :text
+;;          :reader text-of
+;;          :documentation "Error message text."))
+;;   (:report (lambda (condition stream)
+;;              (format stream "IO error~@[: ~a~]"
+;;                      (text-of condition))))
+;;   (:documentation "An error that is raised when performing stream IO
+;; on bio-sequences."))
 
 (define-condition bio-sequence-op-error (invalid-operation-error
                                          bio-sequence-error)

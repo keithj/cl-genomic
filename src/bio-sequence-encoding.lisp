@@ -291,6 +291,90 @@ lower case character."
     (27 #\*)
     (0  #\-)))
 
+(defun symbolize-dna-base (base)
+  "Returns a Lisp keyword symbol representing the base character
+BASE."
+  (let ((encoded-base (encode-dna-4bit base)))
+    (ecase encoded-base
+      (#b0001 :thymine)
+      (#b0010 :cytosine)
+      (#b0100 :adenine)
+      (#b1000 :guanine)
+      (#b1100 :purine)
+      (#b0011 :pyrimidine)
+      (#b1001 :keto)
+      (#b0110 :amino)
+      (#b1010 :strong)
+      (#b0101 :weak)
+      (#b1011 :!adenine)
+      (#b1101 :!cytosine)
+      (#b0111 :!guanine)
+      (#b1110 :!thymine)
+      (#b1111 :any)
+      (#b0000 :gap))))
+
+(defun encode-dna-symbol (dna-symbol)
+  "Encodes the symbol DNA-SYMBOL as a 4-bit byte."
+  (ecase dna-symbol
+      (:thymine    #b0001)
+      (:cytosine   #b0010)
+      (:adenine    #b0100)
+      (:guanine    #b1000)
+      (:purine     #b1100)
+      (:pyrimidine #b0011)
+      (:keto       #b1001)
+      (:amino      #b0110)
+      (:strong     #b1010)
+      (:weak       #b0101)
+      (:!adenine   #b1011)
+      (:!cytosine  #b1101)
+      (:!guanine   #b0111)
+      (:!thymine   #b1110)
+      (:any        #b1111)
+      (:gap        #b0000)))
+
+(defun symbolize-rna-base (base)
+  "Returns a Lisp keyword symbol representing the base character
+BASE."
+  (let ((encoded-base (encode-rna-4bit base)))
+    (ecase encoded-base
+      (#b0001 :uracil)
+      (#b0010 :cytosine)
+      (#b0100 :adenine)
+      (#b1000 :guanine)
+      (#b1100 :purine)
+      (#b0011 :pyrimidine)
+      (#b1001 :keto)
+      (#b0110 :amino)
+      (#b1010 :strong)
+      (#b0101 :weak)
+      (#b1011 :!adenine)
+      (#b1101 :!cytosine)
+      (#b0111 :!guanine)
+      (#b1110 :!uracil)
+      (#b1111 :any)
+      (#b0000 :gap))))
+
+(defun encode-dna-symbol (rna-symbol)
+  "Encodes the symbol RNA-SYMBOL as a 4-bit byte."
+  (ecase rna-symbol
+      (:uracil     #b0001)
+      (:cytosine   #b0010)
+      (:adenine    #b0100)
+      (:guanine    #b1000)
+      (:purine     #b1100)
+      (:pyrimidine #b0011)
+      (:keto       #b1001)
+      (:amino      #b0110)
+      (:strong     #b1010)
+      (:weak       #b0101)
+      (:!adenine   #b1011)
+      (:!cytosine  #b1101)
+      (:!guanine   #b0111)
+      (:!uracil    #b1110)
+      (:any        #b1111)
+      (:gap        #b0000)))
+
 (defun symbolize-aa (aa)
   "Returns a Lisp keyword symbol representing the amino-acid character
 AA."
@@ -357,7 +441,44 @@ AA."
     (:terminator 27)
     (:gap 0)))
 
-(defun explode-encoded-base (encoded-base)
+(defun enum-dna-base (base)
+  "Returns a sorted list of the unambiguous DNA characters represented
+by DNA character BASE."
+  (sort (mapcar #'decode-dna-4bit
+                (enum-encoded-base (encode-dna-4bit base)))
+        #'char<=))
+
+(defun enum-rna-base (base)
+  "Returns a sorted list of the unambiguous RNA characters represented
+by RNA character BASE."
+  (sort (mapcar #'decode-rna-4bit
+                (enum-encoded-base (encode-rna-4bit base)))
+        #'char<=))
+
+(defun enum-dna-codon (codon)
+  "Returns a list of the unambiguous DNA character codons represented
+by list of DNA characters CODON."
+  (mapcar (lambda (ecodon)
+            (mapcar #'decode-dna-4bit ecodon))
+          (enum-encoded-codon
+           (mapcar #'encode-dna-4bit codon))))
+
+(defun enum-rna-codon (codon)
+  "Returns a list of the unambiguous RNA character codons represented
+by list of RNA characters CODON."
+  (mapcar (lambda (ecodon)
+            (mapcar #'decode-rna-4bit ecodon))
+          (enum-encoded-codon
+           (mapcar #'encode-rna-4bit codon))))
+
+(defun enum-aa (aa)
+  "Returns a list of the unambiguous AA characters represented by
+amino-acid character AA."
+  (sort (mapcar #'decode-aa-7bit
+                (enum-encoded-aa (encode-aa-7bit aa)))
+        #'char<=))
+
+(defun enum-encoded-base (encoded-base)
   "Returns a list of all the unambiguous encoded bases represented by
 ENCODED-BASE."
   (loop
@@ -365,17 +486,18 @@ ENCODED-BASE."
      when (logbitp b encoded-base)
      collect (ash 1 b)))
 
-(defun explode-encoded-codon (encoded-codon)
+(defun enum-encoded-codon (encoded-codon)
   "Returns a list of all the unambiguous encoded codons represented by
 ENCODED-CODON."
   (if (null (rest encoded-codon))
-      (mapcar #'list (explode-encoded-base (first encoded-codon)))
-    (loop for x in (explode-encoded-base (first encoded-codon))
-       nconc (loop
-                for y in (explode-encoded-codon (rest encoded-codon))
-                collect (cons x y)))))
+      (mapcar #'list (enum-encoded-base (first encoded-codon)))
+    (loop
+       for x in (enum-encoded-base (first encoded-codon))
+       nconc (mapcar (lambda (y)
+                       (cons x y))
+                     (enum-encoded-codon (rest encoded-codon))))))
 
-(defun explode-encoded-aa (encoded-aa)
+(defun enum-encoded-aa (encoded-aa)
    "Returns a list of all the unambiguous encoded amino-acids
 represented by ENCODED-AA."
   (cond ((= 2 encoded-aa)  ; aspartatic-acid/asparagine

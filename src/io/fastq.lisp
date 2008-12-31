@@ -66,11 +66,16 @@
                  (object-quality parser quality)
                  (values (end-object parser) t)))
               (t
-               (error 'bio-sequence-io-error
+               (error 'malformed-record-error
                       :text (format nil
                                     "~s is not recognised as as Fastq header"
                                     seq-header)))))
-    (skip-bio-sequence () (values nil t))))
+    (skip-bio-sequence ()
+      :report "Skip this sequence."
+      ;; Restart skips on to the next header
+      (let ((line (find-line stream #'char-fastq-header-p)))
+        (push-line stream line))
+      (values nil t))))
 
 (defmethod write-fastq-sequence ((seq dna-quality-sequence) stream
                                  &key token-case)
@@ -123,7 +128,10 @@ the quality header and the quality."
 
 (defun char-fastq-header-p (str)
   "Returns T if STR is a Fastq header (starts with the character '@'),
-or NIL otherwise."
+or NIL otherwise. This function is sensitive to the well-known design
+fault in the Fastq format, being that in general it is not possible to
+distinguish a record header from a line of quality data where the
+first character is '@'."
   (starts-with-char-p str #\@))
 
 (defun char-fastq-quality-header-p (str)

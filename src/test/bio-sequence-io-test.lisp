@@ -124,7 +124,7 @@
 
 (addtest (bio-sequence-io-tests) fasta/8
   (with-test-file (stream "data/phred.fastq") ; fastq!
-    (ensure-condition bio-sequence-io-error
+    (ensure-condition malformed-record-error
         (make-seq-input (make-line-input-stream stream) :fasta
                         :alphabet :dna))))
 
@@ -134,8 +134,8 @@
                        :tmpdir (merge-pathnames "data")
                        :type "fa")))
     (dolist (args '((nil "acgtn")
-                    (:lowercase "acgtn")
-                    (:uppercase "ACGTN")))
+                    (:lower "acgtn")
+                    (:upper "ACGTN")))
       (with-open-file (stream tmp-filespec :direction :io
                               :element-type 'base-char
                               :external-format :ascii)
@@ -175,7 +175,7 @@
 
 (addtest (bio-sequence-io-tests) fastq/3
   (with-test-file (stream "data/simple-dna1.fasta") ; fasta!
-    (ensure-condition bio-sequence-io-error
+    (ensure-condition malformed-record-error
       (make-seq-input (make-line-input-stream stream) :fastq
                       :alphabet :dna
                       :metric :phred))))
@@ -188,8 +188,8 @@
                        :tmpdir (merge-pathnames "data")
                        :type "fq")))
     (dolist (args '((nil "acgtn")
-                    (:lowercase "acgtn")
-                    (:uppercase "ACGTN")))
+                    (:lower"acgtn")
+                    (:upper "ACGTN")))
       (with-open-file (stream tmp-filespec :direction :io
                               :element-type 'base-char
                               :external-format :ascii)

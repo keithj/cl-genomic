@@ -1,5 +1,6 @@
 \documentclass[a4paper, 12pt]{article}
 \usepackage{a4wide}
+\usepackage{graphicx}
 \usepackage{xcolor}
 \usepackage{hyperref}
 \renewcommand{\familydefault}{\sfdefault} % Use default sans-serif font
@@ -10,14 +11,15 @@
 \usepackage[latin1]{inputenc}
 
 \lstloadlanguages{Lisp}
-\lstset{numbers=left,numbersep=5pt,
-  numberfirstline=true,stepnumber=5,
+
+\lstset{
+  basicstyle=\small,
+  numbers=left,numbersep=5pt,stepnumber=5,
+  language=Lisp,
   backgroundcolor=\color{brown!20},
-  keywordstyle=\ttfamily\color{green},
-  identifierstyle=\ttfamily\color{blue}\bfseries, 
-  commentstyle=\color{orange},
+  keywordstyle=[1]{\ttfamily\color{blue}},
+  commentstyle=\color{red!90!green!90!blue},
   stringstyle=\ttfamily\color{brown},
-  keywordsprefix=:,
   showstringspaces=true,
   captionpos=b}
 
@@ -28,6 +30,7 @@
 \date{\today}
 
 \maketitle
+
 
 \section{Creating bio-sequences}
 \label{sec:create-bioseq}
@@ -40,19 +43,18 @@ strings; \lstinline!make-dna!, \lstinline!make-rna! and
 \lstinline!make-aa!, creating DNA, RNA and amino-acid sequence objects
 respectively.
 
-Unless an \lstinline[language=Lisp]!:identifer! keyword argument is
-supplied, the resulting object will be an anonymous sequence
-(i.e. will have an identifier NIL and will return T if passed to the
+Unless an \lstinline!:identifer! keyword argument is supplied, the
+resulting object will be an anonymous sequence (i.e. will have an
+identifier NIL and will return T if passed to the
 \lstinline!anonymousp! predicate). A newly created nucleic-acid
 sequence object will be double-stranded unless a
-\lstinline[language=Lisp]!:num-strands! argument of 1 is supplied. The
-strandedness of a sequence affects some operations. For example, it is
-not possible to request an interval from the reverse-complement strand
-of a such a sequence (including all amino-acid sequences and
-nucleic-acid sequences explicitly marked as single-stranded).
+\lstinline!:num-strands! argument of 1 is supplied. The strandedness
+of a sequence affects some operations. For example, it is not possible
+to request an interval from the reverse-complement strand of a such a
+sequence.
 
-\lstset{basicstyle=\small, language=Lisp}
-\begin{lstlisting}[caption={Making DNA sequences},label=make-dna]
+\begin{lstlisting}[caption={Making DNA sequences from strings},
+  label=make-dnaseq-string]
   (in-package :bio-sequence)
   
   ;; Create an anonymous DNA sequence
@@ -68,10 +70,181 @@ nucleic-acid sequences explicitly marked as single-stranded).
 \end{lstlisting}
 
 All sequences support the full IUPAC character set. Alternatively,
-sequences may be created without any residues being explicitly stated,
-instead supplying a \lstinline[language=Lisp]!:length! initialization
-argument. The resulting object will be a virtual sequence (i.e. will
-be composed implicitly of ambiguous residues and will return T if
-passed to the \lstinline!virtualp! predicate).
+sequences may be created without any explicit residues, supplying
+instead a \lstinline!:length! initialization argument. The resulting
+object will be a virtual sequence (i.e. will be composed implicitly of
+ambiguous residues and will return T if passed to the
+\lstinline!virtualp! predicate). Virtual sequences are useful for
+representing the relative positions of sequence intervals where
+knowledge of the residues is not required.
+
+\subsection{Reading sequences from streams}
+\label{sec:read-bioseq-stream}
+
+Reading DNA, RNA or amino-acid sequences from a stream is essentially
+a chunking operation; data such as sequence metadata and residue
+characters are gathered until a complete sequence record has been
+read, then the gathered data are processed in some way.
+
+The generic function \lstinline!make-seq-input! is the entry point for
+reading from streams. There are several methods available, all of
+which accept two mandatory arguments; a stream designator (a string
+naming a file, a pathname or a stream) and a format symbol. The
+\lstinline!:alphabet! argument is used to specify the sequence
+alphabet (\lstinline!:dna!, \lstinline!:rna! or \lstinline!:aa!,
+defaulting to \lstinline!:dna!). Other keyword arguments are available
+(see the API reference). The value returned is a generator function (a
+closure, in fact) that may be passed to the general-purpose generator
+API functions \lstinline!has-more-p! and \lstinline!next! to return
+sequences.
+
+The parsers offer restarts for occasions where badly formatted
+sequence records are encountered, allowing such records to be skipped,
+logged or otherwise handled using the standard Lisp condition and
+restart system. The error conditions raised by the parser will be
+\lstinline!general-parse-error!s, or a subtype thereof.
+
+The basic restart function is \lstinline!skip-malformed-sequence!
+which causes the generator to return NIL and moves the stream forward
+to the next record.
+
+\begin{lstlisting}[caption={Making sequences from streams},
+  label=read-bioseq-stream]
+  (in-package :bio-sequence)
+  
+  ;; Read Fasta format DNA sequences from a named file into a list
+  (with-open-file (stream "seq.fasta")
+      (let ((g (make-seq-input stream :fasta)))
+        (loop
+           while (has-more-p g)
+           collect (next g))))
+
+  ;; Read a single AA sequence from a stream
+  (next (make-seq-input stream :fasta :alphabet :aa))
+
+  ;; Read the human genome in Fasta format from a file and print
+  ;; chromosome names and lengths
+  (with-open-file (stream "Homo_sapiens.NCBI36.52.dna.toplevel.fa")
+      (let ((g (make-seq-input stream :fasta :virtual t)))
+        (loop
+           while (has-more-p g)
+           do (let ((seq (next g)))
+                (format t "~a ~a~%" (identity-of seq)
+                        (length-of seq))))))
+
+  ;; Read Fasta format DNA sequences, using restarts to skip
+  ;; bad records
+  (with-open-file (stream "bad_seq.fasta")
+      (handler-bind ((malformed-record-error
+                        #'skip-malformed-sequence))
+        (let ((g (make-seq-input stream :fasta)))
+           (loop
+              while (has-more-p g)
+              for seq = (next g)
+              when seq
+              collect seq))))
+\end{lstlisting}
+
+The parsing process may be customized by using the \lstinline!:parser!
+argument of \lstinline!make-seq-input! to pass an instance of a
+subclass of \lstinline!bio-sequence-parser!. For example, passing a
+\lstinline!raw-sequence-parser!  will result in a generator that
+returns assoc lists of unprocessed sequence data instead of CLOS
+sequence objects. The parser protocol is described in the API
+reference.
+
+
+\section{Bio-sequence alphabets}
+\label{sec:alphabet-bioseq}
+
+The permitted residues of DNA, RNA and amino-acid sequences are
+represented by alphabets. Every bio-sequence instance contains its
+alphabet in a class-allocated slot, accessible through the
+\lstinline!alphabet-of! reader. For reference, the list of all
+available alphabets may be obtained by calling the
+\lstinline!registered-alphabets! function, while individual alphabets
+may be obtained by passing an alphabet name symbol (such as
+\lstinline!:dna!, \lstinline!:rna! or \lstinline!:aa!) to the
+\lstinline!find-alphabet! function. An alphabet object has several
+slots, including its name and set of valid tokens, accessible via the
+\lstinline!name-of! and \lstinline!tokens-of! readers, respectively.
+
+An alphabet's set of tokens comprises all its unambiguous and
+ambiguous tokens, plus a gap token. For example, the \lstinline!:dna!
+alphabet contains characters for all of the IUPAC codes (the
+\lstinline!:simple-dna!  alphabet contains only 'a', 'c', 'g' and
+'t'). The \lstinline!size-of!  method returns the size of an alphabet
+which is defined as the number of tokens it contains. Higher order
+alphabets may be constructed by using as tokens lists of characters
+from other alphabets. In this way, the standard codon alphabets are
+constructed.
+
+To test whether a token is a member of an alphabet one can obtain the
+alphabet's token list and use the standard Lisp \lstinline!member!
+function, with an appropriate test predicate (the case of characters
+is not significant). Alternatively, the \lstinline!memberp! method may
+be used for convenience. Tokens that represent IUPAC ambiguity codes
+may be analysed in the context their alphabets; they may be expanded
+into equivalent lists of unambiguous tokens or tested to see whether
+one subsumes the other i.e. that the unambiguous tokens represented by
+one ambiguous token are a subset of those represented by another.
+
+\begin{lstlisting}[caption={Using bio-sequence alphabets},
+  label=use-bioseq-alphabets]
+  (in-package :bio-sequence)
+  
+  ;; List the names of the registered alphabets
+  (mapcar #'name-of (registered-alphabets))
+  ;; Make an assoc list mapping the alphabet names to their sizes
+  (mapcar (lambda (x)
+            (list (name-of x) (size-of x))) (registered-alphabets))
+  ;; Is the character 't' in the DNA alphabet?
+  (memberp #\t (find-alphabet :dna))
+  ;; What characters does 'n' represent in the DNA alphabet?
+  (enum-ambiguity #\n (find-alphabet :dna))
+  ;; List all the codons as DNA character triples
+  (enum-ambiguity '(#\n #\n #\n) (find-alphabet :dna-codons))
+  ;; Does the character 'r' match the character 'n' in
+  ;; the DNA alphabet?
+  (subsumesp #\r #\n (find-alphabet :dna))
+  ;; Does the codon 'aaa' match the codon 'raa' in
+  ;; the DNA codon alphabet?
+  (subsumesp '(#\a #\a #\a) '(#\r #\a #\a) (find-alphabet :dna-codons))
+\end{lstlisting}
+
+
+\section{Manipulating bio-sequences}
+\label{sec:manip-bioseq}
+
+\subsection{The components of a bio-sequence}
+\label{sec:component-bioseq}
+
+Bio-sequence objects are simple representations of biological
+sequences, containing only slots for an identifier, a description
+string \footnote{The description string is free text and therefore
+  should only be used for round-tripping data between persistent
+  storage. For example, it may be used to store the header line found
+  in Fasta format files. It should not be computed upon.}, an alphabet
+and either a vector of residues or a length (in the case of virtual
+sequences).
+
+Some bio-sequence objects contain additional slots and corresponding
+accessor methods. Nucleic acid sequences have a
+\lstinline!num-strands-of! method that returns an either 1 or 2,
+indicating the strandedness of the sequence. Some nucleic acid
+sequences have base quality information accessible via the
+\lstinline!quality-of! method.
+
+
+
+
+
+\begin{figure}[1]
+  \includegraphics[scale=0.70]{repl1.pdf}
+  \caption{Foo}
+  \label{fig:repl1}
+\end{figure}
+
+
 
 \end{document}

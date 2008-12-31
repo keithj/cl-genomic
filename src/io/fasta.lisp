@@ -84,11 +84,17 @@ becomes full of chunks of sequence tokens.")
                               (push-line stream line)))
                  (values (end-object parser) t)))
               (t
-               (error 'bio-sequence-io-error
-                      :text (format nil
-                                    "~s is not recognised as as Fasta header"
-                                    seq-header)))))
-    (skip-bio-sequence () (values nil t))))
+               (error 'malformed-record-error
+                      :record seq-header
+                      :text  (format nil
+                                     "~s is not recognised as as Fasta header"
+                                     seq-header)))))
+    (skip-sequence-record ()
+      :report "Skip this sequence."
+      ;; Restart skips on to the next header
+      (let ((line (find-line stream #'char-fasta-header-p)))
+        (push-line stream line))
+      (values nil t))))
 
 (defmethod write-fasta-sequence ((seq bio-sequence) stream &key token-case) 
   (let ((*print-pretty* nil)
