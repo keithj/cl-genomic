@@ -49,7 +49,7 @@
   nil)
 
 ;;; Collecting raw data into Lisp objects
-(defmethod begin-object ((parser raw-sequence-parser))
+(defmethod begin-object :before ((parser raw-sequence-parser))
   (with-accessors ((raw parsed-raw-of))
       parser
     (setf raw ())))
@@ -105,7 +105,7 @@
 
 
 ;;; Collecting data into CLOS instances
-(defmethod begin-object ((parser simple-sequence-parser))
+(defmethod begin-object :before ((parser simple-sequence-parser))
   (with-accessors ((identity parsed-identity-of)
                    (description parsed-description-of)
                    (residues parsed-residues-of))
@@ -134,11 +134,12 @@
   (make-bio-sequence parser))
 
 ;;; Collecting data into CLOS instances with quality
-(defmethod begin-object ((parser quality-sequence-parser))
+(defmethod begin-object :before ((parser quality-sequence-parser))
   (with-accessors ((quality parsed-quality-of))
       parser
     (setf quality (make-array 0 :adjustable t :fill-pointer 0)))
-  (call-next-method))
+  ;; (call-next-method)
+  )
 
 (defmethod object-quality ((parser quality-sequence-parser)
                            (quality vector))
@@ -146,11 +147,12 @@
 
 
 ;;; Collecting data into CLOS instances without explicit residues
-(defmethod begin-object ((parser virtual-sequence-parser))
+(defmethod begin-object :before ((parser virtual-sequence-parser))
   (with-accessors ((length parsed-length-of))
       parser
     (setf length 0))
-  (call-next-method))
+  ;; (call-next-method)
+  )
 
 (defmethod object-residues ((parser virtual-sequence-parser)
                             (residues vector))

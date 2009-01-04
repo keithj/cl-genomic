@@ -36,14 +36,17 @@ residues, or NIL otherwise."))
   (:documentation "Returns the number of tokens in ALPHABET as a
 fixnum."))
 
-(defgeneric memberp (alphabet char)
+(defgeneric memberp (char alphabet)
   (:documentation "Returns T if CHAR is a member token of ALPHABET, or
 NIL otherwise."))
 
-(defgeneric token-index (alphabet token)
+(defgeneric subsumesp (token1 token2 alphabet)
   (:documentation ""))
 
-(defgeneric explode-ambiguity (alphabet char)
+(defgeneric token-index (token alphabet)
+  (:documentation ""))
+
+(defgeneric enum-ambiguity (char alphabet)
   (:documentation "Returns a list of the ambiguity characters
 represented by CHAR in ALPHABET."))
 
@@ -324,3 +327,20 @@ Returns:
 
 - A single-float alignment score.
 - An alignment object, or NIL."))
+
+
+(defgeneric  begin-term (parser)
+  (:documentation ""))
+
+(defgeneric  begin-typedef (parser)
+  (:documentation ""))
+
+(defgeneric  begin-instance (parser)
+  (:documentation ""))
+
+(defgeneric  end-section (parser)
+  (:documentation ""))
+
+(defgeneric  tag-value (parser tag value)
+  (:documentation ""))
+

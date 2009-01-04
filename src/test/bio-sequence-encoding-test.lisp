@@ -79,8 +79,8 @@
      do (ensure (char= res (bs::decode-rna-4bit
                             (bs::encode-rna-4bit res))))))
 
-(addtest (bio-sequence-encoding-tests) enumerate-ambiguity/1
+(addtest (bio-sequence-encoding-tests) enum-ambiguity/1
   (loop
      for res across dna-residues
      do (ensure (equal (assocdr res dna-enum :test #'char=)
-                       (enumerate-ambiguity res (find-alphabet :dna))))))
+                       (enum-ambiguity res (find-alphabet :dna))))))

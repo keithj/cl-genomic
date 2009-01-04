@@ -8,7 +8,7 @@
 ;;;
 ;;; This program is distributed in the hope that it will be useful,
 ;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
-;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See tnhe
 ;;; GNU General Public License for more details.
 ;;;
 ;;; You should have received a copy of the GNU General Public License
@@ -355,7 +355,7 @@ BASE."
       (#b1111 :any)
       (#b0000 :gap))))
 
-(defun encode-dna-symbol (rna-symbol)
+(defun encode-rna-symbol (rna-symbol)
   "Encodes the symbol RNA-SYMBOL as a 4-bit byte."
   (ecase rna-symbol
       (:uracil     #b0001)

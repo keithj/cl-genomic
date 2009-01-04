@@ -280,6 +280,16 @@ number of strands, or NIL otherwise."
            :args seqs
            :text "expected all sequences to be one of DNA, RNA or AA")))
 
+;;; Initialization methods
+(defmethod initialize-instance :after ((seq na-sequence) &key)
+  (with-accessors ((num-strands num-strands-of))
+      seq
+    (unless (< 0 num-strands 3)
+      (error 'invalid-argument-error
+             :params 'num-strands
+             :args num-strands
+             :text "nucleic acid sequences may have 1 or 2 strands"))))
+
 ;;; Printing methods
 (defmethod print-object ((alphabet alphabet) stream)
   (format stream "#<ALPHABET ~a>" (slot-value alphabet 'name)))
@@ -399,6 +409,13 @@ number of strands, or NIL otherwise."
   (with-slots (num-strands)
       seq
     (= 2 num-strands)))
+
+(defmethod (setf num-strands-of) :before (value (seq na-sequence))
+  (unless (< 0 value 3)
+    (error 'invalid-argument-error
+           :params 'value
+           :args value
+           :text "nucleic acid sequences may have 1 or 2 strands")))
 
 (defmethod num-strands-of ((seq aa-sequence))
   (error 'bio-sequence-op-error

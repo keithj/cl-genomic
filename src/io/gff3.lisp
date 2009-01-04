@@ -302,7 +302,8 @@ from STR."
   "Returns a seqid string extracted from line STR between START and
 END."
   (let ((end (or end (length str))))
-    (unless (loop for i from start below end
+    (unless (loop
+               for i from start below end
                always (or (gff3-valid-id-char-p (char str i))
                           (when (char= #\% (char str i))
                             (url-escape-p str i))))
@@ -314,7 +315,8 @@ END."
   "Returns a source string extracted from line STR between START and
 END."
   (let ((end (or end (length str))))
-    (unless (loop for i from start below end
+    (unless (loop
+               for i from start below end
                always (or (not (control-char-p (char str i)))
                           (when (char= #\% (char str i))
                             (url-escape-p str i))))
@@ -326,7 +328,8 @@ END."
   "Returns a type string extracted from line STR between START and
 END."
   (let ((end (or end (length str))))
-    (unless (loop for i from start below end
+    (unless (loop
+               for i from start below end
                always (or (not (control-char-p (char str i)))
                           (when (char= #\% (char str i))
                             (url-escape-p str i))))
@@ -407,7 +410,8 @@ END."
   (declare (type simple-string str))
   (let ((end (or end (length str))))
     (declare (type array-index start end))
-    (unless (loop for i from start below end
+    (unless (loop
+               for i from start below end
                always (or (not (control-char-p (char str i)))
                           (when (char= #\% (char str i))
                             (url-escape-p str i))))
@@ -450,7 +454,7 @@ URL escapes."
   "Returns T if INDEX into STR is the start of a valid URL encoded
 character ('%' followed by two hexadecimal characters), or NIL
 otherwise."
-  (not (null (and (<= (+ index 3) (length str))
+  (not (null (and (< (+ index 2) (length str))
                   (char= #\% (char str index))
                   (digit-char-p (char str (+ index 1)) 16)
                   (digit-char-p (char str (+ index 2)) 16)))))

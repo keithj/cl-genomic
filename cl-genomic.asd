@@ -42,12 +42,15 @@
                           :pathname "src/"
                           :components
                           ((:file "package")
+                           (:file "generics"
+                            :depends-on ("package"))
                            (:file "conditions"
                             :depends-on ("package"))
                            (:file "bio-sequence-encoding"
                             :depends-on ("package"))
                            (:file "bio-alphabets"
                             :depends-on ("package"
+                                         "generics"
                                          "bio-sequence-encoding"))
                            (:file "bio-sequence-classes"
                             :depends-on ("package"
@@ -57,8 +60,6 @@
                             :depends-on ("package"
                                          "generics"
                                          "bio-sequence-classes"))
-                           (:file "generics"
-                            :depends-on ("package"))
                            (:file "genetic-codes"
                             :depends-on ("package"
                                          "bio-alphabets"
@@ -73,9 +74,9 @@
                  (:module :io
                           :pathname "src/io/"
                           :components
-                          ((:file "io-classes")
+                          ((:file "bio-sequence-io-classes")
                            (:file "bio-sequence-io"
-                            :depends-on ("io-classes"))
+                            :depends-on ("bio-sequence-io-classes"))
                            (:file "fasta"
                             :depends-on ("bio-sequence-io"))
                            (:file "fastq"
@@ -84,6 +85,9 @@
                             :depends-on ("bio-sequence-io"
                                          "fasta"
                                          "fastq"))
+                           (:file "obo-io-classes")
+                           (:file "obo-io"
+                            :depends-on ("obo-io-classes"))
                            (:file "gff3"))
                           :depends-on (:core))
                  (:module :align

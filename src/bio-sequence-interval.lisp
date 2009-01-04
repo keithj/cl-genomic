@@ -262,8 +262,7 @@
       interval
     (with-accessors ((num-strands num-strands-of))
         reference
-      (cond ((or (eql *unknown-strand* strand)
-                 (eql *forward-strand* strand))
+      (cond ((or (eql *unknown-strand* strand) (eql *forward-strand* strand))
              (coerce-sequence reference 'string :start (+ lower start)
                               :end (+ lower end)))
             ((and (eql *reverse-strand* strand) (= 2 num-strands))
@@ -280,8 +279,7 @@
     (with-slots (reference lower upper strand num-strands)
         interval
       (let ((ref-num-strands (num-strands-of reference)))
-        (cond ((or (eql *unknown-strand* strand)
-                   (eql *forward-strand* strand))
+        (cond ((or (eql *unknown-strand* strand) (eql *forward-strand* strand))
                (subsequence reference (+ lower start) (+ lower end)))
               ((and (eql *reverse-strand* strand) (= ref-num-strands 2))
                (nreverse-complement
