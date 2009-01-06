@@ -88,6 +88,9 @@
                            (:file "obo-io-classes")
                            (:file "obo-io"
                             :depends-on ("obo-io-classes"))
+                           (:file "obo-powerloom"
+                            :depends-on ("obo-io-classes"
+                                         "obo-io"))
                            (:file "gff3"))
                           :depends-on (:core))
                  (:module :align

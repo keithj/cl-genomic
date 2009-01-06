@@ -17,6 +17,8 @@
 
 (in-package :bio-sequence)
 
+(defvar *default-base-concept* nil)
+
 (defvar *obo-escape-chars*
   '(#\n #\W #\t #\: #\, #\" #\\ #\( #\) #\[ #\] #\{ #\})
   "Characters that may escaped in OBO tags and values.")
@@ -66,11 +68,13 @@
 
 (defvar *obo-expected-format-version* "1.2")
 
-(defun parse-obo-stream (stream parser)
+(defun read-obo-stream (stream parser)
   (loop
      as line = (read-wrapped-line stream)
      while (not (eql :eof line))
-     do (cond ((whitespace-string-p line)
+     do (cond ((comment-line-p line)
+               nil)
+              ((whitespace-string-p line)
                (end-section parser))
               ((term-stanza-p line)
                (begin-term parser))
@@ -80,7 +84,7 @@
                (begin-instance parser))
               (t
                (multiple-value-bind (tag value)
-                   (parse-tag-value line)
+                   (read-tag-value line)
                  (tag-value parser tag value))))
      finally (end-section parser))
   parser)
@@ -134,45 +138,14 @@
                 (check-tag-counts tag-values))
       ((nil) nil)))) ; case for multiple or trailing empty lines
 
-(defmethod end-section ((parser obo-powerloom-parser))
-  (with-accessors ((state state-of) (tag-values tag-values-of)
-                   (terms terms-of) (typedefs typedefs-of)
-                   (instances instances-of))
-      parser
-    (ecase state
-      (header nil)
-      (term (merge-tag-values tag-values terms))
-      (typedef (merge-tag-values tag-values typedefs))
-      (instance (merge-tag-values tag-values instances))
-      ((nil) nil)) ; case for multiple or trailing empty lines
-    (setf state nil
-          tag-values ())))
-
 (defmethod tag-value ((parser obo-parser) tag value)
   (with-accessors ((tag-values tag-values-of))
       parser
     (setf tag-values (acons tag value tag-values))))
 
-;; (defun make-term-forms (tag-values)
-;;   (let ((id (assocdr "id" tag-values :test #'string=))
-;;         (name (assocdr "name" tag-values :test #'string=))
-;;         (def (parse-quoted-text
-;;               (assocdr "def" tag-values :test #'string=)))
-;;         (isa (assocdr "is_a" tag-values :test #'string=)))
-;;     (list
-;;      `(defconcept ,id
-;;        ,@(if def
-;;              `(|:documentation| ,def)))
-;;      `(assert (= (|name| ,id) ,name))
-;;      `(assert (subset-of ,id ,isa)))))
-
-
-
-
-
-
-
-
+(defun comment-line-p (str)
+  "Returns T if STR is a comment line, or NIL otherwise."
+  (starts-with-char-p (string-left-trim '(#\Space) str) #\!))
 
 (defun term-stanza-p (str)
   "Returns T if STR is the header for a term stanza, or NIL
@@ -189,18 +162,35 @@ otherwise."
 otherwise."
   (starts-with-string-p str "[Instance]"))
 
-(defun parse-tag-value (str)
-  "Parses STR into tag and value strings, returning them as two values."
-  (let ((i (unescaped-position #\: str)))
-    (values (expand-escape-chars (subseq str 0 i))
-            (expand-escape-chars (parse-value (subseq str (1+ i)))))))
+(defun read-tag-value (str)
+  "Parses STR into tag and value strings, returning them as two
+values. The tags and values retain escape characters, trailing
+modifiers, dbxref lists and comments."
+  (let ((i (unescaped-position #\: str))
+        (trim '(#\Space)))
+    (values (string-trim trim (subseq str 0 i))
+            (string-trim trim (subseq str (1+ i))))))
 
-(defun parse-value (str)
-  "Returns a string that is the value part of STR, having removed
-trailing modifiers and comments."
-  (remove-trailing-modifiers (remove-dbxref-list (remove-comments str))))
 
-(defun parse-quoted-text (str)
+;;; Functions for specific tags
+(defun read-def (str)
+  "Returns the quoted text portion of STR. Currently ignores any
+dbxref list."
+  (read-quoted-text str))
+
+(defun read-is-a (str)
+  (expand-escape-chars (remove-trailing-modifiers (remove-comments str))))
+
+(defun read-name (str)
+  (expand-escape-chars (remove-comments str)))
+
+(defun read-relationship (str)
+  (remove-comments str))
+
+
+
+;;; Functions for all tags
+(defun read-quoted-text (str)
   (let ((start (unescaped-position #\" str)))
     (cond ((null start)
            nil)
@@ -209,39 +199,43 @@ trailing modifiers and comments."
                   :field str
                   :text "unbalanced quotes"))
           (t
-           (let ((end (unescaped-position #\" str (1+ start))))
+           (let ((end (unescaped-position #\" str :start (1+ start))))
              (if end
-                 (subseq str start (1+ end))
+                 (subseq str (1+ start) end)
                (error 'malformed-field-error
                   :field str
                   :text "unbalanced quotes")))))))
 
 (defun remove-comments (str)
-  (let ((excl-index (position #\! str :from-end t)))
+  (let ((excl-index (position #\! str)))
     (if excl-index
         (subseq str 0 excl-index)
       str)))
 
 (defun remove-trailing-modifiers (str)
-  (let ((brace-index (unescaped-position #\{ str)))
+  (let ((brace-index (unescaped-position #\{ str :from-end t)))
     (string-trim '(#\Space) (if brace-index
                                 (subseq str 0 brace-index)
                               str))))
 
 (defun remove-dbxref-list (str)
-  (let ((bracket-index (unescaped-position #\[ str)))
+  (let ((bracket-index (unescaped-position #\[ str  :from-end t)))
     (string-trim '(#\Space) (if bracket-index
                                 (subseq str 0 bracket-index)
                               str))))
 
-(defun unescaped-position (char str &optional (start 0))
-  "Returns the position of the first unescaped CHAR in STR, starting
-at START (which defaults to 0), or NIL otherwise."
-  (loop
-     for i from start below (length str)
-     do (when (and (char= char (char str i))
-                   (not (escape-char-p str i)))
-          (return i))))
+(defun unescaped-position (char str &key (start 0) end from-end)
+  "Returns the position of the first unescaped CHAR in STR, between
+START (which defaults to 0) and END, or NIL otherwise."
+  (let* ((end (or end (length str)))
+         (count (- end start)))
+    (loop
+       for i in (if from-end
+                    (iota count (1- end) -1)
+                  (iota count start))
+       do (when (and (char= char (char str i))
+                     (not (escape-char-p str i)))
+            (return i)))))
 
 (defun wrapped-line-p (str)
   "Returns T if STR ends with an escaped literal newline, indicating a
@@ -349,19 +343,4 @@ CHAR."
                            :text ">1 comment tag present"))))
   t)
 
-(defun merge-tag-values (tag-values table)
-  "Removes the id tag-value cons from TAG-VALUES and merges the
-remainder into a list, together with any previous data for that
-id. The list is inserted into TABLE using id as the key."
-  (let ((id (assocdr "id" tag-values :test #'string=))
-        (others (loop
-                   for (tag . value) in tag-values
-                   unless (string= "id" tag)
-                   collect (cons tag value))))
-    (multiple-value-bind (val presentp)
-        (gethash id table)
-      (if presentp
-          (setf (gethash id table) (nconc others val))
-        (setf (gethash id table) others)))
-    table))
 

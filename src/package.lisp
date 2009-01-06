@@ -105,6 +105,7 @@
    #:name-of
    #:symbol-of
    #:token-of
+   #:random-token-of
    #:number-of
    #:ambiguousp
    #:simplep

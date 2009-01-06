@@ -45,7 +45,9 @@
 alphabet.")
    (index :initarg :index
           :reader index-of
-          :documentation "An index of the tokens in the alphabet."))
+          :documentation "An index of the tokens in the alphabet. The
+          keys are the encoded tokens, the values are their position
+          in the alphabet's token list."))
   (:documentation "Alphabets are sets of tokens."))
 
 (defun make-alphabet (name tokens encoder)
@@ -146,7 +148,7 @@ as :dna :rna or :aa."
 
 (defvar *simple-rna*
   (let ((tokens '(#\a #\c #\g #\u)))
-    (make-alphabet :simple-dna tokens #'encode-rna-4bit))
+    (make-alphabet :simple-rna tokens #'encode-rna-4bit))
   "The simple RNA alphabet.")
 
 (defvar *dna*
@@ -181,6 +183,10 @@ as :dna :rna or :aa."
 
 (defmethod token-index (encoded-token (alphabet alphabet))
   (gethash encoded-token (index-of alphabet)))
+
+(defmethod random-token-of ((alphabet alphabet))
+  ;; TODO: inefficient
+  (elt (tokens-of alphabet) (random (size-of alphabet))))
 
 (defmethod memberp ((char character) (alphabet alphabet))
   (find char (tokens-of alphabet)))

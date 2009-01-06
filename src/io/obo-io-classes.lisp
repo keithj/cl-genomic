@@ -30,7 +30,10 @@ single stanza."))
 format version 1.2"))
 
 (defclass obo-powerloom-parser (obo-parser)
-  ((terms :initform (make-hash-table :test #'equal)
+  ((header :initform ()
+           :accessor header-of
+           :documentation "The header tag-values.")
+   (terms :initform (make-hash-table :test #'equal)
           :accessor terms-of
           :documentation "All OBO terms, indexed by id.")
    (typedefs :initform (make-hash-table :test #'equal)

@@ -18,9 +18,13 @@
   language=Lisp,
   backgroundcolor=\color{brown!20},
   keywordstyle=[1]{\ttfamily\color{blue}},
+  keywordstyle=[2]{\itshape\color{blue}},
+  morekeywords=[1]{handler-bind,with-open-file,while},
+  morekeywords=[2]{lambda},
+  deletekeywords={collect,identity,length,list,mapcar,member},
   commentstyle=\color{red!90!green!90!blue},
   stringstyle=\ttfamily\color{brown},
-  showstringspaces=true,
+  showstringspaces=false,
   captionpos=b}
 
 \begin{document}
@@ -173,7 +177,7 @@ An alphabet's set of tokens comprises all its unambiguous and
 ambiguous tokens, plus a gap token. For example, the \lstinline!:dna!
 alphabet contains characters for all of the IUPAC codes (the
 \lstinline!:simple-dna!  alphabet contains only 'a', 'c', 'g' and
-'t'). The \lstinline!size-of!  method returns the size of an alphabet
+'t'). The \lstinline!size-of! method returns the size of an alphabet
 which is defined as the number of tokens it contains. Higher order
 alphabets may be constructed by using as tokens lists of characters
 from other alphabets. In this way, the standard codon alphabets are
@@ -219,31 +223,57 @@ one ambiguous token are a subset of those represented by another.
 \subsection{The components of a bio-sequence}
 \label{sec:component-bioseq}
 
-Bio-sequence objects are simple representations of biological
-sequences, containing only slots for an identifier, a description
-string \footnote{The description string is free text and therefore
-  should only be used for round-tripping data between persistent
-  storage. For example, it may be used to store the header line found
-  in Fasta format files. It should not be computed upon.}, an alphabet
-and either a vector of residues or a length (in the case of virtual
-sequences).
-
-Some bio-sequence objects contain additional slots and corresponding
-accessor methods. Nucleic acid sequences have a
+The simplest bio-sequence objects contain little more than slots for
+an identifier, an alphabet that describes the permitted sequence
+residues and either a vector of residues or a length (in the case of
+virtual sequences). While a description string slot is present in all
+bio-sequence objects, it should be used with care. \footnote{The
+  description string is free text and therefore should only be used
+  for round-tripping data between persistent storage. For example, it
+  may be used to store the header line found in Fasta format files. It
+  should not be computed upon.}  Nucleic acid sequences also have a
 \lstinline!num-strands-of! method that may be used to get and set the
-number of strands the sequence has. Some nucleic acid sequences have
-base quality information accessible via the \lstinline!quality-of!
-method.
+number of strands the sequence has.
+
+The sequence residues themselves may be accessed through the
+\lstinline!element-of! method (or its synonym
+\lstinline!residue-of!). If the sequence has concrete residues (is not
+virtual), the residues are \lstinline!setf!-able and thus may be
+mutated.
+
+
+\begin{lstlisting}[caption={The components of a bio-sequence},
+  label=use-bioseq-alphabets]
+  (in-package :bio-sequence)
+
+  ;; Create an anonymous DNA sequence. Print its identity, length
+  ;; and make a list of its residues
+  (let ((seq (make-dna "gtaaaacgacggccagtg")))
+    (format t "id: ~a len: ~a residues: ~a~%"
+            (identity-of seq) (length-of seq)
+            (loop
+               for i from 0 below (length-of seq)
+               collect (element-of seq i))))
+  ;; Create an anonymous DNA sequence. Mutate all its residues
+  ;; randomly
+  (let ((seq (make-dna "gtaaaacgacggccagtg"))
+        (dna (find-alphabet :simple-dna)))
+    (loop
+       for i from 0 below (length-of seq)
+       do (setf (element-of seq i) (random-token-of dna))
+       finally (return seq)))                               
+\end{lstlisting}
+
+
+\subsection{Testing bio-sequences}
 
 
 
-
-
-\begin{figure}[1]
-  \includegraphics[scale=0.70]{repl1.pdf}
-  \caption{Foo}
-  \label{fig:repl1}
-\end{figure}
+% \begin{figure}[1]
+%   \includegraphics[scale=0.70]{repl1.pdf}
+%   \caption{Foo}
+%   \label{fig:repl1}
+% \end{figure}
 
 
 
