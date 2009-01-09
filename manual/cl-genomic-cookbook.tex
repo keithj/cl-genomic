@@ -19,7 +19,7 @@
   backgroundcolor=\color{brown!20},
   keywordstyle=[1]{\ttfamily\color{blue}},
   keywordstyle=[2]{\itshape\color{blue}},
-  morekeywords=[1]{handler-bind,with-open-file,while},
+  morekeywords=[1]{handler-bind,with-open-file,while,with-sequence-residues},
   morekeywords=[2]{lambda},
   deletekeywords={collect,identity,length,list,mapcar,member},
   commentstyle=\color{red!90!green!90!blue},
@@ -261,7 +261,14 @@ mutated.
     (loop
        for i from 0 below (length-of seq)
        do (setf (element-of seq i) (random-token-of dna))
-       finally (return seq)))                               
+       finally (return seq)))
+  
+  ;; Create an anonymous DNA sequence. Mutate all its residues
+  ;; randomly, this time using the with-sequence-residues macro.
+  (let ((seq (make-dna "gtaaaacgacggccagtg"))
+        (dna (find-alphabet :simple-dna)))
+    (with-sequence-residues (residue seq)
+      (setf residue (random-token-of dna))))
 \end{lstlisting}
 
 

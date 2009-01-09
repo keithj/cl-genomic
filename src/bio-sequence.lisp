@@ -45,6 +45,42 @@
                                       ',type))
                nil))))))
 
+(defmacro with-sequence-residues ((var seq &key start end) &body body)
+  "Executes BODY in the context of bio-sequence SEQ such that VAR is
+iteratively bound to each residue of SEQ in turn.
+
+Arguments:
+
+- var (symbol or symbols): The iteration variable to which the current
+residue will be bound during iteration.
+- seq (bio-sequence): The sequence iterated to be iterated over.
+
+Key:
+
+- start (fixnum): The start index of the iteration.
+- end (fixnum): The end index of the iteration.
+
+Body:
+
+Forms to be executed in the context of these bindings."
+  (with-gensyms (lower upper vector)
+    `(let ((,lower (or ,start 0))
+           (,upper (or ,end (length-of ,seq))))
+      (etypecase ,seq
+        (encoded-dna-sequence
+         (with-accessors ((,vector vector-of))
+             ,seq
+           (loop
+              for i of-type fixnum from ,lower below ,upper
+              do (symbol-macrolet ((,var (%aref-dna-4bit ,vector i)))
+                   ,@body))))
+        (t
+         (loop
+            for i of-type fixnum from ,lower below ,upper
+            do (symbol-macrolet ((,var (element-of ,seq i)))
+                 ,@body))))
+      ,seq)))
+
 (define-strand-decoder string string= "+" "-" "?")
 (define-strand-decoder fixnum = 1 -1 0)
 (define-strand-decoder character char= #\+ #\- #\?)
@@ -422,20 +458,24 @@ number of strands, or NIL otherwise."
          :text "Amino-acid sequences are not stranded."))
 
 (defmethod element-of ((seq encoded-dna-sequence) (index fixnum))
-  (decode-dna-4bit (aref (vector-of seq) index)))
+  (with-accessors ((vector vector-of))
+      seq
+    (%aref-dna-4bit vector index)))
 
 (defmethod (setf element-of) (value (seq encoded-dna-sequence) (index fixnum))
   (with-slots (vector)
       seq
-    (setf (aref vector index) (encode-dna-4bit value))))
+    (setf (%aref-dna-4bit vector index) value)))
 
 (defmethod element-of ((seq encoded-rna-sequence) (index fixnum))
-  (decode-rna-4bit (aref (vector-of seq) index)))
+  (with-slots (vector)
+      seq
+    (%aref-rna-4bit vector index)))
 
 (defmethod (setf element-of) (value (seq encoded-rna-sequence) (index fixnum))
   (with-accessors ((vector vector-of))
       seq
-    (setf (aref vector index) (encode-rna-4bit value))))
+    (setf (%aref-rna-4bit vector index) value)))
 
 (defmethod element-of ((seq virtual-dna-sequence) (index fixnum))
   (with-accessors ((length length-of))
@@ -773,7 +813,7 @@ number of strands, or NIL otherwise."
   "Helper function for printing bio-sequence objects."
   (let ((len (length-of seq)))
     (if (<= len *sequence-print-limit*)
-        (format stream "#<~a \"~a\">" name (coerce-sequence seq 'string))
+        (format stream "#<~a ~s>" name (coerce-sequence seq 'string))
       (format stream "#<~a length ~d>" name len))))
 
 (defun %print-quality-seq (name seq stream)
@@ -782,7 +822,7 @@ number of strands, or NIL otherwise."
       seq
     (let ((len (length-of seq)))
       (if (<= len *sequence-print-limit*)
-          (format stream "#<~a \"~a\" ~a quality \"~a\">"
+          (format stream "#<~a ~s ~a quality \"~a\">"
                   name (coerce-sequence seq 'string) metric
                   (quality-string quality metric))
         (format stream "#<~a ~a quality, length ~d>"
@@ -932,6 +972,28 @@ index END."
         ((nil) str)
         (:lower str)
         (:upper (nstring-upcase str))))))
+
+(declaim (inline %aref-dna-4bit))
+(defun %aref-dna-4bit (vector i)
+  (declare (optimize (speed 3)))
+  (declare (type (encoded-residues 4) vector))
+  (decode-dna-4bit (aref vector i)))
+
+(defun (setf %aref-dna-4bit) (value vector i)
+  (declare (optimize (speed 3)))
+  (declare (type (encoded-residues 4) vector))
+  (setf (aref vector i) (encode-dna-4bit value)))
+
+(declaim (inline %aref-rna-4bit))
+(defun %aref-rna-4bit (vector i)
+  (declare (optimize (speed 3)))
+  (declare (type (encoded-residues 4) vector))
+  (decode-rna-4bit (aref vector i)))
+
+(defun (setf %aref-rna-4bit) (value vector i)
+  (declare (optimize (speed 3)))
+  (declare (type (encoded-residues 4) vector))
+  (setf (aref vector i) (encode-rna-4bit value)))
 
 (defun codon-start-p (base-pos)
   (zerop (mod base-pos +codon-size+)))

@@ -107,10 +107,9 @@
          (seqs (with-ascii-li-stream (stream (merge-pathnames
                                               "data/alignment_test_db.fasta"))
                  (loop
-                    with gen = (make-seq-input stream :fasta)
-                    as seq = (next gen)
-                    while (has-more-p gen)
-                    collect seq)))
+                    with seqi = (make-seq-input stream :fasta)
+                    while (has-more-p seqi)
+                    collect (next seqi))))
          ;; Scores from aligning with EMBOSS 5.0 water
          (scores (with-open-file
                      (s (merge-pathnames "data/alignment-test-scores.sexp"))

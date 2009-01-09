@@ -38,6 +38,9 @@
    #:bio-sequence-op-error
    #:initiator-codon-error
 
+   ;; Macros
+   #:with-sequence-residues
+   
    ;; Functions
    #:make-dna
    #:make-rna
