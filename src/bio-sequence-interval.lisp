@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (C) 2008 Keith. All rights reserved.
+;;; Copyright (C) 2008-2009 Keith James. All rights reserved.
 ;;;
 ;;; This program is free software: you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
@@ -41,9 +41,9 @@
           :accessor upper-of
           :documentation "The upper bound of the interval."))
   (:documentation "An interval within a reference sequence. If a
-  reference is defined, this must be within the bounds of the
-  reference sequence. The basic interval has no notion of sequence
-  strandedness; the bounds always refer to the forward strand."))
+reference is defined, this must be within the bounds of the reference
+sequence. The basic interval has no notion of sequence strandedness;
+the bounds always refer to the forward strand."))
 
 (defclass na-sequence-interval (na-sequence interval stranded-mixin)
   ()
@@ -56,16 +56,6 @@
   ()
   (:documentation "An amino acid sequence that is an interval within
   a reference sequence."))
-
-(defgeneric invert-complement (na-sequence-interval)
-  (:documentation "Returns a copy of NA-SEQUENCE-INTERVAL at the
-  corresponding position on the complementary strand of the reference
-  sequence."))
-
-(defgeneric ninvert-complement (na-sequence-interval)
-  (:documentation "Destructively modifies NA-SEQUENCE-INTERVAL, moving
-  it to the position on the complementary strand of the reference
-  sequence."))
 
 ;;; Allen interval algebra
 ;;;
@@ -98,47 +88,47 @@
 
 (defgeneric beforep (x y)
   (:documentation "Returns T if X is before Y according to Allen's
-  Interval Algebra, or NIL otherwise."))
+Interval Algebra, or NIL otherwise."))
 
 (defgeneric afterp (x y)
   (:documentation "Returns T if X is after Y according to Allen's
-  Interval Algebra, or NIL otherwise."))
+Interval Algebra, or NIL otherwise."))
 
 (defgeneric meetsp (x y)
   (:documentation "Returns T if X meets Y according to Allen's
-  Interval Algebra, or NIL otherwise."))
+Interval Algebra, or NIL otherwise."))
 
 (defgeneric met-by-p (x y)
   (:documentation "Returns T if X is met by Y according to Allen's
-  Interval Algebra, or NIL otherwise."))
+Interval Algebra, or NIL otherwise."))
 
 (defgeneric startsp (x y)
   (:documentation "Returns T if X starts Y according to Allen's
-  Interval Algebra, or NIL otherwise."))
+Interval Algebra, or NIL otherwise."))
 
 (defgeneric started-by-p (x y)
   (:documentation "Returns T if X is started by Y according to Allen's
-  Interval Algebra, or NIL otherwise."))
+Interval Algebra, or NIL otherwise."))
 
 (defgeneric duringp (x y)
   (:documentation "Returns T if X occurs during Y according to Allen's
-  Interval Algebra, or NIL otherwise."))
+Interval Algebra, or NIL otherwise."))
 
 (defgeneric containsp (x y)
   (:documentation "Returns T if X contains Y according to Allen's
-  Interval Algebra, or NIL otherwise."))
+Interval Algebra, or NIL otherwise."))
 
 (defgeneric finishesp (x y)
   (:documentation "Returns T if X finishes Y according to Allen's
-  Interval Algebra, or NIL otherwise."))
+Interval Algebra, or NIL otherwise."))
 
 (defgeneric finished-by-p (x y)
   (:documentation "Returns T if X is finished by Y according to
-  Allen's Interval Algebra, or NIL otherwise."))
+Allen's Interval Algebra, or NIL otherwise."))
 
 (defgeneric interval-equal (x y)
   (:documentation "Returns T if X is interval equal Y according to
-  Allen's Interval Algebra, or NIL otherwise."))
+Allen's Interval Algebra, or NIL otherwise."))
 
 ;;; Initialization methods
 (defmethod initialize-instance :after ((interval na-sequence-interval) &key)
@@ -295,7 +285,7 @@
         interval
       (subsequence reference (+ lower start) (+ lower end)))))
 
-(defmethod invert-complement ((interval na-sequence-interval))
+(defmethod reverse-complement ((interval na-sequence-interval))
   (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of)
                    (strand strand-of))
       interval
@@ -304,21 +294,21 @@
       (make-instance 'na-sequence-interval
                      :lower (- ref-length upper)
                      :upper (+ (- ref-length upper) int-length)
-                     :strand (invert-strand strand)
+                     :strand (complement-strand strand)
                      :reference reference))))
 
-(defmethod ninvert-complement ((interval na-sequence-interval))
+(defmethod nreverse-complement ((interval na-sequence-interval))
   (with-accessors ((reference reference-of)
                    (strand strand-of) (num-strands num-strands-of))
       interval
-    (%check-interval-strands (invert-strand strand) num-strands reference)
+    (%check-interval-strands (complement-strand strand) num-strands reference)
     (with-slots (lower upper) ; direct slot access to allow inversion in place
         interval
       (let ((ref-length (length-of reference))
             (int-length (- upper lower)))
         (setf lower (- ref-length upper)
               upper (+ lower int-length)
-              strand (invert-strand strand)))))
+              strand (complement-strand strand)))))
   interval)
 
 (defmethod beforep ((x interval) (y interval))
@@ -382,27 +372,28 @@ ensure that the interval lies within the bounds of the reference."
          (let ((length (length-of reference)))
            (cond ((or (< lower 0) (> lower length))
                   (error 'invalid-argument-error
-                         :params 'lower
-                         :args lower
-                         :text "lower index must be >0 and <= sequence length"))
+                         :params '(lower length)
+                         :args (list lower length)
+                         :text "lower must be >0 and <= length"))
                  ((or (< upper 0) (> upper length))
                   (error 'invalid-argument-error
-                         :params 'upper
-                         :args upper
-                         :text "upper index must be >0 and <= sequence length"))
+                         :params '(upper length)
+                         :args (list upper length)
+                         :text "upper must be >0 and <= length"))
                  ((< upper lower)
                   (error 'invalid-argument-error
                          :params '(lower upper)
                          :args (list lower upper)
-                         :text "lower bound must be equal to or less than upper bound"))
+                         :text "lower must be <= upper"))
                  (t t))))
           (t
            (cond ((< upper lower)
                   (error 'invalid-argument-error
                          :params '(lower upper)
                          :args (list lower upper)
-                         :text "lower bound must be equal to or less than upper bound"))
+                         :text "lower must be <= upper"))
                  (t t)))))
+
 
 (declaim (inline %check-interval-strands))
 (defun %check-interval-strands (strand num-strands reference)
@@ -424,4 +415,3 @@ reference."
                         :text "a reverse-strand interval may not be applied to a single-stranded sequence"))
               (t t))))
   t)
-

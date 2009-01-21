@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (C) 2007-2008, Keith James. All rights reserved.
+;;; Copyright (C) 2007-2009 Keith James. All rights reserved.
 ;;;
 ;;; This program is free software: you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
@@ -25,24 +25,12 @@
                             alphabet)
   nil)
 
-(defmethod object-relation ((parser bio-sequence-parser)
-                            relation value)
-  nil)
-
 (defmethod object-identity ((parser bio-sequence-parser)
                             identity)
   nil)
 
-(defmethod object-description ((parser bio-sequence-parser)
-                               description)
-  nil)
-
 (defmethod object-residues ((parser bio-sequence-parser)
                             residues)
-  nil)
-
-(defmethod object-quality ((parser bio-sequence-parser)
-                           quality)
   nil)
 
 (defmethod end-object ((parser bio-sequence-parser))

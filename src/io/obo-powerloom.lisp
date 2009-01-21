@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (C) 2009 Keith James. All rights reserved.
+;;; Copyright (C) 2009-2009 Keith James. All rights reserved.
 ;;;
 ;;; This program is free software: you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
@@ -40,6 +40,7 @@
              (parser (read-obo-stream in (make-instance
                                            'obo-powerloom-parser))))
         (write-powerloom-module module parent-module :stream out)
+        (write-powerloom-deffunction base-concept 'name 'string out)
         (write-powerloom-relations (typedefs-of parser) :stream out)
         (write-powerloom-concepts (terms-of parser) :stream out)))))
 
@@ -80,34 +81,48 @@
   (format stream "(clear-module ~s)~%~%" (string-upcase module)))
 
 (defun write-powerloom-concepts (terms &key (stream *standard-output*))
-  (loop
-     for id being the hash-keys of terms
-     using (hash-value tag-values)
-     do (progn
-          (write-powerloom-concept id stream)
-          (loop
-             for (tag . value) in tag-values
-             when (string= "intersection_of" tag) collect value into intersect
-             do (cond ((string= "def" tag)
-                       (write-powerloom-doc id value stream))
-                      ((string= "name" tag)
-                       (write-powerloom-assert
-                        (format nil "(= (name ~a) ~s)" id value) stream))
-                      ((string= "is_a" tag)
-                       (write-powerloom-subset id value stream))
-                      ((string= "relationship" tag)
-                       (multiple-value-bind (rel obj)
-                           (relationship-components value)
+  (let ((deferred ()))
+    (loop
+       for id being the hash-keys of terms
+       using (hash-value tag-values)
+       do (progn
+            (write-powerloom-concept id stream)
+            (loop
+               for (tag . value) in tag-values
+               when (string= "intersection_of" tag) collect
+               value into intersect
+               do (cond ((string= "def" tag)
+                         (write-powerloom-doc id value stream))
+                        ((string= "name" tag)
                          (write-powerloom-assert
-                          (format nil "(~a ~a ~a)" rel id obj) stream)))
-                      (t
-                       nil))
-               ;; Single intersection is a parse error
-               finally (format t ">> ~a~%" intersect))
-          (terpri stream))))
+                          (format nil "(= (name ~a) ~s)" id value) stream))
+                        ((string= "is_a" tag)
+                         (write-powerloom-subset id value stream))
+                        ((string= "relationship" tag)
+                         (write-powerloom-assert
+                          (format nil "(~a ~a ~a)"
+                                  (first value) id (second value)) stream))
+                        (t
+                         nil))
+               ;; FIXME - raise parse error when single intersection clause
+               finally (when intersect
+                         (push (with-output-to-string (s)
+                                 (write-powerloom-intersect id intersect s)
+                                 (terpri s))
+                               deferred)))
+            (terpri stream)))
+    (dolist (d deferred)
+      (write-line d stream))
+    (terpri stream)))
 
-
-;;; Intersections denote term equivalence
+(defun write-powerloom-intersect (id intersect
+                                  &optional (stream *standard-output*))
+  (format stream "(assert (forall ?term~%~10t(=> (and~%~{~a~^~%~})~%~12t(~a ?term))))"
+          (mapcar (lambda (x)
+                    (if (atom x)
+                        (format nil "~16t(subset-of ?term ~a)" x)
+                      (format nil "~16t(~a ?term ~a)" (first x) (second x))))
+                  intersect) id))
 
 (defun write-powerloom-relations (typedefs &key
                                   (base-concept *default-base-concept*)
@@ -139,12 +154,12 @@
           (terpri stream))))
 
 (defun merge-tag-values (tag-values table)
-  "Removes the id tag-value cons from TAG-VALUES and merges the
-remainder into a list, together with any previous data for that
+  "Removes the id tag-value cons from the list TAG-VALUES and merges
+the remainder into a list, together with any previous data for that
 id. The list is inserted into TABLE using id as the key."
   (let ((id (assocdr "id" tag-values :test #'string=))
         (others (loop
-                   for (tag . value) in (mapcar #'read-value-str tag-values)
+                   for (tag . value) in (mapcar #'read-value tag-values)
                    unless (string= "id" tag)
                    collect (cons tag value))))
     (multiple-value-bind (val presentp)
@@ -153,25 +168,4 @@ id. The list is inserted into TABLE using id as the key."
           (setf (gethash id table) (nconc others val))
         (setf (gethash id table) others)))
     table))
-
-(defun read-value-str (tag-value)
-  (let ((tag (car tag-value))
-        (value (cdr tag-value)))
-    (cons tag (cond ((string= "name" tag)
-                     (read-name value))
-                    ((string= "def" tag)
-                     (read-def value))
-                    ((string= "is_a" tag)
-                     (read-is-a value))
-                    ((string= "relationship" tag)
-                     (read-relationship value))
-                    (t
-                     value)))))
-
-(defun relationship-components (str)
-  (let ((rel-obj (split-sequence #\Space str)))
-    (values (first rel-obj) (second rel-obj))))
-
-;; (defun intersection-components (str)
-;;   (let (())))
 

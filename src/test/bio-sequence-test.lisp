@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (C) 2007-2008, Keith James. All rights reserved.
+;;; Copyright (C) 2007-2009 Keith James. All rights reserved.
 ;;;
 ;;; This program is free software: you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
@@ -329,9 +329,7 @@
 (addtest (bio-sequence-tests) bio-sequence/3
   (let ((seq (make-dna "aacccgggt")))
     (mapc (lambda (token freq)
-            (ensure (eq (cdr (assoc token (residue-frequencies
-                                           seq
-                                           (find-alphabet :dna))
+            (ensure (eq (cdr (assoc token (residue-frequencies seq)
                                     :test #'char= )) freq)))
           '(#\a #\c #\g #\t)
           '(2 3 3 1))))
@@ -449,12 +447,12 @@
 (addtest (bio-sequence-tests) virtual-dna-sequence/1
   (let* ((len 10)
          (seq (make-dna nil :length 10)))
-    (dotimes (n len)
+    (dotimes (n (1- len))
       (ensure (char= #\n (residue-of seq n))))
     (ensure-error 'invalid-argument-error
       (residue-of seq -1))
     (ensure-error 'invalid-argument-error
-      (residue-of seq 11))))
+      (residue-of seq 10))))
 
 (addtest (bio-sequence-tests) dna-quality-sequence/3
   (let* ((residues "agaatattctgaccccagttactttcaaga")
@@ -570,3 +568,20 @@
     (ensure (= 8 (search-sequence sub seq :start2 1)))
     (ensure (= 3 (search-sequence sub seq :end1 1)))
     (ensure-null (search-sequence sub seq :end2 1))))
+
+(addtest (bio-sequence-tests) with-sequence-residues/1
+  (let* ((residues "tacgagtcgttttagcgcgattatataa")
+         (seq (make-dna residues))
+         (i 0))
+    (with-sequence-residues (residue seq)
+      (ensure (char= (char residues i) residue))
+      (incf i))))
+
+(addtest (bio-sequence-tests) with-sequence-residues/2
+  (let* ((residues "tacgagtcgttttagcgcgattatataa")
+         (seq (make-dna residues))
+         (i 1))
+    (with-sequence-residues (residue seq :start i
+                                     :end (1- (length residues)))
+      (ensure (char= (char residues i) residue))
+      (incf i))))

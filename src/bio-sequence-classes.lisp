@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (C) 2007-2008, Keith James. All rights reserved.
+;;; Copyright (C) 2007-2009 Keith James. All rights reserved.
 ;;;
 ;;; This program is free software: you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
@@ -100,26 +100,19 @@ numeric quality value for each residue."))
            :accessor length-of
            :documentation "The length of the sequence.")))
 
-(defclass simple-token-sequence (token-sequence)
-  ())
-
 (defclass encoded-token-sequence (token-sequence)
   ())
 
-(defclass mmapped-sequence ()
-  ())
+(defclass mmapped-sequence (token-sequence)
+  ((mmapped-vector :initform nil
+                   :initarg :mmapped-vector
+                   :accessor mmapped-vector-of)))
 
-(defclass vector-sequence ()
+(defclass encoded-vector-sequence (encoded-token-sequence)
   ((vector :initform (make-array 0 :element-type 'fixnum)
            :initarg :vector
            :accessor vector-of
            :documentation "The token vector of the sequence.")))
-
-(defclass simple-vector-sequence (simple-token-sequence vector-sequence)
-  ())
-
-(defclass encoded-vector-sequence (encoded-token-sequence vector-sequence)
-  ())
 
 (defclass bio-sequence ()
   ()

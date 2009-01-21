@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (C) 2008, Keith James. All rights reserved.
+;;; Copyright (C) 2008-2009 Keith James. All rights reserved.
 ;;;
 ;;; This program is free software: you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
@@ -19,12 +19,6 @@
 
 (defvar +gff3-dot-column+ "."
   "The GFF3 empty column string.")
-(defvar +gff3-forward-strand+ "+"
-  "The GFF3 forward strand string.")
-(defvar +gff3-reverse-strand+ "-"
-  "The GFF3 reverse strand string.")
-(defvar +gff3-unknown-strand+ "?"
-  "The GFF3 unknown strand string.")
 
 (defvar *gff3-unsafe-chars*
   '(#\; #\= #\% #\& #\,)
@@ -43,12 +37,6 @@
 (defvar *gff3-ontology-regex*
   (cl-ppcre:create-scanner "^##\\w+ontology\\s+(\\S+)"))
 
-(defvar *parse-fn-symbols*
- '(parse-seqid parse-source parse-type
-   parse-sequence-coord parse-sequence-coord
-   parse-score parse-strand parse-phase
-   parse-attributes)
-  "GFF field parser function symbols, one for each of the 9 fields.")
 (defvar *gff3-field-tags*
   '(:seqid :source :type :start :end
     :score :strand :phase :attributes)
@@ -78,26 +66,10 @@
 
 ;; ignore ontology directives for now
 
-;; unsolved issues:
-;;
-;; where in a vertex object do we put annotation?
-;;
-
-;; read a record; add it to the graph as a vertex; look for its
-;; parent; if the parent is present, add a part_of relation; if the
-;; parent is absent, defer relation by storing in a table with the
-;; parent ID as key and child ID as value.
-
-
-;; sequence-region is a bio-sequence (vertex)
-;; gene is a bio-sequence (vertex) part_of sequence-region
-;; mRNA is a bio-sequence (vertex) part_of gene
-
-;; Make ontology-relationship edges, these have terms as predicates
-;; predicate part_of
-;; predicate derived_from
 
 (defparameter *expected-gff-version* 3)
+
+
 
 ;; (defun wibble-gff3 (filename)
 ;;   (with-open-file (fs filename
@@ -133,6 +105,21 @@
 ;;                                         (assocdr :start record)))
 ;;   )
 
+;; (defmethod read-gff3 ((stream character-line-input-stream)
+;;                       (parser gff3-parser))
+;;   (loop
+;;      for line = (find-line stream #'content-string-p)
+;;      while (not (eql :eof line))
+;;      do (cond ((gff3-directive-p line)
+;;                (gff3-directive parser (parse-gff3-directive line)))
+;;               ((gff3-comment-p line)
+;;                (gff3-comment parser (parse-gff3-comment line)))
+;;               (t
+;;                (gff3-record parser (parse-gff3-record line))))))
+
+
+
+
 (defun open-or-update-record (record records)
   "Adds the data in RECORD to the table of currently open RECORDS."
   (let ((identity (assocdr "ID" (assocdr :attributes record)
@@ -149,8 +136,10 @@
                                        (assocdr field current)))
                         collect field)))
       (when conflicts
-        (error 'malformed-record-error :text
-               "Invalid record: conflicts in fields ~a." conflicts))
+        (error 'malformed-record-error
+               :record new
+               :text (format nil "invalid record: conflicts in fields ~a"
+                             conflicts)))
       (loop
          for field in (set-difference *gff3-field-tags*
                                       *gff3-invariant-field-tags*)
@@ -171,37 +160,12 @@
 ;;                      (attribute-of vertex key)))))
 ;;   t)
 
-
-(defun gff-version-p (record version)
-  "Returns T if RECORD is a GFF version directive (:record-type
-:gff-version) indicating VERSION. If RECORD is not a GFF version
-directive an error is thrown."
-  (unless (eql :gff-version (assocdr :record-type record))
-    (error "Record ~a is not a GFF version directive." record))
-  (eql version (assocdr :version record)))
-
-
-
-
-
-(defmethod read-gff3 ((stream binary-line-input-stream))
-  (let ((line (find-line stream #'content-bytes-p)))
-    (if (vectorp line)
-        (let ((str (make-sb-string line)))
-          (cond ((gff3-directive-p str)
-                 (process-gff3-directive str))
-                ((gff3-comment-p str)
-                 (process-gff3-comment str))
-                (t
-                 (process-gff3-record str))))
-      nil)))
-
-(defun process-gff3-comment (str)
+(defun parse-gff3-comment (str)
   "Returns an alist with key :comment and value being the entire
 comment line STR, including the leading '#' character."
   (pairlis '(:record-type :comment) (list :comment str)))
 
-(defun process-gff3-directive (str)
+(defun parse-gff3-directive (str)
   "Returns an alist of parsed and tagged GFF directive data parsed
 from STR."
   (cond ((string= "##gff-version" str :end2 13)
@@ -224,21 +188,33 @@ from STR."
         ((string= "##FASTA" str :end2 7)
          (acons :record-type :fasta nil))
         (t
-         (error 'malformed-record-error :text
-                (format nil "Unknown directive ~a." str)))))
+         (error 'malformed-record-error
+                :record str
+                :text "unknown directive"))))
 
-(defun process-gff3-record (str)
+(defun parse-gff3-record (str)
    "Returns an alist containing the record data. The alist keys are
 :seqid :source :type :start :end :score :strand :phase and
 :attributes. The value of :attributes is itself an alist, keyed by the
 GFF attribute tag strings."
-   (let ((record (parse-gff3-record str)))
-     (unless (<= (assocdr :start record) (assocdr :end record))
-       (error 'malformed-record-error :text
-              (format nil (msg "Invalid feature coordinates (~a ~a):"
-                               "start must be <= end.")
-                      (assocdr :start record) (assocdr :end record))))
-     record))
+   (multiple-value-bind (field-starts field-ends)
+       (vector-split-indices #\Tab str)
+     (unless (= (length *gff3-field-tags*) (length field-starts))
+       (error 'malformed-record-error
+             :record str
+             :text (format nil "invalid record having ~a fields instead of ~a"
+                           (length field-starts)
+                           (length *gff3-field-tags*))))
+     (let ((record (pairlis
+                    *gff3-field-tags*
+                    (mapcar (lambda (parse-fn x y)
+                              (funcall parse-fn str x y))
+                            (field-parse-fns) field-starts field-ends))))
+       (unless (<= (assocdr :start record) (assocdr :end record))
+         (error 'malformed-record-error
+                :record record
+                :text "invalid feature coordinates having start > end"))
+       record)))
 
 (defun parse-gff-version (str)
   "Returns an alist with key :version and value integer version
@@ -246,50 +222,25 @@ number parsed from STR. A value of 3 is expected."
   (handler-case
       (acons :version (parse-integer str :start 13) nil)
     (parse-error (condition)
-      (error 'malformed-record-error :text (format nil "~a" condition)))))
+      (error 'malformed-record-error
+             :record str
+             :text (format nil "~a" condition)))))
 
 (defun parse-sequence-region (str)
   "Returns an alist containing a seqid string, an integer sequence
 start coordinate and an integer sequence end coordinate parsed from
 STR."
-  (multiple-value-bind (seqid start end)
-      (cl-ppcre:register-groups-bind (x y z)
-          (*gff3-sequence-region-regex* str)
-        (values (parse-seqid x)
-                (parse-gff3-sequence-coord y)
-                (parse-gff3-sequence-coord z)))
-    (unless (stringp seqid)
-      (error 'malformed-record-error :text
-             (format nil "Invalid seqid ~a in sequence-region directive ~a."
-                     seqid str)))
-    (unless (integerp start)
-      (error 'malformed-record-error :text
-             (format nil "Invalid start ~a in sequence-region directive ~a."
-                     start str)))
-    (unless (integerp end)
-      (error 'malformed-record-error :text
-             (format nil "Invalid end ~a in sequence-region directive ~a."
-                     end str)))
-    (unless (<= start end)
-      (error 'malformed-record-error :text
-             (format nil (msg "Invalid sequence-region coordinates (~a ~a)"
-                              "start must be <= end.")
-                     start end)))
-    (pairlis '(:seqid :start :end) (list seqid start end))))
-
-(defun parse-gff3-record (str)
-  "Returns alist of GFF record data parsed from STR."
-  (multiple-value-bind (field-starts field-ends)
-      (vector-split-indices #\Tab str)
-    (unless (= 9 (length field-starts))
-      (error 'malformed-record-error :text
-             (format nil (msg "Invalid GFF line having ~a fields"
-                              "instead of 9: (~a).")
-                     (length field-starts) str)))
-    (let ((fields (mapcar (lambda (fn x y)
-                            (funcall (symbol-function fn) str x y))
-                          *parse-fn-symbols* field-starts field-ends)))
-      (pairlis *gff3-field-tags* fields))))
+  (cl-ppcre:register-groups-bind (x y z)
+      (*gff3-sequence-region-regex* str)
+    (let ((seqid (parse-seqid x))
+          (start (parse-gff3-sequence-coord y))
+          (end (parse-gff3-sequence-coord z)))
+      (let ((record (pairlis '(:seqid :start :end) (list seqid start end))))
+        (unless (<= start end)
+          (error 'malformed-record-error
+                 :record record
+                 :text "invalid sequence-region coordinates having start > end"))
+        record))))
 
 (defun parse-ontology-uri (str)
   "Returns an alist with key :uri and value of an URI object parsed
@@ -307,8 +258,10 @@ END."
                always (or (gff3-valid-id-char-p (char str i))
                           (when (char= #\% (char str i))
                             (url-escape-p str i))))
-      (error 'malformed-record-error :text
-             (format nil "Invalid seqid ~a." (subseq str start end))))
+      (error 'malformed-field-error
+             :record str
+             :field (subseq str start end)
+             :text "invalid seqid"))
     (subseq str start end)))
 
 (defun parse-gff3-source (str &optional (start 0) end)
@@ -320,8 +273,10 @@ END."
                always (or (not (control-char-p (char str i)))
                           (when (char= #\% (char str i))
                             (url-escape-p str i))))
-      (error 'malformed-record-error :text
-             (format nil "Invalid source ~a." (subseq str start end))))
+      (error 'malformed-field-error
+             :record str
+             :field (subseq str start end)
+             :text "invalid source"))
     (subseq str start end)))
 
 (defun parse-gff3-type (str &optional (start 0) end)
@@ -333,8 +288,10 @@ END."
                always (or (not (control-char-p (char str i)))
                           (when (char= #\% (char str i))
                             (url-escape-p str i))))
-      (error 'malformed-record-error :text
-             (format nil "Invalid type ~a." (subseq str start end))))
+      (error 'malformed-field-error
+             :record str
+             :field (subseq str start end)
+             :text "invalid type"))
     (subseq str start end)))
 
 (defun parse-gff3-sequence-coord (str &optional (start 0) end)
@@ -344,14 +301,14 @@ between START and END."
          (coord (handler-case
                     (parse-integer str :start start :end end)
                   (parse-error (condition)
-                    (error 'malformed-record-error :text
-                           (format nil "~a" condition))))))
+                    (error 'malformed-record-error
+                           :text (format nil "~a" condition))))))
     (unless (and (integerp coord)
                  (plusp coord))
-      (error 'malformed-record-error :text
-             (format nil (msg "Invalid sequence coordinate ~a:"
-                              "a positive integer is required.")
-                     coord)))
+      (error 'malformed-field-error
+             :record str
+             :field coord
+             :text "invalid sequence coordinate: a positive integer is required"))
     coord))
 
 (defun parse-gff3-score (str &optional (start 0) end)
@@ -362,27 +319,19 @@ START and END."
       nil
     (handler-case
         (parse-float str :start start :end end)
-      (condition (condition)
-        (when (subtypep (type-of condition) 'error) ; what other conditions?
-          (error 'malformed-record-error :text
-                 (format nil "Invalid score ~a." condition)))))))
+      (error ()
+        (error 'malformed-field-error
+               :record str
+               :field (subseq str start end)
+               :text "invalid score")))))
 
 (defun parse-gff3-strand (str &optional (start 0) end)
   "Returns a nucleic acid sequence strand object (canonical
 SEQUENCE-STRAND instance) corresponding to line STR between START and
 END."
-  (cond ((string= +gff3-dot-column+ str :start2 start :end2 end)
-         nil) ; FIXME -- was *without-strand*, should it be nil?
-        ((string= +gff3-forward-strand+ str :start2 start :end2 end)
-         *forward-strand*)
-        ((string= +gff3-reverse-strand+ str :start2 start :end2 end)
-         *reverse-strand*)
-        ((string= +gff3-unknown-strand+ str :start2 start :end2 end)
-         *unknown-strand*)
-        (t
-         (error 'malformed-record-error :text
-                (format nil "Invalid sequence strand ~a."
-                        (subseq str start end))))))
+  (if (string= +gff3-dot-column+ str :start2 start :end2 end)
+      nil ; FIXME -- was *without-strand*, should it be nil?
+    (decode-strand str :strict t)))
 
 (defun parse-gff3-phase (str &optional (start 0) end)
   "Returns a coding phase integer from line STR between START and END,
@@ -392,31 +341,31 @@ and END."
      nil
   (let ((phase (handler-case
                    (parse-integer str :start start :end end)
-                 (parse-error (condition)
-                   (error 'malformed-record-error :text
-                          (format nil "Invalid phase ~a." condition))))))
+                 (parse-error ()
+                   (error 'malformed-field-error
+                          :record str
+                          :field (subseq str start end)
+                          :text "invalid phase")))))
     (unless (and (integerp phase)
                  (<= 0 phase 2))
-      (error 'malformed-record-error :text
-             (format nil (msg "Invalid phase ~a: a positive integer"
-                              "between 0 and 2 (inclusive) is required.")
-                     phase)))
+      (error 'malformed-field-error
+             :record str
+             :field phase
+             :text "invalid phase: a positive integer between 0 and 2 (inclusive) is required"))
     phase)))
 
 (defun parse-gff3-attributes (str &optional (start 0) end)
   "Returns an alist of GFF attributes from line STR between START and
 END."
-  (declare (optimize (speed 3) (debug 0)))
-  (declare (type simple-string str))
   (let ((end (or end (length str))))
-    (declare (type array-index start end))
     (unless (loop
                for i from start below end
                always (or (not (control-char-p (char str i)))
                           (when (char= #\% (char str i))
                             (url-escape-p str i))))
-      (error 'malformed-record-error :text
-             (format nil "Invalid type ~a." (subseq str start end))))
+      (error 'malformed-record-error
+             :record str
+             :text "unescaped control characters in attributes"))
     (multiple-value-bind (attr-starts attr-ends)
         (vector-split-indices #\; str :start start :end end)
       (mapcar (lambda (x y)
@@ -426,12 +375,19 @@ END."
   "Returns a list containing a single GFF attribute extracted from
 line STR between START and END. The first element of the list is the
 key string and the rest of the list contains the value strings."
-  (declare (optimize (speed 3) (debug 0)))
-  (declare (type simple-string str)
-           (type array-index start end))
   (let ((sep-index (position #\= str :start start :end end)))
     (cons (subseq str start sep-index)
           (vector-split #\, str :start (1+ sep-index) :end end))))
+
+(defun gff-version-p (record version)
+  "Returns T if RECORD is a GFF version directive (:record-type
+:gff-version) indicating VERSION. If RECORD is not a GFF version
+directive an error is thrown."
+  (unless (eql :gff-version (assocdr :record-type record))
+    (error 'malformed-record-error
+           :record record
+           :text "invalid GFF version directive"))
+  (eql version (assocdr :version record)))
 
 (defun gff3-directive-p (str)
   "Returns T if STR is a GFF3 directive line, or NIL otherwise."
@@ -458,3 +414,11 @@ otherwise."
                   (char= #\% (char str index))
                   (digit-char-p (char str (+ index 1)) 16)
                   (digit-char-p (char str (+ index 2)) 16)))))
+
+(defun field-parse-fns ()
+  "Returns a list of GFF field parser functions, one for each of the 9
+fields."
+  (list #'parse-seqid #'parse-gff3-source #'parse-gff3-type
+        #'parse-gff3-sequence-coord #'parse-gff3-sequence-coord
+        #'parse-gff3-score #'parse-gff3-strand #'parse-gff3-phase
+        #'parse-gff3-attributes))

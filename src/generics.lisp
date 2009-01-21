@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (C) 2007-2008, Keith James. All rights reserved.
+;;; Copyright (C) 2007-2009 Keith James. All rights reserved.
 ;;;
 ;;; This program is free software: you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
@@ -41,35 +41,51 @@ fixnum."))
 NIL otherwise."))
 
 (defgeneric subsumesp (token1 token2 alphabet)
-  (:documentation ""))
+  (:documentation "Returns T if TOKEN1 subsumes TOKEN2 using IUPAC
+ambiguities, where both tokens belong to ALPHABET."))
 
 (defgeneric token-index (token alphabet)
-  (:documentation ""))
+  (:documentation "Returns the integer position of TOKEN in
+ALPHABET."))
 
 (defgeneric enum-ambiguity (char alphabet)
   (:documentation "Returns a list of the ambiguity characters
 represented by CHAR in ALPHABET."))
 
 (defgeneric strand-designator-p (object)
-  (:documentation ""))
+  (:documentation "Returns T if OBJECT is one of the supported nucleic
+acid sequence strand designators, or NIL otherwise.
+
+The strand designators are:
+
+                   String  Character     Symbol    Integer
+Forward strand          +          +   :forward          1
+Reverse strand          -          -   :reverse         -1
+Unknown strand          ?          ?   :unknown          0"))
 
 (defgeneric decode-strand (strand-designator &key strict)
-  (:documentation ""))
+  (:documentation "Returns a {defclass sequence-strand} given
+STRAND-DESIGNATOR, or NIL if the designator is not recognised. If
+STRICT is set to T an invalid designator will raise an error."))
 
-(defgeneric invert-strand (sequence-strand)
-  (:documentation ""))
+(defgeneric complement-strand (sequence-strand)
+  (:documentation "Returns the complement strand to
+SEQUENCE-STRAND."))
 
-(defgeneric match-strand (sequence-strand sequence-strand)
+(defgeneric complementp (sequence-strand1 sequence-strand2)
   (:documentation ""))
 
 (defgeneric forward-strand-p (sequence-strand)
-  (:documentation ""))
+  (:documentation "Returns T if SEQUENCE-STRAND is a forward strand,
+or NIL otherwise."))
 
 (defgeneric reverse-strand-p (sequence-strand)
-  (:documentation ""))
+  (:documentation "Returns T if SEQUENCE-STRAND is a reverse strand,
+or NIL otherwise."))
 
 (defgeneric unknown-strand-p (sequence-strand)
-  (:documentation ""))
+  (:documentation "Returns T if SEQUENCE-STRAND is an unknown strand,
+or NIL otherwise."))
 
 (defgeneric element-of (bio-sequence index)
   (:documentation "Returns the element at INDEX of BIO-SEQUENCE.  As
@@ -88,15 +104,17 @@ VALUE."))
 sequence representation, merely a length, or NIL otherwise."))
 
 (defgeneric single-stranded-p (nucleic-acid-sequence)
-  (:documentation ""))
+  (:documentation "Returns T if NUCLEIC-ACID-SEQUENCE is
+single-stranded, or NIL otherwise."))
 
 (defgeneric double-stranded-p (nucleic-acid-sequence)
-  (:documentation ""))
+  (:documentation "Returns T if NUCLEIC-ACID-SEQUENCE is
+double-stranded, or NIL otherwise."))
 
 (defgeneric num-gaps-of (bio-sequence &key start end)
   (:documentation ""))
 
-(defgeneric residue-frequencies (bio-sequence alphabet)
+(defgeneric residue-frequencies (bio-sequence)
   (:documentation ""))
 
 (defgeneric coerce-sequence (bio-sequence result-type &key start end)
@@ -125,11 +143,17 @@ modified such that its token-seq is complemented."))
 
 (defgeneric reverse-complement (nucleic-acid-sequence)
   (:documentation "Returns a new nucleic-acid-sequence that is the
-reverse-complement of NUCLEIC-ACID-SEQUENCE."))
+reverse-complement of NUCLEIC-ACID-SEQUENCE. If the argument is a
+{defclass na-sequence-interval} this is accomplished by returning a
+copy at the corresponding position on the complementary strand of the
+reference sequence."))
 
 (defgeneric nreverse-complement (nucleic-acid-sequence)
   (:documentation "Returns NUCLEIC-ACID-SEQUENCE, destructively
-modified such that its token-seq is reverse-complemented."))
+modified such that its token-seq is reverse-complemented. If the
+argument is a {defclass na-sequence-interval} this is accomplished by
+moving it to the corresponding position on the complementary strand of
+the reference sequence."))
 
 (defgeneric subsequence (bio-sequence start &optional end)
   (:documentation "Subsequence creates a bio-sequence that is a copy

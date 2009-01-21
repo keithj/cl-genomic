@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (C) 2008 Keith James. All rights reserved.
+;;; Copyright (C) 2008-2009 Keith James. All rights reserved.
 ;;;
 ;;; This program is free software: you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
@@ -126,12 +126,12 @@ alignment."
              (,max-row 0)
              (,max-col 0))
         (loop
-           for ,row of-type fixnum from 1 below ,rows
-           for ,prev-row of-type fixnum = (1- ,row)
+           for ,row of-type array-index from 1 below ,rows
+           for ,prev-row of-type array-index = (1- ,row)
            do
              (loop
-                for ,col of-type fixnum from 1 below ,cols
-                for ,prev-col of-type fixnum = (1- ,col)
+                for ,col of-type array-index from 1 below ,cols
+                for ,prev-col of-type array-index = (1- ,col)
                   ,@(when cell-exclusion-form
                           `(when ,cell-exclusion-form))
                 do
@@ -499,7 +499,7 @@ Returns:
 - A list of lists of fixnum start coordinates of kmers in VECM.
 - A list of lists of fixnum start coordinates of kmers in VECN.
 
-The returned lists each contain the a number of elements equal to the
+The returned lists each contain a number of elements equal to the
 number of unique, shared kmers found. The coordinate lists at the nth
 position in each list refer to the same kmer."
   (declare (optimize (speed 3) (safety 0)))

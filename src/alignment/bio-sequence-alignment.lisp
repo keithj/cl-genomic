@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (C) 2008 Keith James. All rights reserved.
+;;; Copyright (C) 2008-2009 Keith James. All rights reserved.
 ;;;
 ;;; This program is free software: you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
@@ -22,7 +22,7 @@
             :reader aligned-of
             :documentation "An aligned copy of a sequence."))
   (:documentation "A mixin describing an aligned copy of a
-  sequence."))
+sequence."))
 
 (defclass na-alignment-interval (na-sequence-interval aligned-mixin)
   ())
@@ -40,8 +40,8 @@
 
 (defgeneric aligned-length-of (aligned)
   (:documentation "Returns the aligned length of a sequence or
-  sequence interval. This value may include the length contributed by
-  gaps."))
+sequence interval. This value may include the length contributed by
+gaps."))
 
 ;;; Initialization methods
 (defmethod initialize-instance :after ((interval na-alignment-interval) &key)
@@ -93,7 +93,6 @@
       interval
     (coerce-sequence aligned 'string :start start :end end)))
 
-(defmethod ninvert-complement :before ((interval na-alignment-interval))
+(defmethod nreverse-complement :before ((interval na-alignment-interval))
   (error 'bio-sequence-op-error
          :text "Alignment intervals may not be destructively modified."))
-

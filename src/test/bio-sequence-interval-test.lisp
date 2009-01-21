@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (C) 2008 Keith. All rights reserved.
+;;; Copyright (C) 2008-2009 Keith James. All rights reserved.
 ;;;
 ;;; This program is free software: you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
@@ -196,8 +196,8 @@ single-stranded reference."))
                                      :upper upper
                                      :strand strand
                                      :reference reference-ds))
-           (interval2 (invert-complement interval1))
-           (interval3 (invert-complement interval2))
+           (interval2 (reverse-complement interval1))
+           (interval3 (reverse-complement interval2))
            (interval4 (make-instance 'na-sequence-interval
                                      :lower lower
                                      :upper upper
@@ -216,8 +216,8 @@ single-stranded reference."))
       (ensure (= 4 (upper-of interval3)))
       (ensure (string= "aaac" (coerce-sequence interval3 'string)))
       (ensure-error 'invalid-argument-error
-                    (invert-complement interval4)
-                    :report "Successfully called invert-complement on
+                    (reverse-complement interval4)
+                    :report "Successfully called reverse-complement on
                     an interval with a single-stranded reference."))))
 
 (addtest (bio-sequence-interval-tests) na-sequence-interval/12
@@ -237,17 +237,17 @@ single-stranded reference."))
                                      :strand strand
                                      :num-strands 1
                                      :reference reference-ss)))
-      (ninvert-complement interval1)
+      (nreverse-complement interval1)
       (ensure (eql *reverse-strand* (strand-of interval1)))
       (ensure (= 6 (lower-of interval1)))
       (ensure (= 10 (upper-of interval1)))
       (ensure (string= "gcaa" (coerce-sequence interval1 'string)))
-      (ninvert-complement interval1)
+      (nreverse-complement interval1)
       (ensure (eql *forward-strand* (strand-of interval1)))
       (ensure (= 0 (lower-of interval1)))
       (ensure (= 4 (upper-of interval1)))
       (ensure (string= "aaac" (coerce-sequence interval1 'string)))
       (ensure-error 'invalid-argument-error
-                    (invert-complement interval2)
-                    :report "Successfully called ninvert-complement on
+                    (reverse-complement interval2)
+                    :report "Successfully called nreverse-complement on
                     an interval with a single-stranded reference."))))

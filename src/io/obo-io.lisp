@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (C) 2008 Keith James. All rights reserved.
+;;; Copyright (C) 2008-2009 Keith James. All rights reserved.
 ;;;
 ;;; This program is free software: you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
@@ -171,6 +171,22 @@ modifiers, dbxref lists and comments."
     (values (string-trim trim (subseq str 0 i))
             (string-trim trim (subseq str (1+ i))))))
 
+(defun read-value (tag-value)
+  (let ((tag (car tag-value))
+        (value (cdr tag-value)))
+    (cons tag (cond ((string= "name" tag)
+                     (read-name value))
+                    ((string= "def" tag)
+                     (read-def value))
+                    ((string= "is_a" tag)
+                     (read-is-a value))
+                    ((string= "relationship" tag)
+                     (read-relationship value))
+                    ((string= "intersection_of" tag)
+                     (read-intersection value))
+                    (t
+                     value)))))
+
 
 ;;; Functions for specific tags
 (defun read-def (str)
@@ -185,9 +201,17 @@ dbxref list."
   (expand-escape-chars (remove-comments str)))
 
 (defun read-relationship (str)
-  (remove-comments str))
+  (split-value str))
 
+(defun read-intersection (str)
+  (split-value str))
 
+(defun split-value (str)
+  (let ((parts (split-sequence #\Space (remove-comments str)
+                               :remove-empty-subseqs t)))
+    (if (endp (rest parts))
+        (string-trim '(#\Space) (first parts))
+      parts)))
 
 ;;; Functions for all tags
 (defun read-quoted-text (str)
@@ -342,5 +366,3 @@ CHAR."
                            :record tag-values
                            :text ">1 comment tag present"))))
   t)
-
-
