@@ -87,7 +87,7 @@ be the same length as the array of residues."))
   (:documentation "A mixin with support for bio-sequences that have a
 numeric quality value for each residue."))
 
-  
+
 (defclass token-sequence ()
   ((alphabet :initarg :alphabet
              :reader alphabet-of

@@ -118,6 +118,8 @@
    #:reverse-strand-p
    #:unknown-strand-p
    #:decode-strand
+   #:strand=
+   #:strand-equal
    #:complement-strand
    #:complementp
    #:num-strands-of
@@ -156,9 +158,7 @@
    #:residue-frequencies
 
    #:coerce-sequence
-   
-   #:invert-complement
-   #:ninvert-complement
+
    #:residue-position
    #:quality-position
    

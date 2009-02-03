@@ -48,6 +48,10 @@ ambiguities, where both tokens belong to ALPHABET."))
   (:documentation "Returns the integer position of TOKEN in
 ALPHABET."))
 
+(defgeneric  random-token-of (alphabet)
+  (:documentation "Returns a random token from ALPHABET, with an
+equal probability of selecting each token."))
+
 (defgeneric enum-ambiguity (char alphabet)
   (:documentation "Returns a list of the ambiguity characters
 represented by CHAR in ALPHABET."))
@@ -68,23 +72,35 @@ Unknown strand          ?          ?   :unknown          0"))
 STRAND-DESIGNATOR, or NIL if the designator is not recognised. If
 STRICT is set to T an invalid designator will raise an error."))
 
+(defgeneric strand= (sequence-strand1 sequence-strand2)
+  (:documentation "Returns T if SEQUENCE-STRAND1 can be shown to be
+the same as SEQUENCE-STRAND2, or NIL otherwise. If either strand is
+unknown, the result will be NIL."))
+
+(defgeneric strand-equal (sequence-strand1 sequence-strand2)
+  (:documentation "Returns T if SEQUENCE-STRAND1 may be the same as
+SEQUENCE-STRAND2, or NIL otherwise. If either strand is unknown, the
+result will be T."))
+
 (defgeneric complement-strand (sequence-strand)
   (:documentation "Returns the complement strand to
-SEQUENCE-STRAND."))
+SEQUENCE-STRAND. The complement of the unknown strand is the unknown
+strand."))
 
 (defgeneric complementp (sequence-strand1 sequence-strand2)
-  (:documentation ""))
+  (:documentation "Returns T if SEQUENCE-STRAND1 is the complement of
+SEQUENCE-STRAND2, or NIL otherwise."))
 
 (defgeneric forward-strand-p (sequence-strand)
-  (:documentation "Returns T if SEQUENCE-STRAND is a forward strand,
+  (:documentation "Returns T if SEQUENCE-STRAND is the forward strand,
 or NIL otherwise."))
 
 (defgeneric reverse-strand-p (sequence-strand)
-  (:documentation "Returns T if SEQUENCE-STRAND is a reverse strand,
+  (:documentation "Returns T if SEQUENCE-STRAND is the reverse strand,
 or NIL otherwise."))
 
 (defgeneric unknown-strand-p (sequence-strand)
-  (:documentation "Returns T if SEQUENCE-STRAND is an unknown strand,
+  (:documentation "Returns T if SEQUENCE-STRAND is the unknown strand,
 or NIL otherwise."))
 
 (defgeneric element-of (bio-sequence index)

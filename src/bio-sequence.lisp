@@ -350,6 +350,18 @@ number of strands, or NIL otherwise."
 (defmethod unknown-strand-p ((strand (eql *unknown-strand*)))
   t)
 
+(defmethod strand= ((strand1 sequence-strand) (strand2 sequence-strand))
+  (cond ((or (eql *unknown-strand* strand1) (eql *unknown-strand* strand2))
+         nil)
+        (t
+         (eql strand1 strand2))))
+
+(defmethod strand-equal ((strand1 sequence-strand) (strand2 sequence-strand))
+  (cond ((or (eql *unknown-strand* strand1) (eql *unknown-strand* strand2))
+         t)
+        (t
+         (eql strand1 strand2))))
+
 (defmethod complement-strand ((strand sequence-strand))
   (cond ((eql *forward-strand* strand)
          *reverse-strand*)
@@ -359,10 +371,7 @@ number of strands, or NIL otherwise."
          *unknown-strand*)))
 
 (defmethod complementp ((strand1 sequence-strand) (strand2 sequence-strand))
-  (cond ((or (eql *unknown-strand* strand1) (eql *unknown-strand* strand2))
-         t)
-        (t
-         (eql strand1 strand2))))
+  (strand-equal (complement-strand strand1) strand2))
 
 (defmethod ambiguousp ((seq virtual-token-sequence))
   t)
