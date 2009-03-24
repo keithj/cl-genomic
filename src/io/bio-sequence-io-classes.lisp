@@ -32,8 +32,8 @@ parsed from the input stream."))
   (:documentation "A parser specialised for processing biological
 sequence data with additional residue quality information."))
 
-(defclass raw-sequence-parser (bio-sequence-parser
-                               quality-parser-mixin)
+(defclass raw-sequence-parser (quality-parser-mixin
+                               bio-sequence-parser)
   ((raw :initform ()
         :accessor parsed-raw-of
         :documentation "The raw sequence data parsed from the input
@@ -63,8 +63,8 @@ input stream."))
   (:documentation "A parser specialised for processing biological
 sequence data to build CLOS objects."))
 
-(defclass quality-sequence-parser (simple-sequence-parser
-                                   quality-parser-mixin)
+(defclass quality-sequence-parser (quality-parser-mixin
+                                   simple-sequence-parser)
   ((quality :initform (make-array 0 :adjustable t :fill-pointer 0)
             :accessor parsed-quality-of
             :documentation "The sequence quality data parsed from the
@@ -80,6 +80,12 @@ stream."))
   (:documentation "A parser specialised for processing biological
 sequence data to build CLOS objects that do not contain explicit
 residue data."))
+
+(defclass indexing-sequence-parser (virtual-sequence-parser)
+  ((offset :initform 0
+           :accessor offset-of)
+   (stream :initarg :stream
+           :reader stream-of)))
 
 (defclass gff3-parser (bio-sequence-parser)
   ((feature-ontology)

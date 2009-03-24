@@ -22,6 +22,36 @@
 ;;; may not be practical when there are millions of intervals and
 ;;; millions of references.
 
+;;; Allen interval algebra (x is the upper interval)
+;;;
+;;; x before y, y after x
+;;; ------
+;;;        -----
+;;;
+;;; x meets y, y met-by x
+;;; ------
+;;;       -----
+;;;
+;;; x overlaps y, y overlaps x
+;;; ------
+;;;     -----
+;;;
+;;; x starts y, y started-by x
+;;; ----
+;;; -------
+;;;
+;;; x during y, y contains x
+;;;  ---
+;;; -----
+;;;
+;;; x finishes y, y finished-by x
+;;;   ---
+;;; -----
+;;;
+;;; x equals y
+;;; -----
+;;; -----
+
 (defclass interval ()
   ((reference :initform nil
               :initarg :reference
@@ -31,14 +61,14 @@
    (lower :type fixnum
           :initform 0
           :initarg :lower
-          :accessor lower-of
+          :reader lower-of
           :documentation "The lower bound of the interval. If a
           reference is defined, this must be within the bounds of the
           reference sequence.")
    (upper :type fixnum
           :initform 0
           :initarg :upper
-          :accessor upper-of
+          :reader upper-of
           :documentation "The upper bound of the interval."))
   (:documentation "An interval within a reference sequence. If a
 reference is defined, this must be within the bounds of the reference
@@ -57,35 +87,6 @@ the bounds always refer to the forward strand."))
   (:documentation "An amino acid sequence that is an interval within
   a reference sequence."))
 
-;;; Allen interval algebra
-;;;
-;;; x before y, y after x
-;;; ------  -----
-;;;
-;;; x meets y, y met-by x
-;;; ------
-;;;       -----
-;;;
-;;; x overlaps y, y overlaps x
-;;; ------
-;;;     -----
-;;;
-;;; x starts y, y started-by x
-;;; ------
-;;; -----
-;;;
-;;; x during y, y contains x
-;;;  ---
-;;; -----
-;;;
-;;; x finishes y, y finished-by x
-;;;   ---
-;;; -----
-;;;
-;;; x equals y
-;;; -----
-;;; -----
-
 (defgeneric beforep (x y)
   (:documentation "Returns T if X is before Y according to Allen's
 Interval Algebra, or NIL otherwise."))
@@ -100,6 +101,10 @@ Interval Algebra, or NIL otherwise."))
 
 (defgeneric met-by-p (x y)
   (:documentation "Returns T if X is met by Y according to Allen's
+Interval Algebra, or NIL otherwise."))
+
+(defgeneric overlaps (x y)
+  (:documentation "Returns T if X overlaps Y according to Allen's
 Interval Algebra, or NIL otherwise."))
 
 (defgeneric startsp (x y)
@@ -159,36 +164,42 @@ Allen's Interval Algebra, or NIL otherwise."))
       interval
     (format stream "#<AA-SEQUENCE-INTERVAL ~a ~a>" lower upper)))
 
+(defmethod make-interval ((reference na-sequence) &rest initargs)
+  (apply #'make-instance 'na-sequence-interval :reference reference initargs))
+
+(defmethod make-interval ((reference aa-sequence) &rest initargs)
+  (apply #'make-instance 'aa-sequence-interval :reference reference initargs))
+
+;; (let* ((ref (make-dna (make-string 10000000 :initial-element #\a)))
+;;        (dna (find-alphabet :simple-dna))
+;;        (intervals (make-array 100000 :initial-element nil)))
+;;   (with-sequence-residues (residue ref)
+;;     (setf residue (random-token-of dna)))
+;;   (dotimes (i (length intervals))
+;;     (let* ((len (* 10 (random 2000)))
+;;            (lower (random (- 10000000 len))))
+;;       (setf (svref intervals i)
+;;             (make-interval ref :lower lower :upper (+ lower len)))))
+;;   (sort intervals #'< :key #'lower-of)
+;;   (time (let ((x (svref intervals 0)))
+;;           (cons x
+;;                 (loop
+;;                    for i across intervals
+;;                    when (overlaps x i)
+;;                    collect i)))))
+
 ;;; Implementation methods
 (defmethod (setf reference-of) :before (value (interval interval))
   (with-accessors ((lower lower-of) (upper upper-of))
       interval
     (%check-interval-range lower upper value)))
 
-(defmethod (setf upper-of) :before (value (interval interval))
-  (with-accessors ((lower lower-of) (reference reference-of))
-      interval
-    (%check-interval-range lower value reference)))
-
-(defmethod (setf lower-of) :before (value (interval interval))
-  (with-accessors ((upper upper-of) (reference reference-of))
-      interval
-    (%check-interval-range value upper reference)))
-
-(defmethod (setf reference-of) :before
-    (value (interval na-sequence-interval))
+(defmethod (setf reference-of) :before (value (interval na-sequence-interval))
   (with-accessors ((strand strand-of) (num-strands num-strands-of))
       interval
     (%check-interval-strands strand num-strands value)))
 
-(defmethod (setf strand-of) :before
-    (value (interval na-sequence-interval))
-  (with-accessors ((reference reference-of) (num-strands num-strands-of))
-       interval
-    (%check-interval-strands value num-strands reference)))
-
-(defmethod (setf num-strands-of) :before
-    (value (interval na-sequence-interval))
+(defmethod (setf num-strands-of) :before (value (interval na-sequence-interval))
   (with-accessors ((reference reference-of) (strand strand-of))
       interval
     (%check-interval-strands strand value reference)))
@@ -261,7 +272,8 @@ Allen's Interval Algebra, or NIL otherwise."))
                (subsequence reference (+ lower start) (+ lower end))) 'string))
             (t
              (error 'bio-sequence-op-error
-                    :text "a reverse-strand interval may not be created on a single-stranded sequence."))))))
+                    :text (txt "a reverse-strand interval may not be created"
+                               "on a single-stranded sequence.")))))))
 
 (defmethod subsequence ((interval na-sequence-interval)
                         (start fixnum) &optional end)
@@ -276,7 +288,8 @@ Allen's Interval Algebra, or NIL otherwise."))
                 (subsequence reference (+ lower start) (+ lower end))))
               (t
                (error 'bio-sequence-op-error
-                      :text "a reverse-strand interval may not be applied to a single-stranded sequence.")))))))
+                      :text (txt "a reverse-strand interval may not be applied"
+                                 "to a single-stranded sequence."))))))))
 
 (defmethod subsequence ((interval aa-sequence-interval) (start fixnum)
                         &optional end)
@@ -302,7 +315,8 @@ Allen's Interval Algebra, or NIL otherwise."))
                    (strand strand-of) (num-strands num-strands-of))
       interval
     (%check-interval-strands (complement-strand strand) num-strands reference)
-    (with-slots (lower upper) ; direct slot access to allow inversion in place
+    (with-slots (lower upper strand) ; direct slot access to allow
+                                     ; inversion in place
         interval
       (let ((ref-length (length-of reference))
             (int-length (- upper lower)))
@@ -323,6 +337,14 @@ Allen's Interval Algebra, or NIL otherwise."))
 (defmethod met-by-p ((x interval) (y interval))
   (= (lower-of x) (upper-of y)))
 
+(defmethod overlaps ((x interval) (y interval))
+  (with-accessors ((lowx lower-of) (upx upper-of))
+      x
+    (with-accessors ((lowy lower-of) (upy upper-of))
+        y
+      (or (< lowx lowy upx upy)
+          (< lowy lowx upy upx)))))
+
 (defmethod startsp ((x interval) (y interval))
   (and (= (lower-of x) (lower-of y))
        (< (upper-of x) (upper-of y))))
@@ -332,12 +354,12 @@ Allen's Interval Algebra, or NIL otherwise."))
        (> (upper-of x) (upper-of y))))
 
 (defmethod duringp ((x interval) (y interval))
-  (and (>= (lower-of x) (lower-of y))
-       (<= (upper-of x) (upper-of y))))
+  (and (> (lower-of x) (lower-of y))
+       (< (upper-of x) (upper-of y))))
 
 (defmethod containsp ((x interval) (y interval))
-  (and (<= (lower-of x) (lower-of y))
-       (>= (upper-of x) (upper-of y))))
+  (and (< (lower-of x) (lower-of y))
+       (> (upper-of x) (upper-of y))))
 
 (defmethod finishesp ((x interval) (y interval))
   (and (> (lower-of x) (lower-of y))
@@ -350,6 +372,8 @@ Allen's Interval Algebra, or NIL otherwise."))
 (defmethod interval-equal ((x interval) (y interval))
   (and (= (lower-of x) (lower-of y))
        (= (upper-of x) (upper-of y))))
+
+
 
 
 ;; FIXME -- circular sequences
@@ -407,11 +431,13 @@ reference."
                (error 'invalid-argument-error
                       :params 'reference
                       :args reference
-                      :text "a double-stranded interval may not be applied to a single-stranded sequence"))
+                      :text (txt "a double-stranded interval may not be"
+                                 "applied to a single-stranded sequence")))
               ((and (= 1 num-ref-strands) (eql *reverse-strand* strand))
                  (error 'invalid-argument-error
                         :params 'reference
                         :args reference
-                        :text "a reverse-strand interval may not be applied to a single-stranded sequence"))
+                        :text (txt "a reverse-strand interval may not be"
+                                   "applied to a single-stranded sequence")))
               (t t))))
   t)

@@ -157,6 +157,20 @@
    #:search-sequence
    #:residue-frequencies
 
+   #:make-interval
+   #:beforep
+   #:afterp
+   #:meetsp
+   #:met-by-p
+   #:overlaps
+   #:startsp
+   #:started-by-p
+   #:duringp
+   #:containsp
+   #:finishesp
+   #:finished-by-p
+   #:interval-equal
+   
    #:coerce-sequence
 
    #:residue-position

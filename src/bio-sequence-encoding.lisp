@@ -522,9 +522,7 @@ score."
 
 (defun encode-phred-quality (q)
   "Returns the character encoding of the Phred quality score Q."
-  (code-char (+ 33 (if (< 93 q)
-                       93
-                     q))))
+  (code-char (+ 33 (min 93 q))))
 
 (defun decode-phred-quality (c)
   "Returns the Phred quality score encoded by the character C."

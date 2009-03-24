@@ -59,7 +59,7 @@ to request an interval from the reverse-complement strand of a such a
 sequence.
 
 \begin{lstlisting}[caption={Making DNA sequences from strings},
-  label=lst:make-dnaseq-string]
+  label=lst:make-dnaseq-string,float=[tbph]]
   (in-package :bio-sequence)
   
   ;; Create an anonymous DNA sequence
@@ -119,15 +119,15 @@ which causes the generator to return NIL and moves the stream forward
 to the next record.
 
 \begin{lstlisting}[caption={Making sequences from streams},
-  label=lst:read-bioseq-stream]
+  label=lst:read-bioseq-stream,float=[tbph]]
   (in-package :bio-sequence)
   
   ;; Read Fasta format DNA sequences from a named file into a list
   (with-open-file (stream "seq.fasta")
-      (let ((g (make-seq-input stream :fasta)))
+      (let ((seqi (make-seq-input stream :fasta)))
         (loop
-           while (has-more-p g)
-           collect (next g))))
+           while (has-more-p seqi)
+           collect (next seqi))))
 
   ;; Read a single AA sequence from a stream
   (next (make-seq-input stream :fasta :alphabet :aa))
@@ -135,10 +135,10 @@ to the next record.
   ;; Read the human genome in Fasta format from a file and print
   ;; chromosome names and lengths
   (with-open-file (stream "Homo_sapiens.NCBI36.52.dna.toplevel.fa")
-      (let ((g (make-seq-input stream :fasta :virtual t)))
+      (let ((seqi (make-seq-input stream :fasta :virtual t)))
         (loop
-           while (has-more-p g)
-           do (let ((seq (next g)))
+           while (has-more-p seqi)
+           do (let ((seq (next seqi)))
                 (format t "~a ~a~%" (identity-of seq)
                         (length-of seq))))))
 
@@ -147,10 +147,10 @@ to the next record.
   (with-open-file (stream "bad_seq.fasta")
       (handler-bind ((malformed-record-error
                         #'skip-malformed-sequence))
-        (let ((g (make-seq-input stream :fasta)))
+        (let ((seqi (make-seq-input stream :fasta)))
            (loop
-              while (has-more-p g)
-              for seq = (next g)
+              while (has-more-p seqi)
+              for seq = (next seqi)
               when seq
               collect seq))))
 \end{lstlisting}
@@ -200,7 +200,7 @@ one subsumes the other i.e. that the unambiguous tokens represented by
 one ambiguous token are a subset of those represented by another.
 
 \begin{lstlisting}[caption={Using bio-sequence alphabets},
-  label=lst:using-bioseq-alphabets]
+  label=lst:using-bioseq-alphabets,float=[tbph]]
   (in-package :bio-sequence)
   
   ;; List the names of the registered alphabets
@@ -257,7 +257,7 @@ virtual), the residues are \lstinline!setf!-able and thus may be
 mutated. 
 
 \begin{lstlisting}[caption={The components of a bio-sequence},
-  label=lst:components-of-bioseq]
+  label=lst:components-of-bioseq,float=[tbph]]
   (in-package :bio-sequence)
 
   ;; Create an anonymous DNA sequence. Print its identity, length
@@ -301,7 +301,7 @@ provided; if a single inter-residue coordinate is provided, it
 implicitly addresses the following residue. The resulting system is
 equivalent to the standard addressing of CL vectors.
 
-\begin{figure}[hb]
+\begin{figure}[tbph]
   \begin{center}
     \includegraphics[scale=1.0]{inter-residue-coordinates.pdf}
   \end{center}
@@ -310,6 +310,55 @@ equivalent to the standard addressing of CL vectors.
     vector-style coordinates in blue.}
   \label{fig:inter-residue-coords}
 \end{figure}
+
+The strand of a nucleic acid sequence is represented by one of the
+global strand objects \lstinline!*forward-strand*!,
+\lstinline!*reverse-strand*! or \lstinline!*unknown-strand*!. There
+exist a number of methods for testing, comparing and converting
+strands. The convention for comparing two strands is that if either is
+unknown, they cannot be \lstinline!strand=!. However, if both strands
+are unknown they are \lstinline!strand-equal!. In other words, the
+former test guarantees that the strands are the same, while the latter
+guarantees only that they might be the same.
+
+The complement relationship between forward and reverse strands is
+executed by the \lstinline!complement-strand! method, while the
+\lstinline!complementp! predicate tests for this relationship. The
+complement of the unknown strand is itself the unknown strand. The
+\lstinline!complementp! predicate is implemented using
+\lstinline!strand=! and shares its restriction that it will return T
+only if the strands are guaranteed to be complementary.
+
+\begin{lstlisting}[caption={Sequence strand operations},
+  label=lst:testing-bioseq,float=[tbph]]
+  (in-package :bio-sequence)
+
+  ;; Returns T
+  (strand= *forward-strand* *forward-strand*)
+  (strand= *reverse-strand* *reverse-strand*)
+
+  ;; Returns NIL
+  (strand= *unknown-strand* *unknown-strand*)
+  
+  ;; Returns T
+  (strand-equal *forward-strand* *forward-strand*)
+  (strand-equal *reverse-strand* *reverse-strand*)
+  (strand-equal *unknown-strand* *unknown-strand*)
+  (strand-equal *unknown-strand* *forward-strand*)
+  (strand-equal *unknown-strand* *reverse-strand*)
+  
+  ;; Returns NIL
+  (strand= *forward-strand* *reverse-strand*)
+  
+  ;; Returns T
+  (complementp *forward-strand* *reverse-strand*)
+
+  ;; Returns NIL
+  (complementp *unknown-strand* *unknown-strand*)
+  (complementp *forward-strand* *unknown-strand*)
+  (complementp *reverse-strand* *unknown-strand*)
+\end{lstlisting}
+
 
 \subsection{Testing bio-sequences}
 
@@ -326,7 +375,7 @@ functions and will simply return NIL if passed a Lisp object that is
 not a \lstinline!bio-sequence!.
 
 \begin{lstlisting}[caption={Testing bio-sequences},
-  label=lst:testing-bioseq]
+  label=lst:testing-bioseq,float=[tbph]]
   (in-package :bio-sequence)
 
   ;; Create and test anonymous sequences
@@ -373,12 +422,11 @@ types or to CL strings. In fact, coercion to a string is the main way
 of producing a bare string rendering of a
 \lstinline!bio-sequence!. Bio-sequence coercion differs from CL
 coercion in that the function accepts \lstinline!:start! and
-\lstinline!:end! arguments so that it is possible to coerce a
-subsequence directly, without first using the \lstinline!subsequence!
-method.
+\lstinline!:end! arguments, making it possible to coerce a subsequence
+directly, without first using the \lstinline!subsequence! method.
 
 \begin{lstlisting}[caption={Coercing bio-sequences},
-  label=lst:coercing-bioseq]
+  label=lst:coercing-bioseq,float=[tbph]]
   (in-package :bio-sequence)
 
   ;; DNA may be coerced to RNA and vice versa

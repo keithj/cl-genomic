@@ -51,14 +51,14 @@
   ((strand :type sequence-strand
            :initform *unknown-strand*
            :initarg :strand
-           :accessor strand-of
+           :reader strand-of
            :documentation "The nucleotide strand.")))
 
 (defclass identity-mixin ()
   ((identity :initform nil
              :initarg :identity
-             :accessor identity-of
-             :documentation "A temporary locally unique identifier."))
+             :reader identity-of
+             :documentation "A temporary, locally unique identifier."))
   (:documentation "A mixin which allows assignment of a temporary
 local identifier to an object. An identity of NIL signifies an
 anonymous object."))
@@ -87,7 +87,6 @@ be the same length as the array of residues."))
   (:documentation "A mixin with support for bio-sequences that have a
 numeric quality value for each residue."))
 
-
 (defclass token-sequence ()
   ((alphabet :initarg :alphabet
              :reader alphabet-of
@@ -98,10 +97,14 @@ numeric quality value for each residue."))
   ((length :initform 0
            :initarg :length
            :accessor length-of
-           :documentation "The length of the sequence.")))
+           :documentation "The length of the sequence."))
+  (:documentation "A token sequence whose tokens are not explicitly
+represented."))
 
 (defclass encoded-token-sequence (token-sequence)
-  ())
+  ()
+  (:documentation "A token sequence whose tokens have been transformed
+to a representation other than characters, typically small integers."))
 
 (defclass mmapped-sequence (token-sequence)
   ((mmapped-vector :initform nil
@@ -112,7 +115,9 @@ numeric quality value for each residue."))
   ((vector :initform (make-array 0 :element-type 'fixnum)
            :initarg :vector
            :accessor vector-of
-           :documentation "The token vector of the sequence.")))
+           :documentation "The token vector of the sequence."))
+  (:documentation "An encoded sequence whose tokens are stored in an
+in-memory vector."))
 
 (defclass bio-sequence ()
   ()

@@ -69,6 +69,9 @@
 
 (defparameter *expected-gff-version* 3)
 
+(defmethod make-seq-input ((stream line-input-stream)
+                           (format (eql :gff3))
+                           &key (alphabet :dna) parser virtual))
 
 
 ;; (defun wibble-gff3 (filename)

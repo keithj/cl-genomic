@@ -91,7 +91,6 @@
           (setf (assocdr key raw) (concat-strings val)))))
     raw))
 
-
 ;;; Collecting data into CLOS instances
 (defmethod begin-object :before ((parser simple-sequence-parser))
   (with-accessors ((identity parsed-identity-of)
@@ -125,9 +124,7 @@
 (defmethod begin-object :before ((parser quality-sequence-parser))
   (with-accessors ((quality parsed-quality-of))
       parser
-    (setf quality (make-array 0 :adjustable t :fill-pointer 0)))
-  ;; (call-next-method)
-  )
+    (setf quality (make-array 0 :adjustable t :fill-pointer 0))))
 
 (defmethod object-quality ((parser quality-sequence-parser)
                            (quality vector))
@@ -138,14 +135,22 @@
 (defmethod begin-object :before ((parser virtual-sequence-parser))
   (with-accessors ((length parsed-length-of))
       parser
-    (setf length 0))
-  ;; (call-next-method)
-  )
+    (setf length 0)))
 
 (defmethod object-residues ((parser virtual-sequence-parser)
                             (residues vector))
   (incf (parsed-length-of parser) (length residues)))
 
+;;; Collecting data into an indexed file that may be mmapped later
+(defmethod object-residues :after ((parser indexing-sequence-parser)
+                                   (residues vector))
+  (princ residues (stream-of parser)))
+
+(defmethod end-object :after ((parser indexing-sequence-parser))
+  (with-accessors ((offset offset-of)
+                   (identity parsed-identity-of) (length parsed-length-of))
+      parser
+    (incf offset length)))
 
 ;;; CLOS instance constructors
 (defmethod make-bio-sequence ((parser simple-sequence-parser))
@@ -187,7 +192,7 @@
       (error 'malformed-record-error
              :record (parsed-identity-of parser)
              :text "no quality data provided"))
-    ;; FIXME -- On sbcl with-output-to-string is apparently very fast
+    ;; TODO -- On sbcl with-output-to-string is apparently very fast
     ;; for this sort of operation. Maybe faster than pre-allocating a
     ;; string and copying into it?
     (let ((residues (etypecase (aref residue-chunks 0)
@@ -215,6 +220,8 @@
     (apply #'make-seq-input s format args)))
 
 (defun skip-malformed-sequence (condition)
+  "Restart function that invokes the SKIP-SEQUENCE-RECORD restart to
+skip over a malformed sequence record."
   (declare (ignore condition))
   (invoke-restart 'skip-sequence-record))
 
@@ -260,6 +267,10 @@ for example, {defun write-raw-fasta} and {defun write-raw-fastq} ."
 
 (declaim (inline nadjust-case))
 (defun nadjust-case (string token-case)
+  "Returns STRING, having destructively modified the case of its
+characters as indicated by TOKEN-CASE, which may be :UPPER, :LOWER or
+NIL. Specifying a TOKEN-CASE of NIL results in the original string
+case being retained."
   (ecase token-case
     ((nil) string)
     (:lower (nstring-downcase string))

@@ -50,6 +50,34 @@
 
 (defmethod read-fastq-sequence ((stream character-line-input-stream)
                                 (alphabet symbol)
+                                (parser bio-sequence-parser))
+  (restart-case
+      (let ((seq-header (find-line stream #'content-string-p)))
+        (cond ((eql :eof seq-header)
+               (values nil nil))
+              ((char-fastq-header-p seq-header)
+               (multiple-value-bind (residues quality-header quality)
+                   (parse-fastq-record stream #'char-fastq-quality-header-p)
+                 (declare (ignore quality-header quality))
+                 (begin-object parser)
+                 (object-alphabet parser alphabet)
+                 (object-identity parser (string-left-trim '(#\@) seq-header))
+                 (object-residues parser residues)
+                 (values (end-object parser) t)))
+              (t
+               (error 'malformed-record-error
+                      :text (format nil
+                                    "~s is not recognised as as Fastq header"
+                                    seq-header)))))
+    (skip-bio-sequence ()
+      :report "Skip this sequence."
+      ;; Restart skips on to the next header
+      (let ((line (find-line stream #'char-fastq-header-p)))
+        (push-line stream line))
+      (values nil t))))
+
+(defmethod read-fastq-sequence ((stream character-line-input-stream)
+                                (alphabet symbol)
                                 (parser quality-parser-mixin))
   (restart-case
       (let ((seq-header (find-line stream #'content-string-p)))

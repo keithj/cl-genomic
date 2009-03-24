@@ -25,4 +25,5 @@ coverage: clean
 	sbcl --noinform --noprint --load make-coverage-report.lisp
 
 clean:
-	find . -name \*.fasl -exec rm {} \;
+	find . -name \*.fasl -o -name \*.ufsl -o -name \*.lx32fsl -exec rm {} \;
+

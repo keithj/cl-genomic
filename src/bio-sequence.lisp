@@ -18,6 +18,7 @@
 (in-package :bio-sequence)
 
 (deftype encoded-residues (n)
+  "Parameterized type for encoded sequence residues."
   `(simple-array (unsigned-byte ,n) (*)))
 
 (deftype quality-score ()
@@ -28,6 +29,21 @@
   "Maximum length of sequence to be pretty-printed.")
 
 (defmacro define-strand-decoder (type test forward reverse unknown)
+  "Defines a sequence strand decoder method for a particular strand
+representation that converts an ad hoc strand designator to a
+canonical strand object. There is no standard nomenclature for
+sequence strands and they may be represented as strings, characters,
+integers, mathematical symbols etc. For example +/-/? or fwd/rev/unk
+or 1/-1/0.
+
+Arguments:
+
+- type (Lisp type): The Lisp type of the strand designators.
+- test (function): The test function to be used to compare strand
+  designators.
+- forward (object): The forward strand designator.
+- reverse (object): The reverse strand designator.
+- unknown (object): The unknown strand designator."
   `(progn
     (defmethod decode-strand ((strand ,type) &key strict)
       (cond ((,test ,forward strand)
@@ -37,13 +53,12 @@
             ((,test ,unknown strand)
              *unknown-strand*)
             (t
-             (if strict
-                 (error 'invalid-argument-error
-                        :params 'strand
-                        :args strand
-                        :text (format nil "not a valid ~a strand designator"
-                                      ',type))
-               nil))))))
+             (when strict
+               (error 'invalid-argument-error
+                      :params 'strand
+                      :args strand
+                      :text (format nil "not a valid ~a strand designator"
+                                    ',type))))))))
 
 (defmacro with-sequence-residues ((var seq &key start end) &body body)
   "Executes BODY in the context of bio-sequence SEQ such that VAR is
@@ -136,9 +151,8 @@ Returns:
 
 Arguments:
 
-- residues (vector or NIL): A vector of characters, encoded residues
-  or NIL. The latter creates a virtual sequence and requires a length
-  argument to be supplied.
+- residues (vector): A vector of characters or encoded residues. It is
+  not possible to create virtual sequences with quality information.
 - quality (vector integer): A vector of integers, the same length as
   RESIDUES, containing quality data.
 
@@ -172,7 +186,7 @@ Returns:
 
 Arguments:
 
-- residues (vector or NIL): A vector of characters, encoded residues
+- residues (vector): A vector of characters, encoded residues
   or NIL. The latter creates a virtual sequence and requires a length
   argument to be supplied.
 
@@ -249,18 +263,19 @@ number of strands, or NIL otherwise."
 
 (defun concat-sequence (&rest seqs)
   (if (apply #'same-biotype-p seqs)
-      (let ((construct (cond ((dna-sequence-p (first seqs))
-                              #'make-dna)
-                             ((rna-sequence-p (first seqs))
-                              #'make-rna)
-                             ((aa-sequence-p (first seqs))
-                              #'make-aa)
-                             (t
-                              (error 'invalid-argument-error
-                                     :params 'seqs
-                                     :args seqs
-                                     :text (msg "expected all sequences to be"
-                                                "one of DNA, RNA or AA"))))))
+      (let ((construct
+             (cond ((dna-sequence-p (first seqs))
+                    #'make-dna)
+                   ((rna-sequence-p (first seqs))
+                    #'make-rna)
+                   ((aa-sequence-p (first seqs))
+                    #'make-aa)
+                   (t
+                    (error 'invalid-argument-error
+                           :params 'seqs
+                           :args seqs
+                           :text (txt "expected all sequences to be"
+                                      "one of DNA, RNA or AA"))))))
         ;; We use coerce-sequence to avoid a special case for virtual
         ;; sequences. We can't simply concatenate the encoded residue
         ;; vectors because virtual sequences do not have them
@@ -323,32 +338,20 @@ number of strands, or NIL otherwise."
 (defmethod strand-designator-p ((strand symbol))
   (decode-strand strand))
 
-(defmethod forward-strand-p ((strand (eql *forward-strand*)))
-  t)
+(defmethod forward-strand-p ((strand sequence-strand))
+  (if (eql *forward-strand* strand)
+      t
+    nil))
 
-(defmethod forward-strand-p ((strand (eql *reverse-strand*)))
-  nil)
+(defmethod reverse-strand-p ((strand sequence-strand))
+  (if (eql *reverse-strand* strand)
+      t
+    nil))
 
-(defmethod forward-strand-p ((strand (eql *unknown-strand*)))
-  nil)
-
-(defmethod reverse-strand-p ((strand (eql *forward-strand*)))
-  nil)
-
-(defmethod reverse-strand-p ((strand (eql *reverse-strand*)))
-  t)
-
-(defmethod reverse-strand-p ((strand (eql *unknown-strand*)))
-  nil)
-
-(defmethod unknown-strand-p ((strand (eql *forward-strand*)))
-  nil)
-
-(defmethod unknown-strand-p ((strand (eql *reverse-strand*)))
-  nil)
-
-(defmethod unknown-strand-p ((strand (eql *unknown-strand*)))
-  t)
+(defmethod unknown-strand-p ((strand sequence-strand))
+  (if (eql *unknown-strand* strand)
+      t
+    nil))
 
 (defmethod strand= ((strand1 sequence-strand) (strand2 sequence-strand))
   (cond ((or (eql *unknown-strand* strand1) (eql *unknown-strand* strand2))
@@ -371,13 +374,13 @@ number of strands, or NIL otherwise."
          *unknown-strand*)))
 
 (defmethod complementp ((strand1 sequence-strand) (strand2 sequence-strand))
-  (strand-equal (complement-strand strand1) strand2))
+  (strand= (complement-strand strand1) strand2))
 
 (defmethod ambiguousp ((seq virtual-token-sequence))
   t)
 
 ;;; FIXME -- this is only implemented for DNA/RNA/AA. If a user
-;;; extends the set of alphabets
+;;; extends the set of alphabets this must be changed.
 (defmethod ambiguousp ((seq encoded-vector-sequence))
   (with-accessors ((vector vector-of) (alphabet alphabet-of))
       seq
@@ -1015,4 +1018,3 @@ index END."
                           (make-array aa-len
                                       :element-type '(unsigned-byte 7)
                                       :initial-contents aa)))))))
-

@@ -296,7 +296,7 @@ Returns:
 - A single-float alignment score.
 - An alignment object, or NIL."
   (declare (optimize (speed 3) (safety 0)
-                      ;; #+:lispworks (hcl:fixnum-safety 0)
+                     ;; #+:lispworks (hcl:fixnum-safety 0)
                      #+:lispworks (float 0)))
   (declare (type function subst-fn)
            (type single-float gap-open gap-extend)
