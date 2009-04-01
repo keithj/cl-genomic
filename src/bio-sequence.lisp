@@ -173,7 +173,7 @@ Returns:
            :params '(residues quality)
            :args (list residues quality)
            :text "the residues and quality vectors were not the same length"))
-  (let ((initargs (remove-args '(:metric) initargs)))
+  (let ((initargs (remove-key-values '(:metric) initargs)))
     (apply #'make-instance 'dna-quality-sequence
            :vector (ensure-encoded residues #'encode-dna-4bit
                                    '(unsigned-byte 4))
