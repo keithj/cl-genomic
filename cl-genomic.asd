@@ -29,7 +29,6 @@
 (defsystem cl-genomic
     :name "Common Lisp Genomics"
     :author "Keith James"
-    :version "0.3.0"
     :licence "GPL v3"
     :depends-on (:trivial-gray-streams
                  :split-sequence
@@ -97,7 +96,7 @@
                           :pathname "src/alignment/"
                           :components
                           ((:file "bio-sequence-alignment")
-                           (:file "matrices")                           
+                           (:file "matrices")
                            (:file "pairwise"
                             :depends-on ("matrices"
                                          "bio-sequence-alignment")))

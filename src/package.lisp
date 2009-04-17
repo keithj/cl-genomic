@@ -24,6 +24,7 @@
    #:quality-score
    
    ;; Specials
+   #:*package-version*
    #:*sequence-print-limit*
    
    #:*forward-strand*
@@ -224,3 +225,8 @@ structures or CLOS instances."))
         #:cl-io-utilities #:cl-gp-utilities
         #:trivial-gray-streams)
   (:nicknames #:bsu))
+
+(in-package :bio-sequence)
+
+(defvar *package-version* '(0 3 0)
+  "The package version.")

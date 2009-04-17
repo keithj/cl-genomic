@@ -21,7 +21,7 @@
 (asdf:operate 'asdf:load-op :cl-graphic-utilities)
 (asdf:operate 'asdf:load-op :cl-genomic)
 
-(csu:document-system :cl-genomic)
+(su:document-system :cl-genomic)
 
 (gru:make-class-diagram
  (gpu:all-classes :bs (find-class 'bs:bio-sequence))

@@ -70,13 +70,45 @@
             (loop
                for seq = (next seqi)
                for i = 0 then (1+ i)
+               with time = (get-universal-time)
                while (and (has-more-p seqi) (< i 10000000))
                do (progn
                     (tc:dbm-put index (identity-of seq)
                                 (princ-to-string i) :mode :async)
                     (when (zerop (rem i 100000))
-                      (format t "~d records~%" i))))))))
+                      (let* ((now (get-universal-time))
+                             (interval (- now time)))
+                        (setf time now)
+                        (format t "~d records in ~d seconds~%" i interval)))))))))
     (tc:dbm-close index)))
+
+(defun index-sequence-file3 (filespec format alphabet)
+  (let ((index (merge-pathnames (make-pathname :type "index") filespec))
+        (data (merge-pathnames (make-pathname :type "data") filespec)))
+    (with-open-file (data-stream data :direction :output
+                                 :if-exists :supersede
+                                 :element-type 'base-char
+                                 :external-format :ascii)
+      (with-open-file (index-stream index :direction :output
+                                    :if-exists :supersede
+                                    :element-type 'base-char
+                                    :external-format :ascii)
+        (let ((parser (make-instance 'indexing-sequence-parser
+                                     :stream data-stream)))
+          (with-ascii-li-stream (input-stream filespec)
+            (let ((seqi (make-seq-input input-stream format
+                                        :alphabet alphabet
+                                        :parser parser)))
+              (loop
+                 for rlen = (- (offset-of parser) (parsed-length-of parser))
+                 for seq = (next seqi)
+                 while (has-more-p seqi)
+                 do (prog1
+                        (princ (identity-of seq) index-stream)
+                      (write-char #\Tab index-stream)
+                      (princ rlen index-stream)
+                      (terpri index-stream))))))))))
+
 
 (defun lookup-sequence (identity filespec)
   (let ((index (with-open-file (s (merge-pathnames
