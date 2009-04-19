@@ -29,7 +29,6 @@
 (defsystem cl-genomic
     :name "Common Lisp Genomics"
     :author "Keith James"
-    :version "0.3.0"
     :licence "GPL v3"
     :depends-on (:trivial-gray-streams
                  :split-sequence
