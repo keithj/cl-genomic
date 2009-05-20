@@ -63,14 +63,27 @@
    #:find-genetic-code
    #:registered-genetic-codes
    #:phred-quality
+   #:illumina-quality
+   #:illumina-to-phred-quality
+   #:symbolize-dna-base
+   #:symbolize-rna-base
+   #:symbolize-aa
+   #:encode-dna-symbol
+   #:encode-rna-symbol
+   #:encode-aa-symbol
+   #:encode-dna-4bit
+   #:decode-dna-4bit
+   #:encode-rna-4bit
+   #:decode-rna-4bit
+   #:encode-aa-7bit
+   #:decode-aa-7bit
    #:encode-quality
    #:decode-quality
    #:encode-phred-quality
    #:decode-phred-quality
-   #:illumina-quality
    #:encode-illumina-quality
    #:decode-illumina-quality
-   #:illumina-to-phred-quality
+
    #:skip-malformed-sequence
 
    #:simple-dna-subst
