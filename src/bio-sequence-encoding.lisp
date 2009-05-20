@@ -64,88 +64,88 @@ character BASE."
   "Returns the complentary encoded DNA base to that represented by
 ENCODED-BASE."
   (ecase encoded-base
-    (#b0001 #b0100)
-    (#b0010 #b1000)
-    (#b0100 #b0001)
-    (#b1000 #b0010)
-    (#b1100 #b0011)
-    (#b0011 #b1100)
-    (#b1001 #b0110)
-    (#b0110 #b1001)
-    (#b1010 #b1010)
-    (#b0101 #b0101)
-    (#b1011 #b1110)
-    (#b1101 #b0111)
-    (#b0111 #b1101)
-    (#b1110 #b1011)
-    (#b1111 #b1111)
-    (#b0000 #b0000)))
+    (#b0001 #b1000)
+    (#b0010 #b0100)
+    (#b0100 #b0010)
+    (#b1000 #b0001)
+    (#b0101 #b1010)                     ; purine
+    (#b1010 #b0101)                     ; pyrimidine
+    (#b1100 #b0011)                     ; keto
+    (#b0011 #b1100)                     ; amino
+    (#b0110 #b0110)                     ; strong
+    (#b1001 #b1001)                     ; weak
+    (#b1110 #b0111)                     ; !adenosine
+    (#b1101 #b1011)                     ; !cytosine
+    (#b1011 #b1101)                     ; !guanine
+    (#b0111 #b1110)                     ; !thymine
+    (#b1111 #b1111)                     ; any
+    (#b0000 #b0000)))                   ; gap
 
 (declaim (inline complement-rna-4bit))
 (defun complement-rna-4bit (encoded-base)
   "Returns the complentary encoded RNA base to that represented by
 ENCODED-BASE."
-  (ecase encoded-base
-    (#b0001 #b0100)
-    (#b0010 #b1000)
-    (#b0100 #b0001)
-    (#b1000 #b0010)
-    (#b1100 #b0011)
-    (#b0011 #b1100)
-    (#b1001 #b0110)
-    (#b0110 #b1001)
-    (#b1010 #b1010)
-    (#b0101 #b0101)
-    (#b1011 #b1110)
-    (#b1101 #b0111)
-    (#b0111 #b1101)
-    (#b1110 #b1011)
-    (#b1111 #b1111)
-    (#b0000 #b0000)))
+   (ecase encoded-base
+    (#b0001 #b1000)
+    (#b0010 #b0100)
+    (#b0100 #b0010)
+    (#b1000 #b0001)
+    (#b0101 #b1010)                     ; purine
+    (#b1010 #b0101)                     ; pyrimidine
+    (#b1100 #b0011)                     ; keto
+    (#b0011 #b1100)                     ; amino
+    (#b0110 #b0110)                     ; strong
+    (#b1001 #b1001)                     ; weak
+    (#b1110 #b0111)                     ; !adenosine
+    (#b1101 #b1011)                     ; !cytosine
+    (#b1011 #b1101)                     ; !guanine
+    (#b0111 #b1110)                     ; !thymine
+    (#b1111 #b1111)                     ; any
+    (#b0000 #b0000)))                   ; gap
 
 (declaim (inline encode-dna-4bit))
 (defun encode-dna-4bit (base)
-  "Encodes DNA standard-char BASE as a 4-bit byte, representing T as
-0001, C as 0010, A as 0100 and G as 1000. The first base is in the
+  "Encodes DNA standard-char BASE as a 4-bit byte, representing A as
+0001, C as 0010, G as 0100 and T as 1000. The first base is in the
 most significant 4-bit byte and the last base is in the least
 significant 4-bit byte. Ambiguous bases are represented by bitwise AND
 combinations of these."
   (ecase base
-    ((#\t #\T) #b0001)
+    ((#\a #\A) #b0001)
     ((#\c #\C) #b0010)
-    ((#\a #\A) #b0100)
-    ((#\g #\G) #b1000)
-    ((#\r #\R) #b1100)
-    ((#\y #\Y) #b0011)
-    ((#\k #\K) #b1001)
-    ((#\m #\M) #b0110)
-    ((#\s #\S) #b1010)
-    ((#\w #\W) #b0101)
-    ((#\b #\B) #b1011)
-    ((#\d #\D) #b1101)
-    ((#\h #\H) #b0111)
-    ((#\v #\V) #b1110)
-    ((#\n #\N) #b1111)
-    (#\-       #b0000)))
+    ((#\g #\G) #b0100)
+    ((#\t #\T) #b1000)
+    ((#\r #\R) #b0101)                  ; purine
+    ((#\y #\Y) #b1010)                  ; pyrimidine
+    ((#\k #\K) #b1100)                  ; keto
+    ((#\m #\M) #b0011)                  ; amino
+    ((#\s #\S) #b0110)                  ; strong
+    ((#\w #\W) #b1001)                  ; weak
+    ((#\b #\B) #b1110)                  ; !adenosine
+    ((#\d #\D) #b1101)                  ; !cytosine
+    ((#\h #\H) #b1011)                  ; !guanine
+    ((#\v #\V) #b0111)                  ; !thymine
+    ((#\n #\N) #b1111)                  ; any
+    (#\-       #b0000)))                ; gap
 
 (declaim (inline decode-dna-4bit))
 (defun decode-dna-4bit (encoded-base)
   "Decodes 4-bit byte ENCODED-BASE, returning a lower case character."
   (ecase encoded-base
-    (#b0001 #\t)
+    (#b0001 #\a)
     (#b0010 #\c)
-    (#b0100 #\a)
-    (#b1000 #\g)
-    (#b1100 #\r)
-    (#b0011 #\y)
-    (#b1001 #\k)
-    (#b0110 #\m)
-    (#b1010 #\s)
-    (#b0101 #\w)
-    (#b1011 #\b)
+    (#b0100 #\g)
+    (#b1000 #\t)
+    (#b0101 #\r)
+    (#b1010 #\y)
+    (#b1100 #\k)
+    (#b0011 #\m)
+    (#b0110 #\s)
+    (#b1001 #\w)
+    (#b1110 #\b)
     (#b1101 #\d)
-    (#b0111 #\h)
-    (#b1110 #\v)
+    (#b1011 #\h)
+    (#b0111 #\v)
     (#b1111 #\n)
     (#b0000 #\-)))
 
@@ -172,41 +172,41 @@ most significant 4-bit byte and the last base is in the least
 significant 4-bit byte. Ambiguous bases are represented by bitwise AND
 combinations of these."
   (ecase base
-    ((#\u #\U) #b0001)
+    ((#\a #\A) #b0001)
     ((#\c #\C) #b0010)
-    ((#\a #\A) #b0100)
-    ((#\g #\G) #b1000)
-    ((#\r #\R) #b1100)
-    ((#\y #\Y) #b0011)
-    ((#\k #\K) #b1001)
-    ((#\m #\M) #b0110)
-    ((#\s #\S) #b1010)
-    ((#\w #\W) #b0101)
-    ((#\b #\B) #b1011)
-    ((#\d #\D) #b1101)
-    ((#\h #\H) #b0111)
-    ((#\v #\V) #b1110)
-    ((#\n #\N) #b1111)
-    (#\-       #b0000)))
+    ((#\g #\G) #b0100)
+    ((#\u #\U) #b1000)
+    ((#\r #\R) #b0101)                  ; purine
+    ((#\y #\Y) #b1010)                  ; pyrimidine
+    ((#\k #\K) #b1100)                  ; keto
+    ((#\m #\M) #b0011)                  ; amino
+    ((#\s #\S) #b0110)                  ; strong
+    ((#\w #\W) #b1001)                  ; weak
+    ((#\b #\B) #b1110)                  ; !adenosine
+    ((#\d #\D) #b1101)                  ; !cytosine
+    ((#\h #\H) #b1011)                  ; !guanine
+    ((#\v #\V) #b0111)                  ; !thymine
+    ((#\n #\N) #b1111)                  ; any
+    (#\-       #b0000)))                ; gap
 
 (declaim (inline decode-rna-4bit))
 (defun decode-rna-4bit (encoded-base)
   "Decodes 4-bit byte ENCODED-BASE, returning a lower case character."
   (ecase encoded-base
-    (#b0001 #\u)
+    (#b0001 #\a)
     (#b0010 #\c)
-    (#b0100 #\a)
-    (#b1000 #\g)
-    (#b1100 #\r)
-    (#b0011 #\y)
-    (#b1001 #\k)
-    (#b0110 #\m)
-    (#b1010 #\s)
-    (#b0101 #\w)
-    (#b1011 #\b)
+    (#b0100 #\g)
+    (#b1000 #\u)
+    (#b0101 #\r)
+    (#b1010 #\y)
+    (#b1100 #\k)
+    (#b0011 #\m)
+    (#b0110 #\s)
+    (#b1001 #\w)
+    (#b1110 #\b)
     (#b1101 #\d)
-    (#b0111 #\h)
-    (#b1110 #\v)
+    (#b1011 #\h)
+    (#b0111 #\v)
     (#b1111 #\n)
     (#b0000 #\-)))
 
@@ -300,38 +300,38 @@ BASE."
       (#b0010 :cytosine)
       (#b0100 :adenine)
       (#b1000 :guanine)
-      (#b1100 :purine)
-      (#b0011 :pyrimidine)
-      (#b1001 :keto)
-      (#b0110 :amino)
-      (#b1010 :strong)
-      (#b0101 :weak)
-      (#b1011 :!adenine)
+      (#b0101 :purine)
+      (#b1010 :pyrimidine)
+      (#b1100 :keto)
+      (#b0011 :amino)
+      (#b0110 :strong)
+      (#b1001 :weak)
+      (#b1110 :!adenine)
       (#b1101 :!cytosine)
-      (#b0111 :!guanine)
-      (#b1110 :!thymine)
+      (#b1011 :!guanine)
+      (#b0111 :!thymine)
       (#b1111 :any)
       (#b0000 :gap))))
 
 (defun encode-dna-symbol (dna-symbol)
   "Encodes the symbol DNA-SYMBOL as a 4-bit byte."
   (ecase dna-symbol
-      (:thymine    #b0001)
-      (:cytosine   #b0010)
-      (:adenine    #b0100)
-      (:guanine    #b1000)
-      (:purine     #b1100)
-      (:pyrimidine #b0011)
-      (:keto       #b1001)
-      (:amino      #b0110)
-      (:strong     #b1010)
-      (:weak       #b0101)
-      (:!adenine   #b1011)
-      (:!cytosine  #b1101)
-      (:!guanine   #b0111)
-      (:!thymine   #b1110)
-      (:any        #b1111)
-      (:gap        #b0000)))
+    (:thymine    #b0001)
+    (:cytosine   #b0010)
+    (:adenine    #b0100)
+    (:guanine    #b1000)
+    (:purine     #b0101)
+    (:pyrimidine #b1010)
+    (:keto       #b1100)
+    (:amino      #b0011)
+    (:strong     #b0110)
+    (:weak       #b1001)
+    (:!adenine   #b1110)
+    (:!cytosine  #b1101)
+    (:!guanine   #b1011)
+    (:!thymine   #b0111)
+    (:any        #b1111)
+    (:gap        #b0000)))
 
 (defun symbolize-rna-base (base)
   "Returns a Lisp keyword symbol representing the base character
@@ -342,38 +342,38 @@ BASE."
       (#b0010 :cytosine)
       (#b0100 :adenine)
       (#b1000 :guanine)
-      (#b1100 :purine)
-      (#b0011 :pyrimidine)
-      (#b1001 :keto)
-      (#b0110 :amino)
-      (#b1010 :strong)
-      (#b0101 :weak)
-      (#b1011 :!adenine)
+      (#b0101 :purine)
+      (#b1010 :pyrimidine)
+      (#b1100 :keto)
+      (#b0011 :amino)
+      (#b0110 :strong)
+      (#b1001 :weak)
+      (#b1110 :!adenine)
       (#b1101 :!cytosine)
-      (#b0111 :!guanine)
-      (#b1110 :!uracil)
+      (#b1011 :!guanine)
+      (#b0111 :!thymine)
       (#b1111 :any)
       (#b0000 :gap))))
 
 (defun encode-rna-symbol (rna-symbol)
   "Encodes the symbol RNA-SYMBOL as a 4-bit byte."
   (ecase rna-symbol
-      (:uracil     #b0001)
-      (:cytosine   #b0010)
-      (:adenine    #b0100)
-      (:guanine    #b1000)
-      (:purine     #b1100)
-      (:pyrimidine #b0011)
-      (:keto       #b1001)
-      (:amino      #b0110)
-      (:strong     #b1010)
-      (:weak       #b0101)
-      (:!adenine   #b1011)
-      (:!cytosine  #b1101)
-      (:!guanine   #b0111)
-      (:!uracil    #b1110)
-      (:any        #b1111)
-      (:gap        #b0000)))
+    (:uracil     #b0001)
+    (:cytosine   #b0010)
+    (:adenine    #b0100)
+    (:guanine    #b1000)
+    (:purine     #b0101)
+    (:pyrimidine #b1010)
+    (:keto       #b1100)
+    (:amino      #b0011)
+    (:strong     #b0110)
+    (:weak       #b1001)
+    (:!adenine   #b1110)
+    (:!cytosine  #b1101)
+    (:!guanine   #b1011)
+    (:!thymine   #b0111)
+    (:any        #b1111)
+    (:gap        #b0000)))
 
 (defun symbolize-aa (aa)
   "Returns a Lisp keyword symbol representing the amino-acid character

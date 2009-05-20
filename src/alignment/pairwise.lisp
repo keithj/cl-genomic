@@ -295,9 +295,7 @@ Key:
 Returns:
 - A single-float alignment score.
 - An alignment object, or NIL."
-  (declare (optimize (speed 3) (safety 0)
-                     ;; #+:lispworks (hcl:fixnum-safety 0)
-                     #+:lispworks (float 0)))
+  (declare (optimize (speed 3) (safety 1)))
   (declare (type function subst-fn)
            (type single-float gap-open gap-extend)
            (type fixnum band-centre band-width)
@@ -364,9 +362,7 @@ Key:
 Returns:
 - A single-float alignment score.
 - An alignment object."
-  (declare (optimize (speed 3) (safety 0)
-                     ;; #+:lispworks (hcl:fixnum-safety 0)
-                     #+:lispworks (float 0)))
+  (declare (optimize (speed 3) (safety 1)))
   (declare (type function subst-fn)
            (type single-float gap-open gap-extend)
            (type fixnum band-centre band-width)
@@ -473,7 +469,7 @@ Returns:
 A EQUAL hash-table of the kmers of length K in vector VEC. The hash
 keys are the kmers, while the hash values are lists of the coordinates
 at which those kmers occur."
-  (declare (optimize (speed 3) (safety 0)))
+  (declare (optimize (speed 3) (safety 1)))
   (declare (type (encoded-residues 4) vec)
            (type fixnum k))
   (let ((end (- (length vec) k))
@@ -502,7 +498,7 @@ Returns:
 The returned lists each contain a number of elements equal to the
 number of unique, shared kmers found. The coordinate lists at the nth
 position in each list refer to the same kmer."
-  (declare (optimize (speed 3) (safety 0)))
+  (declare (optimize (speed 3) (safety 1)))
   (declare (type (encoded-residues 4) vecm vecn)
            (type fixnum k))
   (let ((end (- (length vecm) k))
@@ -542,7 +538,7 @@ Returns:
 - A fixnum matrix band width that contains all diagonals described by
 the arguments.
 - A fixnum diagonal about which the band is centred."
-  (declare (optimize (speed 3) (safety 0)))
+  (declare (optimize (speed 3) (safety 1)))
   (declare (type list mcoords ncoords))
   (let ((k 0)
         (c 0))

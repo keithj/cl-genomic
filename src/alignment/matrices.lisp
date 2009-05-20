@@ -167,7 +167,7 @@ G, T and N.")
 (define-subst-index blosum-50-index
     (1 18 14 4 3 17 5 7 8 9 12 11 13 6 16 19 20 23 25 22 2 26 24))
 
-(declaim (inline simple-dna-subst))
+(declaim (inline simple-dna-subst)) 
 (defun simple-dna-subst (x y)
   "Returns a substitution score from a simple DNA matrix \(permitted
 residues are A, C, G, T and N\) for 4bit encoded DNA residues X and
