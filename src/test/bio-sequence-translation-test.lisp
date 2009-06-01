@@ -69,9 +69,9 @@
                   (loop
                      with code = (find-genetic-code :standard)
                      for codon in *test-codons*
-                     collect (bs::decode-aa-7bit
+                     collect (decode-aa-7bit
                               (translate-codon
-                               (mapcar #'bs::encode-dna-4bit codon) code
+                               (mapcar #'encode-dna-4bit codon) code
                                :initiator nil)))))
    (ensure (every (lambda (char)
                     (or (char= #\X char)
@@ -81,7 +81,7 @@
                      for codon in (bs::permutations-of-n
                                    '(#\a #\c #\g #\t #\r #\y #\k #\m
                                      #\s #\w #\b #\d #\h #\v #\n) 3)
-                     collect (bs::decode-aa-7bit
+                     collect (decode-aa-7bit
                               (translate-codon
-                               (mapcar #'bs::encode-dna-4bit codon) code
+                               (mapcar #'encode-dna-4bit codon) code
                                :initiator nil))))))

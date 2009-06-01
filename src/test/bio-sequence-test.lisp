@@ -38,7 +38,7 @@
         (mapcar (lambda (str)
                   (loop
                      for c across str collect c))
-                (list dna-residues rna-residues))))
+                (list *dna-residues* *rna-residues*))))
 
 (addtest (bio-sequence-tests) alphabet/1
   (let ((name "test name"))
@@ -373,22 +373,22 @@
                      (reverse residues)))))
 
 (addtest (bio-sequence-tests) dna-sequence/5
-  (let ((seq (make-dna dna-residues)))
+  (let ((seq (make-dna *dna-residues*)))
     (ensure (string= "atcgyrmkswvhdbn-"
                      (coerce-sequence (complement-sequence seq) 'string)))))
 
 (addtest (bio-sequence-tests) dna-sequence/6
-  (let ((seq (make-dna dna-residues)))
+  (let ((seq (make-dna *dna-residues*)))
     (ensure (string= "atcgyrmkswvhdbn-"
                      (coerce-sequence (ncomplement-sequence seq) 'string)))))
 
 (addtest (bio-sequence-tests) dna-sequence/7
-  (let ((seq (make-dna dna-residues)))
+  (let ((seq (make-dna *dna-residues*)))
     (ensure (string= "-nbdhvwskmrygcta"
                      (coerce-sequence (reverse-complement seq) 'string)))))
 
 (addtest (bio-sequence-tests) dna-sequence/8
-  (let ((seq (make-dna dna-residues)))
+  (let ((seq (make-dna *dna-residues*)))
     (ensure (string= "-nbdhvwskmrygcta"
                      (coerce-sequence (nreverse-complement seq) 'string)))))
 
@@ -425,22 +425,22 @@
                      (reverse residues)))))
 
 (addtest (bio-sequence-tests) rna-sequence/5
-  (let ((seq (make-rna rna-residues)))
+  (let ((seq (make-rna *rna-residues*)))
     (ensure (string= "aucgyrmkswvhdbn-"
                      (coerce-sequence (complement-sequence seq) 'string)))))
 
 (addtest (bio-sequence-tests) rna-sequence/6
-  (let ((seq (make-rna rna-residues)))
+  (let ((seq (make-rna *rna-residues*)))
     (ensure (string= "aucgyrmkswvhdbn-"
                      (coerce-sequence (ncomplement-sequence seq) 'string)))))
 
 (addtest (bio-sequence-tests) rna-sequence/7
-  (let ((seq (make-rna rna-residues)))
+  (let ((seq (make-rna *rna-residues*)))
     (ensure (string= "-nbdhvwskmrygcua"
                      (coerce-sequence (reverse-complement seq) 'string)))))
 
 (addtest (bio-sequence-tests) rna-sequence/8
-  (let ((seq (make-rna rna-residues)))
+  (let ((seq (make-rna *rna-residues*)))
     (ensure (string= "-nbdhvwskmrygcua"
                      (coerce-sequence (nreverse-complement seq) 'string)))))
 

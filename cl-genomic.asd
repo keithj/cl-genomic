@@ -18,11 +18,11 @@
 (in-package :cl-user)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (when (asdf:find-system :cl-system-utilities nil)
-    (asdf:operate 'asdf:load-op :cl-system-utilities)))
+  (when (asdf:find-system :deoxybyte-systems nil)
+    (asdf:operate 'asdf:load-op :deoxybyte-systems)))
 
 (defpackage #:cl-genomic-system
-  (:use :common-lisp :asdf :cl-system-utilities))
+  (:use :common-lisp :asdf :deoxybyte-systems))
 
 (in-package #:cl-genomic-system)
 
@@ -30,12 +30,7 @@
     :name "Common Lisp Genomics"
     :author "Keith James"
     :licence "GPL v3"
-    :depends-on (:trivial-gray-streams
-                 :split-sequence
-                 :cl-ppcre
-                 :puri
-                 :cl-gp-utilities
-                 :cl-io-utilities)
+    :depends-on (:cl-ppcre :puri :deoxybyte-utilities :deoxybyte-io)
     :in-order-to ((test-op (load-op :cl-genomic :cl-genomic-test)))
     :components ((:module :core
                           :pathname "src/"

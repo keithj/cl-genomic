@@ -16,7 +16,7 @@
 ;;;
 
 (defpackage :cl-genomic-test
-  (:use #:common-lisp #:cl-gp-utilities #:cl-io-utilities
+  (:use #:common-lisp #:deoxybyte-utilities #:deoxybyte-io
         #:bio-sequence #:lift)
   (:export #:cl-genomic-tests)
   (:documentation "cl-genomic tests."))

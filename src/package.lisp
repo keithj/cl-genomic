@@ -16,7 +16,7 @@
 ;;;
 
 (defpackage bio-sequence
-  (:use #:common-lisp #:cl-io-utilities #:cl-gp-utilities
+  (:use #:common-lisp #:deoxybyte-utilities #:deoxybyte-io
         #:trivial-gray-streams #:split-sequence)
   (:nicknames #:bs)
   (:export
@@ -235,11 +235,5 @@ structures or CLOS instances."))
 
 (defpackage bio-sequence-user
   (:use #:common-lisp #:bio-sequence
-        #:cl-io-utilities #:cl-gp-utilities
-        #:trivial-gray-streams)
+        #:deoxybyte-utilities #:deoxybyte-io)
   (:nicknames #:bsu))
-
-(in-package :bio-sequence)
-
-(defvar *package-version* '(0 3 0)
-  "The package version.")

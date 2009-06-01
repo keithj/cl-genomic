@@ -129,9 +129,8 @@
 
 (addtest (bio-sequence-io-tests) write-fasta-sequence/1
   (let ((seq (make-dna "acgtn" :identity "foo"))
-        (tmp-filespec (iou:make-tmp-pathname
-                       :tmpdir (merge-pathnames "data")
-                       :type "fa")))
+        (tmp-filespec (make-tmp-pathname :tmpdir (merge-pathnames "data")
+                                         :type "fa")))
     (dolist (args '((nil "acgtn")
                     (:lower "acgtn")
                     (:upper "ACGTN")))
@@ -182,9 +181,8 @@
   (let ((seq (make-dna-quality "acgtn" "<<<<<"
                                :identity "foo"
                                :metric :phred))
-        (tmp-filespec (iou:make-tmp-pathname
-                       :tmpdir (merge-pathnames "data")
-                       :type "fq")))
+        (tmp-filespec (make-tmp-pathname :tmpdir (merge-pathnames "data")
+                                         :type "fq")))
     (dolist (args '((nil "acgtn")
                     (:lower"acgtn")
                     (:upper "ACGTN")))
@@ -230,9 +228,9 @@
 
 (addtest (bio-sequence-io-tests) convert-sequence-file/1
   (let ((in-filespec (merge-pathnames "data/phred.fastq"))
-        (out-filespec (namestring (iou:make-tmp-pathname
-                                   :tmpdir (merge-pathnames "data")
-                                   :type "fasta"))))
+        (out-filespec (namestring
+                       (make-tmp-pathname :tmpdir (merge-pathnames "data")
+                                          :type "fasta"))))
     (convert-sequence-file in-filespec :fastq out-filespec :fasta)
     (with-ascii-li-stream (fqs in-filespec)
       (with-ascii-li-stream (fas out-filespec)

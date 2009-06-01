@@ -18,8 +18,8 @@
 (in-package :cl-genomic-test)
 
 (deftestsuite bio-sequence-interval-tests (cl-genomic-tests)
-  ((ss-seq (make-dna dna-residues :num-strands 1))
-   (ds-seq (make-dna dna-residues :num-strands 2))))
+  ((ss-seq (make-dna *dna-residues* :num-strands 1))
+   (ds-seq (make-dna *dna-residues* :num-strands 2))))
 
 (addtest (bio-sequence-interval-tests) interval/1
   (let* ((lower 2)
