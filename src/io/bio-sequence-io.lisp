@@ -147,8 +147,7 @@
   (princ residues (stream-of parser)))
 
 (defmethod end-object :after ((parser indexing-sequence-parser))
-  (with-accessors ((offset offset-of)
-                   (identity parsed-identity-of) (length parsed-length-of))
+  (with-accessors ((offset offset-of) (length parsed-length-of))
       parser
     (incf offset length)))
 

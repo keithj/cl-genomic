@@ -15,8 +15,8 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;
 
-(defpackage bio-sequence
-  (:use #:common-lisp #:cl-io-utilities #:cl-gp-utilities
+(defpackage :bio-sequence
+  (:use #:common-lisp #:deoxybyte-utilities #:deoxybyte-io
         #:trivial-gray-streams #:split-sequence)
   (:nicknames #:bs)
   (:export
@@ -24,6 +24,7 @@
    #:quality-score
    
    ;; Specials
+   #:*package-version*
    #:*sequence-print-limit*
    
    #:*forward-strand*
@@ -62,14 +63,27 @@
    #:find-genetic-code
    #:registered-genetic-codes
    #:phred-quality
+   #:illumina-quality
+   #:illumina-to-phred-quality
+   #:symbolize-dna-base
+   #:symbolize-rna-base
+   #:symbolize-aa
+   #:encode-dna-symbol
+   #:encode-rna-symbol
+   #:encode-aa-symbol
+   #:encode-dna-4bit
+   #:decode-dna-4bit
+   #:encode-rna-4bit
+   #:decode-rna-4bit
+   #:encode-aa-7bit
+   #:decode-aa-7bit
    #:encode-quality
    #:decode-quality
    #:encode-phred-quality
    #:decode-phred-quality
-   #:illumina-quality
    #:encode-illumina-quality
    #:decode-illumina-quality
-   #:illumina-to-phred-quality
+
    #:skip-malformed-sequence
 
    #:simple-dna-subst
@@ -219,8 +233,7 @@ An event-based parsing interface enables reading of some common,
 simple biological sequence file formats into primitive Lisp data
 structures or CLOS instances."))
 
-(defpackage bio-sequence-user
+(defpackage :bio-sequence-user
   (:use #:common-lisp #:bio-sequence
-        #:cl-io-utilities #:cl-gp-utilities
-        #:trivial-gray-streams)
+        #:deoxybyte-utilities #:deoxybyte-io)
   (:nicknames #:bsu))

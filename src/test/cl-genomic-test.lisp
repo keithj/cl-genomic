@@ -19,5 +19,7 @@
 
 ;; The base test of all cl-genomic tests
 (deftestsuite cl-genomic-tests ()
-  ((dna-residues "tagcrykmswbdhvn-")
-   (rna-residues "uagcrykmswbdhvn-")))
+  ())
+
+(defparameter *dna-residues* "tagcrykmswbdhvn-")
+(defparameter *rna-residues* "uagcrykmswbdhvn-")

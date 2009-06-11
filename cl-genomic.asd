@@ -18,24 +18,19 @@
 (in-package :cl-user)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (when (asdf:find-system :cl-system-utilities nil)
-    (asdf:operate 'asdf:load-op :cl-system-utilities)))
+  (when (asdf:find-system :deoxybyte-systems nil)
+    (asdf:operate 'asdf:load-op :deoxybyte-systems)))
 
-(defpackage #:cl-genomic-system
-  (:use :common-lisp :asdf :cl-system-utilities))
+(defpackage :cl-genomic-system
+  (:use :common-lisp :asdf :deoxybyte-systems))
 
-(in-package #:cl-genomic-system)
+(in-package :cl-genomic-system)
 
 (defsystem cl-genomic
     :name "Common Lisp Genomics"
     :author "Keith James"
     :licence "GPL v3"
-    :depends-on (:trivial-gray-streams
-                 :split-sequence
-                 :cl-ppcre
-                 :puri
-                 :cl-gp-utilities
-                 :cl-io-utilities)
+    :depends-on (:cl-ppcre :puri :deoxybyte-utilities :deoxybyte-io)
     :in-order-to ((test-op (load-op :cl-genomic :cl-genomic-test)))
     :components ((:module :core
                           :pathname "src/"
@@ -96,7 +91,7 @@
                           :pathname "src/alignment/"
                           :components
                           ((:file "bio-sequence-alignment")
-                           (:file "matrices")                           
+                           (:file "matrices")
                            (:file "pairwise"
                             :depends-on ("matrices"
                                          "bio-sequence-alignment")))
