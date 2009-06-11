@@ -15,7 +15,7 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;
 
-(in-package #:cl-genomic-system)
+(in-package :cl-genomic-system)
 
 (defsystem cl-genomic-test
     :depends-on (:cl-genomic :lift)

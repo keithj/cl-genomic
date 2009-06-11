@@ -21,10 +21,10 @@
   (when (asdf:find-system :deoxybyte-systems nil)
     (asdf:operate 'asdf:load-op :deoxybyte-systems)))
 
-(defpackage #:cl-genomic-system
+(defpackage :cl-genomic-system
   (:use :common-lisp :asdf :deoxybyte-systems))
 
-(in-package #:cl-genomic-system)
+(in-package :cl-genomic-system)
 
 (defsystem cl-genomic
     :name "Common Lisp Genomics"

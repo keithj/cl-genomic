@@ -15,7 +15,7 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;
 
-(defpackage bio-sequence
+(defpackage :bio-sequence
   (:use #:common-lisp #:deoxybyte-utilities #:deoxybyte-io
         #:trivial-gray-streams #:split-sequence)
   (:nicknames #:bs)
@@ -233,7 +233,7 @@ An event-based parsing interface enables reading of some common,
 simple biological sequence file formats into primitive Lisp data
 structures or CLOS instances."))
 
-(defpackage bio-sequence-user
+(defpackage :bio-sequence-user
   (:use #:common-lisp #:bio-sequence
         #:deoxybyte-utilities #:deoxybyte-io)
   (:nicknames #:bsu))
