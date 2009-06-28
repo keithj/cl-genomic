@@ -1,6 +1,8 @@
 ;;;
 ;;; Copyright (C) 2008-2009 Keith James. All rights reserved.
 ;;;
+;;; This file is part of cl-genomic.
+;;;
 ;;; This program is free software: you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
 ;;; the Free Software Foundation, either version 3 of the License, or
@@ -21,36 +23,6 @@
 ;;; have unattached intervals. An alternative is to use proxies, which
 ;;; may not be practical when there are millions of intervals and
 ;;; millions of references.
-
-;;; Allen interval algebra (x is the upper interval)
-;;;
-;;; x before y, y after x
-;;; ------
-;;;        -----
-;;;
-;;; x meets y, y met-by x
-;;; ------
-;;;       -----
-;;;
-;;; x overlaps y, y overlaps x
-;;; ------
-;;;     -----
-;;;
-;;; x starts y, y started-by x
-;;; ----
-;;; -------
-;;;
-;;; x during y, y contains x
-;;;  ---
-;;; -----
-;;;
-;;; x finishes y, y finished-by x
-;;;   ---
-;;; -----
-;;;
-;;; x equals y
-;;; -----
-;;; -----
 
 (defclass interval ()
   ((reference :initform nil
@@ -73,7 +45,46 @@
   (:documentation "An interval within a reference sequence. If a
 reference is defined, this must be within the bounds of the reference
 sequence. The basic interval has no notion of sequence strandedness;
-the bounds always refer to the forward strand."))
+the bounds always refer to the forward strand. Spatial relationships
+between intervals are described using Allen interval algebra.
+
+ Allen interval algebra (x is the upper interval)
+
+   x before y, y after x
+   ------
+          -----
+
+   x meets y, y met-by x
+   ------
+         -----
+
+   x overlaps y, y overlaps x
+   ------
+       -----
+
+   x starts y, y started-by x
+   ----
+   -------
+
+   x during y, y contains x
+    ---
+   -----
+
+   x finishes y, y finished-by x
+     ---
+   -----
+
+   x equals y
+   -----
+   -----
+
+This set of functions is extended with others that are less strict.
+
+  lax-before which is the union of before and meets
+  lax-after which is the union of after and met-by
+  lax-contains which is the union of contains, started-by, finished-by
+    and equals
+  lax-overlaps which is the union of overlaps and lax-contains"))
 
 (defclass na-sequence-interval (na-sequence interval stranded-mixin)
   ()
@@ -89,11 +100,15 @@ the bounds always refer to the forward strand."))
 
 (defgeneric beforep (x y)
   (:documentation "Returns T if X is before Y according to Allen's
-Interval Algebra, or NIL otherwise."))
+Interval Algebra, or NIL otherwise. This definition of 'before' is
+stricter than is often used in bioinformatics. See also
+{defun slack-beforep} ."))
 
 (defgeneric afterp (x y)
   (:documentation "Returns T if X is after Y according to Allen's
-Interval Algebra, or NIL otherwise."))
+Interval Algebra, or NIL otherwise. This definition of 'after' is
+stricter than is often used in bioinformatics. See also
+{defun slack-afterp} ."))
 
 (defgeneric meetsp (x y)
   (:documentation "Returns T if X meets Y according to Allen's
@@ -103,9 +118,11 @@ Interval Algebra, or NIL otherwise."))
   (:documentation "Returns T if X is met by Y according to Allen's
 Interval Algebra, or NIL otherwise."))
 
-(defgeneric overlaps (x y)
+(defgeneric overlapsp (x y)
   (:documentation "Returns T if X overlaps Y according to Allen's
-Interval Algebra, or NIL otherwise."))
+Interval Algebra, or NIL otherwise. This definition of 'overlaps' is
+stricter than is often used in bioinformatics. See also
+{defun slack-overlapsp} ."))
 
 (defgeneric startsp (x y)
   (:documentation "Returns T if X starts Y according to Allen's
@@ -121,7 +138,9 @@ Interval Algebra, or NIL otherwise."))
 
 (defgeneric containsp (x y)
   (:documentation "Returns T if X contains Y according to Allen's
-Interval Algebra, or NIL otherwise."))
+Interval Algebra, or NIL otherwise. This definition of 'contains' is
+stricter than is often used in bioinformatics. See also
+{defun slack-containsp} ."))
 
 (defgeneric finishesp (x y)
   (:documentation "Returns T if X finishes Y according to Allen's
@@ -134,6 +153,26 @@ Allen's Interval Algebra, or NIL otherwise."))
 (defgeneric interval-equal (x y)
   (:documentation "Returns T if X is interval equal Y according to
 Allen's Interval Algebra, or NIL otherwise."))
+
+(defgeneric slack-beforep (x y)
+  (:documentation "The union of beforep and meetsp. This predicate is
+often named 'before' in bioinformatics use cases. See also
+{defun beforep} ."))
+
+(defgeneric slack-afterp (x y)
+  (:documentation "The union of afterp and meet-by-p. This predicate is
+often named 'after' in bioinformatics use cases. See also
+{defun beforep} ."))
+
+(defgeneric slack-containsp (x y)
+  (:documentation "The union of startsp, duringp, finishesp and
+interval-equal. This predicate is often named 'contains' in
+bioinformatics use cases. See also {defun containsp} ."))
+
+(defgeneric slack-overlaps (x y)
+  (:documentation "The union of overlapsp and slack-containsp. This
+predicate is often named 'overlaps' in bioinformatics use cases. See
+also {defun overlapsp} ."))
 
 ;;; Initialization methods
 (defmethod initialize-instance :after ((interval na-sequence-interval) &key)
@@ -337,7 +376,7 @@ Allen's Interval Algebra, or NIL otherwise."))
 (defmethod met-by-p ((x interval) (y interval))
   (= (lower-of x) (upper-of y)))
 
-(defmethod overlaps ((x interval) (y interval))
+(defmethod overlapsp ((x interval) (y interval))
   (with-accessors ((lowx lower-of) (upx upper-of))
       x
     (with-accessors ((lowy lower-of) (upy upper-of))
@@ -373,6 +412,18 @@ Allen's Interval Algebra, or NIL otherwise."))
   (and (= (lower-of x) (lower-of y))
        (= (upper-of x) (upper-of y))))
 
+(defmethod slack-beforep ((x interval) (y interval))
+  (or (beforep x y) (meetsp x y)))
+
+(defmethod slack-afterp ((x interval) (y interval))
+  (or (afterp x y) (met-by-p x y)))
+
+(defmethod slack-containsp ((x interval) (y interval))
+  (or (interval-equal x y) (containsp x y) 
+      (started-by-p x y) (finished-by-p x y)))
+
+(defmethod slack-overlaps ((x interval) (y interval))
+  (or (overlapsp x y) (slack-containsp x y)))
 
 
 
@@ -417,7 +468,6 @@ ensure that the interval lies within the bounds of the reference."
                          :args (list lower upper)
                          :text "lower must be <= upper"))
                  (t t)))))
-
 
 (declaim (inline %check-interval-strands))
 (defun %check-interval-strands (strand num-strands reference)

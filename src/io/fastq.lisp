@@ -1,6 +1,8 @@
 ;;;
 ;;; Copyright (C) 2007-2009 Keith James. All rights reserved.
 ;;;
+;;; This file is part of cl-genomic.
+;;;
 ;;; This program is free software: you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
 ;;; the Free Software Foundation, either version 3 of the License, or
@@ -25,7 +27,7 @@
                                    :metric metric))))
      (multiple-value-bind (current more)
          (read-fastq-sequence stream alphabet parser)
-       (define-generator
+       (defgenerator
            :current current
            :next (prog1
                      current

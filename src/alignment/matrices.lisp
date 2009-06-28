@@ -1,6 +1,8 @@
 ;;;
 ;;; Copyright (C) 2008-2009 Keith James. All rights reserved.
 ;;;
+;;; This file is part of cl-genomic.
+;;;
 ;;; This program is free software: you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
 ;;; the Free Software Foundation, either version 3 of the License, or
@@ -19,7 +21,7 @@
 
 (defmacro define-subst-index (name elements &key (test '=))
   "Defines a numeric indexing function of ELEMENTS which accepts a
-single argument. If the argument is equal \(by TEST\) to the nth
+single argument. If the argument is equal (by TEST) to the nth
 member of ELEMENTS, the function returns n. If the argument is not a
 member of ELEMENTS, an error is raised."
   `(progn

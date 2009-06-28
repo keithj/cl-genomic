@@ -1,6 +1,8 @@
 ;;;
 ;;; Copyright (C) 2008-2009 Keith James. All rights reserved.
 ;;;
+;;; This file is part of cl-genomic.
+;;;
 ;;; This program is free software: you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
 ;;; the Free Software Foundation, either version 3 of the License, or
@@ -80,13 +82,13 @@ algorithm.
 
 Arguments:
 
-- cell (lambda list): A lambda list of two symbols \(row column\) to which the
+- cell (lambda list): A lambda list of two symbols (row column) to which the
   current cell's row and column indices are bound at each step.
-- prev-cell (lambda list): A lambda list of two symbols \(prev-row prev-col\) to
+- prev-cell (lambda list): A lambda list of two symbols (prev-row prev-col) to
   which the previous cell's row and column indices are bound at each
   step. The previous cell is the one to the upper left of the current
   cell.
-- max-cell (lambda list): A lambda list of two symbols \(max-row max-col\) to
+- max-cell (lambda list): A lambda list of two symbols (max-row max-col) to
   which the row and column indices of the cell containing the maximum
   score encountered so far in the main score matrix.
 
@@ -239,7 +241,7 @@ alignment."
                                  :alignment alignment)
     (values align-score align)))
 
-;; Modify finding shared kmers to use a substitution matrix
+;; FIXME -- Modify finding shared kmers to use a substitution matrix
 ;; kmer seeded heuristic
 (defmethod align-local-ksh ((seqm encoded-dna-sequence)
                             (seqn encoded-dna-sequence) subst-fn
@@ -268,28 +270,28 @@ alignment."
                                   alignment)
   "Implements the Smith Waterman local alignment algorithm with
 Gotoh's improvement. This version is optimized for sequences with a
-4bit encoding.
+4-bit encoding.
 
 Arguments:
 
-- vecm \(simple-array \(unsigned-byte 4\)\): The m or y vector to be
+- vecm (simple-array (unsigned-byte 4)): The m or y vector to be
   aligned.
-- vecn \(simple-array \(unsigned-byte 4\)\): The n or x vector to be
+- vecn (simple-array (unsigned-byte 4)): The n or x vector to be
   aligned.
 
 Key:
 
-- gap-open \(single-float\): The gap opening score, a negative
+- gap-open (single-float): The gap opening score, a negative
   value. Defaults to -5.0.
-- gap-extend \(single-float\): The gap extension score, a negative
+- gap-extend (single-float): The gap extension score, a negative
   value. Defaults to -1.0.
 
-- band-centre \(fixnum\): The band centre for banded
+- band-centre (fixnum): The band centre for banded
   alignments. Defaults to 0.
-- band-width \(fixnum\): The band width about the band centre for banded
-  alignments. Defaults to most-positive-fixnum.
+- band-width (fixnum): The band width about the band centre for banded
+  alignments. Defaults to most-positive-fixnum. Must be an odd number.
 
-- alignment \(generalized boolean\): T if an alignment is to be
+- alignment (generalized boolean): T if an alignment is to be
   calculated.
 
 Returns:
@@ -304,7 +306,7 @@ Returns:
            (funcall subst-fn x y)))
     (let ((m (length vecm))
           (n (length vecn))
-          (half-width (ceiling band-width 2)))
+          (half-width  (/ (1- band-width) 2)))
       (with-affine-gap-matrices
           (sc ix iy bt) ((1+ m) (1+ n))
         (define-affine-gap-dp
@@ -335,13 +337,13 @@ Returns:
                                   alignment)
     "Implements the Smith Waterman local alignment algorithm with
 Gotoh's improvement. This version is optimized for sequences with a
-4bit encoding.
+7-bit encoding.
 
 Arguments:
 
-- vecm \(simple-array \(unsigned-byte 7\)\): The m or y vector to be
+- vecm (simple-array (unsigned-byte 7)): The m or y vector to be
   aligned.
-- vecn \(simple-array \(unsigned-byte 7\)\): The n or x vector to be
+- vecn (simple-array (unsigned-byte 7)): The n or x vector to be
   aligned.
 
 Key:
@@ -525,9 +527,9 @@ described by the coordinates MCOORDS and NCOORDS.
 
 Arguments:
 
-- mcoords \(list list\): A list of lists of fixnum start coordinates
+- mcoords (list list): A list of lists of fixnum start coordinates
 of kmers in sequence m.
-- ncoords \(list list\): A list of lists of fixnum start coordinates,
+- ncoords (list list): A list of lists of fixnum start coordinates,
 the same length as mcoords, of the same kmers in sequence n.
 
 The nth element in each argument list indicates the start coordinates
@@ -536,7 +538,7 @@ of the same kmer.
 Returns:
 
 - A fixnum matrix band width that contains all diagonals described by
-the arguments.
+the arguments, an odd number.
 - A fixnum diagonal about which the band is centred."
   (declare (optimize (speed 3) (safety 1)))
   (declare (type list mcoords ncoords))
@@ -557,32 +559,10 @@ the arguments.
                        for d of-type fixnum = (- i j)
                        do (setf mind (min mind d)
                                 maxd (max maxd d)))))
-        ;; FIXME -- is this value for k correct? When there are no
-        ;; kmers k is 2, which is why we test of that condition
-        ;; above. It would be nice to omit that special case.
-        (setf k (+ 2 (- maxd mind))
-              c (round (+ (/ (the fixnum (- maxd mind)) 2.0)
-                          mind)))))
+        (let ((w (- maxd mind)))
+          (setf k (if (evenp w)
+                      (1+ w)
+                    w)
+                c (round (+ (/ (the fixnum w) 2.0) mind))))))
     (values k c)))
 
-(defun print-banding (m n band-centre band-width a b)
-  (let ((x (make-array (list (1+ m) (1+ n)) :initial-element 0))
-        (half-width (ceiling band-width 2)))
-    (loop
-       for i from 1 to m
-       do (loop
-             for j from 1 to n
-             for diag = (- i j)
-             do (progn
-                  (when (< (- diag half-width)
-                           band-centre
-                           (+ diag half-width))
-                    (setf (aref x i j) 1))
-                  (when (= band-centre diag)
-                    (setf (aref x i j) 8)))))
-    (mapc (lambda (z w)
-            (setf (aref x
-                        (first z)
-                        (first w)) 2)) a b)
-    (princ x)
-    (terpri)))
