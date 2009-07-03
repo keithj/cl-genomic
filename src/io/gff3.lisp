@@ -1,6 +1,8 @@
 ;;;
 ;;; Copyright (C) 2008-2009 Keith James. All rights reserved.
 ;;;
+;;; This file is part of cl-genomic.
+;;;
 ;;; This program is free software: you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
 ;;; the Free Software Foundation, either version 3 of the License, or
@@ -143,10 +145,10 @@
                :record new
                :text (format nil "invalid record: conflicts in fields ~a"
                              conflicts)))
-      (loop
-         for field in (set-difference *gff3-field-tags*
-                                      *gff3-invariant-field-tags*)
-         do (assocpush+ field current (assocdr field new)))
+;;       (loop
+;;          for field in (set-difference *gff3-field-tags*
+;;                                       *gff3-invariant-field-tags*)
+;;          do )
       ;; FIXME -- deal with attributes here
       )))
 

@@ -1,6 +1,8 @@
 ;;;
 ;;; Copyright (C) 2007-2009 Keith James. All rights reserved.
 ;;;
+;;; This file is part of cl-genomic.
+;;;
 ;;; This program is free software: you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
 ;;; the Free Software Foundation, either version 3 of the License, or
@@ -24,7 +26,6 @@
    #:quality-score
    
    ;; Specials
-   #:*package-version*
    #:*sequence-print-limit*
    
    #:*forward-strand*
@@ -176,7 +177,7 @@
    #:afterp
    #:meetsp
    #:met-by-p
-   #:overlaps
+   #:overlapsp
    #:startsp
    #:started-by-p
    #:duringp
@@ -184,6 +185,10 @@
    #:finishesp
    #:finished-by-p
    #:interval-equal
+   #:slack-beforep
+   #:slack-afterp
+   #:slack-overlapsp
+   #:slack-containsp
    
    #:coerce-sequence
 
