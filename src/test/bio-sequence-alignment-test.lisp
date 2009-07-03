@@ -118,6 +118,7 @@
                    (read s))))
      (mapc (lambda (seq score)
              (multiple-value-bind (s a)
+                 (declare (ignore a))
                  (align-local *dna-query* seq subst-fn
                               :gap-open gap-open
                               :gap-extend gap-extend)
