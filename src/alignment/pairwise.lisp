@@ -263,12 +263,11 @@ alignment."
     (values align-score align)))
 
 (defun smith-waterman-gotoh-4bit (vecm vecn subst-fn
-                                  &key (gap-open -5.0f0)
+                                  &key (gap-open -10.0f0)
                                   (gap-extend -1.0f0)
                                   (band-centre 0)
-                                  (band-width most-positive-fixnum)
-                                  alignment)
-  "Implements the Smith Waterman local alignment algorithm with
+                                  (band-width 0) alignment)
+    "Implements the Smith Waterman local alignment algorithm with
 Gotoh's improvement. This version is optimized for sequences with a
 4-bit encoding.
 
@@ -282,15 +281,14 @@ Arguments:
 Key:
 
 - gap-open (single-float): The gap opening score, a negative
-  value. Defaults to -5.0.
+  value. Defaults to -10.0.
 - gap-extend (single-float): The gap extension score, a negative
   value. Defaults to -1.0.
-
 - band-centre (fixnum): The band centre for banded
   alignments. Defaults to 0.
-- band-width (fixnum): The band width about the band centre for banded
-  alignments. Defaults to most-positive-fixnum. Must be an odd number.
-
+- band-width (fixnum): The band width for banded alignments. Defaults
+  to 0, meaning unbanded alignment. If supplied, must be an odd
+  number.
 - alignment (generalized boolean): T if an alignment is to be
   calculated.
 
@@ -300,41 +298,53 @@ Returns:
   (declare (optimize (speed 3) (safety 1)))
   (declare (type function subst-fn)
            (type single-float gap-open gap-extend)
-           (type fixnum band-centre band-width)
-           (type (encoded-residues 4) vecm vecn))
-  (flet ((subn (x y) ; local fn to avoid boxing of returned floats
-           (funcall subst-fn x y)))
-    (let ((m (length vecm))
-          (n (length vecn))
-          (half-width  (/ (1- band-width) 2)))
-      (with-affine-gap-matrices
-          (sc ix iy bt) ((1+ m) (1+ n))
-        (define-affine-gap-dp
-            (((row col) (prev-row prev-col) (max-row max-col))
-             (cell-score max-score)
-             (sc ix iy bt (gap-open gap-extend))
-             (the single-float
-               (subn (aref vecm prev-row) (aref vecn prev-col)))
-             (let ((diag (- row col)))
-               (< (- diag half-width) band-centre (+ diag half-width))))
-          (values max-score
-                  (when alignment
-                    (multiple-value-bind (alm startm endm aln startn endn)
-                        (dp-backtrace-4bit vecm vecn sc ix iy
-                                           bt max-row max-col)
-                      (make-instance 'alignment
-                                     :intervals (list
-                                                 (make-na-align-interval
-                                                  alm startm endm)
-                                                 (make-na-align-interval
-                                                  aln startn endn)))))))))))
+           (type (encoded-residues 4) vecm vecn)
+           (type fixnum band-centre band-width))
+  (let* ((m (length vecm))
+         (n (length vecn))
+         (mdim (max m n))
+         (band-width (cond ((and (zerop band-width) (evenp mdim))
+                            (1+ mdim))
+                           ((and (zerop band-width) (oddp mdim))
+                            mdim)
+                           ((evenp band-width)
+                            (error 'invalid-argument-error
+                                   :params 'band-width
+                                   :args band-width
+                                   :text "band-width must be an odd number"))
+                           (t
+                            band-width))))
+    (let ((half-width (ceiling (1- band-width) 2)))
+      (declare (type fixnum half-width))
+      (flet ((subn (x y) ; local fn to avoid boxing of returned floats
+               (funcall subst-fn x y)))
+        (with-affine-gap-matrices
+            (sc ix iy bt) ((1+ m) (1+ n))
+          (define-affine-gap-dp
+              (((row col) (prev-row prev-col) (max-row max-col))
+               (cell-score max-score)
+               (sc ix iy bt (gap-open gap-extend))
+               (the single-float
+                 (subn (aref vecm prev-row) (aref vecn prev-col)))
+               (let ((diag (- row col)))
+                 (<= (- diag half-width) band-centre (+ diag half-width))))
+            (values max-score
+                    (when alignment
+                      (multiple-value-bind (alm startm endm aln startn endn)
+                          (dp-backtrace-4bit vecm vecn sc ix iy
+                                             bt max-row max-col)
+                        (make-instance 'alignment
+                                       :intervals (list
+                                                   (make-aa-align-interval
+                                                    alm startm endm)
+                                                   (make-aa-align-interval
+                                                    aln startn endn))))))))))))
 
 (defun smith-waterman-gotoh-7bit (vecm vecn subst-fn
                                   &key (gap-open -10.0f0)
                                   (gap-extend -1.0f0)
                                   (band-centre 0)
-                                  (band-width most-positive-fixnum)
-                                  alignment)
+                                  (band-width 0) alignment)
     "Implements the Smith Waterman local alignment algorithm with
 Gotoh's improvement. This version is optimized for sequences with a
 7-bit encoding.
@@ -352,49 +362,61 @@ Key:
   value. Defaults to -10.0.
 - gap-extend (single-float): The gap extension score, a negative
   value. Defaults to -1.0.
-
 - band-centre (fixnum): The band centre for banded
   alignments. Defaults to 0.
-- band-width (fixnum): The band width about the band centre for banded
-  alignments. Defaults to most-positive-fixnum.
-
+- band-width (fixnum): The band width for banded alignments. Defaults
+  to 0, meaning unbanded alignment. If supplied, must be an odd
+  number.
 - alignment (generalized boolean): T if an alignment is to be
   calculated.
 
 Returns:
 - A single-float alignment score.
-- An alignment object."
+- An alignment object, or NIL."
   (declare (optimize (speed 3) (safety 1)))
   (declare (type function subst-fn)
            (type single-float gap-open gap-extend)
-           (type fixnum band-centre band-width)
-           (type (encoded-residues 7) vecm vecn))
-  (flet ((subn (x y) ; local fn to avoid boxing of returned floats
-           (funcall subst-fn x y)))
-    (let ((m (length vecm))
-          (n (length vecn))
-          (half-width (ceiling band-width 2)))
-      (with-affine-gap-matrices
-          (sc ix iy bt) ((1+ m) (1+ n))
-        (define-affine-gap-dp
-            (((row col) (prev-row prev-col) (max-row max-col))
-             (cell-score max-score)
-             (sc ix iy bt (gap-open gap-extend))
-             (the single-float
-               (subn (aref vecm prev-row) (aref vecn prev-col)))
-             (let ((diag (- row col)))
-               (< (- diag half-width) band-centre (+ diag half-width))))
-          (values max-score
-                  (when alignment
-                    (multiple-value-bind (alm startm endm aln startn endn)
-                        (dp-backtrace-7bit vecm vecn sc ix iy
-                                           bt max-row max-col)
-                      (make-instance 'alignment
-                                     :intervals (list
-                                                 (make-aa-align-interval
-                                                  alm startm endm)
-                                                 (make-aa-align-interval
-                                                  aln startn endn)))))))))))
+           (type (encoded-residues 7) vecm vecn)
+           (type fixnum band-centre band-width))
+  (let* ((m (length vecm))
+         (n (length vecn))
+         (mdim (max m n))
+         (band-width (cond ((and (zerop band-width) (evenp mdim))
+                            (1+ mdim))
+                           ((and (zerop band-width) (oddp mdim))
+                            mdim)
+                           ((evenp band-width)
+                            (error 'invalid-argument-error
+                                   :params 'band-width
+                                   :args band-width
+                                   :text "band-width must be an odd number"))
+                           (t
+                            band-width))))
+    (let ((half-width (ceiling (1- band-width) 2)))
+      (declare (type fixnum half-width))
+      (flet ((subn (x y) ; local fn to avoid boxing of returned floats
+               (funcall subst-fn x y)))
+        (with-affine-gap-matrices
+            (sc ix iy bt) ((1+ m) (1+ n))
+          (define-affine-gap-dp
+              (((row col) (prev-row prev-col) (max-row max-col))
+               (cell-score max-score)
+               (sc ix iy bt (gap-open gap-extend))
+               (the single-float
+                 (subn (aref vecm prev-row) (aref vecn prev-col)))
+               (let ((diag (- row col)))
+                 (<= (- diag half-width) band-centre (+ diag half-width))))
+            (values max-score
+                    (when alignment
+                      (multiple-value-bind (alm startm endm aln startn endn)
+                          (dp-backtrace-7bit vecm vecn sc ix iy
+                                             bt max-row max-col)
+                        (make-instance 'alignment
+                                       :intervals (list
+                                                   (make-aa-align-interval
+                                                    alm startm endm)
+                                                   (make-aa-align-interval
+                                                    aln startn endn))))))))))))
 
 ;; (defun smith-waterman-gotoh-qual (vecm vecn qualm qualn subst-fn
 ;;                                   &key (gap-open -10.0) (gap-extend -1.0)
@@ -500,9 +522,9 @@ Returns:
 The returned lists each contain a number of elements equal to the
 number of unique, shared kmers found. The coordinate lists at the nth
 position in each list refer to the same kmer."
-  (declare (optimize (speed 3) (safety 1)))
-  (declare (type (encoded-residues 4) vecm vecn)
-           (type fixnum k))
+;;   (declare (optimize (speed 3) (safety 1)))
+;;   (declare (type (encoded-residues 4) vecm vecn)
+;;            (type fixnum k))
   (let ((end (- (length vecm) k))
         (kmern (make-kmer-table vecn k size))
         (matched (make-hash-table :size size :test #'equalp)))
@@ -546,9 +568,9 @@ the arguments, an odd number.
         (c 0))
     (declare (type fixnum k c))
     (when (and mcoords ncoords)
-      (let ((mind 0)
-            (maxd 0))
-        (declare (type fixnum mind maxd))
+      (let ((mindiag 0)
+            (maxdiag 0))
+        (declare (type fixnum mindiag maxdiag))
         (loop
            for m in mcoords
            for n in ncoords
@@ -556,13 +578,12 @@ the arguments, an odd number.
                  for i of-type fixnum in m
                  do (loop
                        for j of-type fixnum in n
-                       for d of-type fixnum = (- i j)
-                       do (setf mind (min mind d)
-                                maxd (max maxd d)))))
-        (let ((w (- maxd mind)))
-          (setf k (if (evenp w)
-                      (1+ w)
-                    w)
-                c (round (+ (/ (the fixnum w) 2.0) mind))))))
+                       for diag of-type fixnum = (- i j)
+                       do (setf mindiag (min mindiag diag)
+                                maxdiag (max maxdiag diag)))))
+        (let ((width (1+ (- maxdiag mindiag))))
+          (setf k (if (evenp width)
+                      (1+ width)
+                    width)
+                c (round (+ (/ (the fixnum width) 2.0) mindiag))))))
     (values k c)))
-

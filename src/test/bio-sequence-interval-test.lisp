@@ -245,7 +245,7 @@ single-stranded reference."))
 (defun interval-predicates ()
   (list #'beforep #'afterp
         #'meetsp #'met-by-p
-        #'overlaps
+        #'overlapsp
         #'startsp #'started-by-p
         #'duringp #'containsp
         #'finishesp #'finished-by-p
@@ -283,14 +283,14 @@ single-stranded reference."))
                     (make-interval ref :lower 0 :upper 4)
                     (list #'met-by-p))))
 
-(addtest (bio-sequence-interval-tests) overlaps/1
+(addtest (bio-sequence-interval-tests) overlapsp/1
   (let ((ref (make-dna "acttacggccgt")))
     (test-intervals (make-interval ref :lower 0 :upper 6)
                     (make-interval ref :lower 2 :upper 8)
-                    (list #'overlaps))
+                    (list #'overlapsp))
     (test-intervals (make-interval ref :lower 2 :upper 8)
                     (make-interval ref :lower 0 :upper 6)
-                    (list #'overlaps))))
+                    (list #'overlapsp))))
 
 (addtest (bio-sequence-interval-tests) startsp/1
   (let ((ref (make-dna "acttacggccgt")))
