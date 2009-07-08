@@ -21,7 +21,7 @@
 
 (defun complement-dna (base)
   "Returns the complentary DNA base to that represented by the
-character BASE."
+character BASE. Folds to lower-case."
   (ecase base
     ((#\t #\T) #\a)
     ((#\c #\C) #\g)
@@ -42,7 +42,7 @@ character BASE."
 
 (defun complement-rna (base)
   "Returns the complentary RNA base to that represented by the
-character BASE."
+character BASE. Folds to lower-case."
   (ecase base
     ((#\u #\U) #\a)
     ((#\c #\C) #\g)
@@ -60,6 +60,28 @@ character BASE."
     ((#\v #\V) #\b)
     ((#\n #\N) #\n)
     (#\-       #\-)))
+
+(declaim (inline complement-dna-8bit))
+(defun complement-dna-8bit (byte)
+  "Returns the byte representing the complementary DNA base to that of
+BYTE. Folds to lower case."
+  (ecase byte
+    ((116 84)  97)
+    ((99  67) 103)
+    ((97  65) 116)
+    ((103 71)  99)
+    ((114 82) 121)
+    ((121 89) 114)
+    ((107 75) 109)
+    ((109 77) 107)
+    ((115 83) 115)
+    ((119 87) 119)
+    ((98  66) 118)
+    ((100 68) 104)
+    ((104 72) 100)
+    ((118 86)  98)
+    ((110 78) 110)
+    (45        45)))
 
 (declaim (inline complement-dna-4bit))
 (defun complement-dna-4bit (encoded-base)

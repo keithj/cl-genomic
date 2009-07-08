@@ -1,6 +1,8 @@
 ;;;
 ;;; Copyright (C) 2007-2009 Keith James. All rights reserved.
 ;;;
+;;; This file is part of cl-genomic.
+;;;
 ;;; This program is free software: you can redistribute it and/or modify
 ;;; it under the terms of the GNU General Public License as published by
 ;;; the Free Software Foundation, either version 3 of the License, or
@@ -30,7 +32,8 @@
     :name "Common Lisp Genomics"
     :author "Keith James"
     :licence "GPL v3"
-    :depends-on (:cl-ppcre :puri :deoxybyte-utilities :deoxybyte-io)
+    :depends-on (:cl-ppcre :puri :deoxybyte-utilities :deoxybyte-io
+                 :deoxybyte-unix :cffi)
     :in-order-to ((test-op (load-op :cl-genomic :cl-genomic-test)))
     :components ((:module :core
                           :pathname "src/"
@@ -71,12 +74,18 @@
                           ((:file "bio-sequence-io-classes")
                            (:file "bio-sequence-io"
                             :depends-on ("bio-sequence-io-classes"))
+                           (:file "pure"
+                            :depends-on ("bio-sequence-io"))
+                           (:file "raw"
+                            :depends-on ("bio-sequence-io"))
                            (:file "fasta"
                             :depends-on ("bio-sequence-io"))
                            (:file "fastq"
                             :depends-on ("bio-sequence-io"))
                            (:file "format-conversion"
                             :depends-on ("bio-sequence-io"
+                                         "pure"
+                                         "raw"
                                          "fasta"
                                          "fastq"))
                            (:file "obo-io-classes")
@@ -100,5 +109,6 @@
                                     :pathname "cl-genomic-test.config"
                                     :target-system :cl-genomic)
                  (:cldoc-config :cldoc-documentation
-                                :pathname "doc/html"
+                                :pathname "doc/html/"
                                 :target-system :cl-genomic)))
+

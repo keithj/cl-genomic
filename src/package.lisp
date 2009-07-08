@@ -19,7 +19,7 @@
 
 (defpackage :bio-sequence
   (:use #:common-lisp #:deoxybyte-utilities #:deoxybyte-io
-        #:trivial-gray-streams #:split-sequence)
+        #:trivial-gray-streams)
   (:nicknames #:bs)
   (:export
    ;; Types
@@ -41,6 +41,7 @@
    #:initiator-codon-error
 
    ;; Macros
+   #:with-seq-input
    #:with-sequence-residues
    
    ;; Functions
@@ -104,6 +105,7 @@
    #:rna-sequence
    #:aa-sequence
    #:dna-quality-sequence
+   #:mapped-dna-sequence
    #:interval
    #:bio-sequence-interval
    #:na-sequence-interval
@@ -200,7 +202,7 @@
    #:aligned-length-of
    #:align-local
    #:align-local-ksh
-   
+
    #:make-seq-input
    #:make-seq-output
    #:begin-object
@@ -212,6 +214,10 @@
    #:object-quality
    #:end-object
 
+   #:read-raw-sequence
+   #:write-raw-sequence
+   #:read-pure-sequence
+   #:write-pure-sequence
    #:read-fasta-sequence
    #:write-fasta-sequence
    #:read-fastq-sequence

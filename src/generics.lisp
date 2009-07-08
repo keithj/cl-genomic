@@ -248,17 +248,17 @@ object. The method must return T if the accumulated state of the
 current object is valid, or NIL otherwise. If PARSER is constructing a
 CLOS object, the object must be returned by this method."))
 
-(defgeneric make-seq-input (stream format &key alphabet parser
+(defgeneric make-seq-input (source format &key alphabet parser
                             &allow-other-keys)
   (:documentation "Returns a generator function of arity 1 that uses
 PARSER to read a single bio-sequence of ALPHABET, in FORMAT, from
-STREAM. The standard generator interface functions, CURRENT, NEXT and
+SOURCE. The standard generator interface functions, CURRENT, NEXT and
 HAS-MORE-P may be used in operations on the returned generator."))
 
-(defgeneric make-seq-output (stream format &key token-case
+(defgeneric make-seq-output (dest format &key token-case
                              &allow-other-keys)
   (:documentation "Returns a consumer function of arity 1 that accepts
-a bio-sequence and writes a representation in FORMAT to STREAM. The
+a bio-sequence and writes a representation in FORMAT to DEST. The
 TOKEN-CASE keyword is used to override the default character case for
 printing sequence residues, which is lowercase for DNA or RNA and
 uppercase for amino acids. The standard consumer interface function
@@ -293,15 +293,8 @@ uppercase for amino acids."))
   (:documentation "Splits sequence file identified by FILESPEC into
 automatically named files, each containing up to CHUNK-SIZE
 records. The new file names are created by the function
-PATHNAME-GEN. See iou:pathname-generator and iou:pathname-extender
+PATHNAME-GEN. See dxi:pathname-generator and dxi:pathname-extender
 ."))
-
-(defgeneric convert-sequence-file (in-filespec in-format
-                                   out-filespec out-format)
-  (:documentation "Converts the sequence data in the file identified
-by IN-FILESPEC in format IN-FORMAT, to OUT-FORMAT, writing the data to
-a new file identified by OUT-FILESPEC. Returns the number of records
-converted."))
 
 (defgeneric align-local (seqm seqn subst-fn &key gap-open gap-extend
                          band-centre band-width alignment)
@@ -385,4 +378,3 @@ Returns:
 
 (defgeneric  tag-value (parser tag value)
   (:documentation ""))
-

@@ -37,8 +37,8 @@
 
 (defmethod make-seq-output ((stream stream) (format (eql :fastq))
                             &key token-case)
-  (lambda (bio-sequence)
-    (write-fastq-sequence bio-sequence stream :token-case token-case)))
+  (lambda (obj)
+    (write-fastq-sequence obj stream :token-case token-case)))
 
 (defmethod split-sequence-file (filespec (format (eql :fastq))
                                 pathname-gen &key (chunk-size 1))
@@ -47,8 +47,7 @@
       (split-from-generator
        (make-seq-input stream :fastq
                        :parser (make-instance 'raw-sequence-parser))
-       #'write-fastq-sequence
-       chunk-size pathname-gen))))
+       #'write-fastq-sequence chunk-size pathname-gen))))
 
 (defmethod read-fastq-sequence ((stream character-line-input-stream)
                                 (alphabet symbol)
@@ -107,7 +106,7 @@
         (push-line stream line))
       (values nil t))))
 
-(defmethod write-fastq-sequence ((seq dna-quality-sequence) stream
+(defmethod write-fastq-sequence ((seq dna-quality-sequence) (stream stream)
                                  &key token-case)
   (let ((*print-pretty* nil))
     (write-char #\@ stream)
@@ -118,7 +117,7 @@
     (write-line "+" stream)
     (write-line (quality-string (quality-of seq) (metric-of seq)) stream)))
 
-(defmethod write-fastq-sequence ((alist list) stream &key token-case)
+(defmethod write-fastq-sequence ((alist list) (stream stream) &key token-case)
   (let ((*print-pretty* nil)
         (residues (let ((str (or (assocdr :residues alist) "")))
                     (nadjust-case str token-case)))
@@ -130,15 +129,19 @@
     (write-line "+" stream)
     (write-line quality stream)))
 
-(defun write-raw-fastq (raw stream)
-  "Writes sequence data RAW to STREAM in Fastq format. The alist RAW
+(defmethod write-fastq-sequence (obj filespec &key token-case)
+  (with-open-file (stream filespec :direction :output)
+    (write-fastq-sequence obj stream :token-case token-case)))
+
+(defun write-fastq-alist (alist stream)
+  "Writes sequence data ALIST to STREAM in Fastq format. ALIST
 must contain keys and values as created by {defclass raw-sequence-parser} ."
-  (let ((*print-pretty* nil))
+  (let ((*print-pretty* nil))11
     (write-char #\@ stream)
-    (write-line (or (assocdr :identity raw) "") stream)
-    (write-line (or (assocdr :residues raw) "") stream)
+    (write-line (or (assocdr :identity alist) "") stream)
+    (write-line (or (assocdr :residues alist) "") stream)
     (write-line "+" stream)
-    (write-line (or (assocdr :quality raw) "") stream)))
+    (write-line (or (assocdr :quality alist) "") stream)))
 
 (defun parse-fastq-record (stream qual-header-validate-fn)
   "Reads the body of a Fastq record that follows the header from

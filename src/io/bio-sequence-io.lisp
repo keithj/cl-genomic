@@ -208,17 +208,15 @@
                :description (parsed-description-of parser)
                :metric (parsed-metric-of parser)))))
 
-(defmethod make-seq-input ((filespec string) format &rest args)
-  (with-ascii-li-stream (stream filespec)
-    (apply #'make-seq-input stream format args)))
-
-(defmethod make-seq-input ((filespec pathname) format &rest args)
-  (with-ascii-li-stream (stream filespec)
-    (apply #'make-seq-input stream format args)))
-
 (defmethod make-seq-input ((stream stream) format &rest args)
   (let ((s (make-line-input-stream stream)))
     (apply #'make-seq-input s format args)))
+
+(defmacro with-seq-input ((seqi filespec format &rest args) &body body)
+  (with-gensyms (stream)
+    `(with-ascii-li-stream (,stream ,filespec)
+      (let ((,seqi (make-seq-input ,stream ,format ,@args)))
+        ,@body))))
 
 (defun skip-malformed-sequence (condition)
   "Restart function that invokes the SKIP-SEQUENCE-RECORD restart to

@@ -19,6 +19,7 @@
 
 (in-package :bio-sequence)
 
+(declaim (type fixnum *fasta-line-width*))
 (defparameter *fasta-line-width* 50
   "Line width for printing Fasta files.")
 
@@ -46,8 +47,8 @@ becomes full of chunks of sequence tokens.")
 
 (defmethod make-seq-output ((stream stream) (format (eql :fasta))
                             &key token-case)
-  (lambda (bio-sequence)
-    (write-fasta-sequence bio-sequence stream :token-case token-case)))
+  (lambda (obj)
+    (write-fasta-sequence obj stream :token-case token-case)))
 
 (defmethod split-sequence-file (filespec (format (eql :fasta))
                                 pathname-gen &key (chunk-size 1))
@@ -56,8 +57,7 @@ becomes full of chunks of sequence tokens.")
       (split-from-generator
        (make-seq-input stream :fasta
                        :parser (make-instance 'raw-sequence-parser))
-       #'write-fasta-sequence
-       chunk-size pathname-gen))))
+       #'write-fasta-sequence chunk-size pathname-gen))))
 
 (defmethod read-fasta-sequence ((stream line-input-stream)
                                 (alphabet symbol)
@@ -75,7 +75,7 @@ becomes full of chunks of sequence tokens.")
                  (object-description parser description)
                  (loop
                     as line = (stream-read-line stream)
-                    with offset = 0
+                    with offset = 0 ; FIXME -- I'm doing nothing with offset
                     while (not (eql :eof line))
                     until (char-fasta-header-p line)
                     do (progn
@@ -99,14 +99,16 @@ becomes full of chunks of sequence tokens.")
       (values nil t))))
 
 (defmethod write-fasta-sequence ((seq bio-sequence) stream &key token-case) 
+  (declare (optimize (speed 3) (safety 1)))
   (let ((*print-pretty* nil)
         (len (length-of seq)))
+    (declare (type fixnum len))
     (write-char #\> stream)
     (write-line (if (anonymousp seq)
                     ""
                   (identity-of seq)) stream)
     (loop
-       for i from 0 below len by *fasta-line-width*
+       for i of-type fixnum from 0 below len by *fasta-line-width*
        do (write-line
            (nadjust-case
             (coerce-sequence seq 'string
@@ -114,10 +116,12 @@ becomes full of chunks of sequence tokens.")
             token-case) stream))))
 
 (defmethod write-fasta-sequence ((alist list) stream &key token-case)
+  (declare (optimize (speed 3) (safety 1)))
   (let ((*print-pretty* nil)
         (residues (let ((str (or (assocdr :residues alist) "")))
                     (nadjust-case str token-case)))
         (identity (or (assocdr :identity alist) "")))
+    (declare (type simple-string residues))
     (write-char #\> stream)
     (write-line identity stream)
     (let ((len (length residues)))
@@ -127,12 +131,13 @@ becomes full of chunks of sequence tokens.")
                         :start i
                         :end (min len (+ i *fasta-line-width*)))))))
 
-(defun write-raw-fasta (alist stream)
+(defun write-fasta-alist (alist stream)
   "Writes sequence data ALIST to STREAM in Fasta format. ALIST must
 contain keys and values as created by {defclass raw-sequence-parser} ."
+  (declare (optimize (speed 3) (safety 1)))
   (let* ((*print-pretty* nil)
          (residues (or (assocdr :residues alist) ""))
-         (len (length residues)))
+         (len (length (the simple-string residues))))
     (write-char #\> stream)
     (write-line (or (assocdr :identity alist) "") stream)
     (loop
@@ -146,22 +151,14 @@ contain keys and values as created by {defclass raw-sequence-parser} ."
 leading '>' character and splitting the line on the first space(s)
 into identity and description. This function supports pathological
 cases where the identity, description, or both are empty strings."
-  (multiple-value-bind (split index)
-      (split-sequence #\Space str :count 1 :remove-empty-subseqs t)
-    (let ((str-len (length str))
-          (str-elt-type (array-element-type str))
-          (identity-str (car split)))
-      (values
-       (if (> (length identity-str) 1)
-           (adjust-array identity-str (- (length identity-str) 1)
-                         :displaced-to identity-str
-                         :displaced-index-offset 1)
-         (make-string 0 :element-type str-elt-type))
-       (if (< index str-len)
-           (adjust-array str (- str-len index)
-                         :displaced-to str
-                         :displaced-index-offset index)
-         (make-string 0 :element-type str-elt-type))))))
+  (let* ((split-index (position #\Space str :test #'char=))
+         (identity  (string-left-trim '(#\>) (if split-index
+                                                 (subseq str 0 split-index)
+                                               str)))
+         (description (if split-index
+                          (string-trim '(#\Space) (subseq str split-index))
+                        "")))
+    (values identity description)))
 
 (defun char-fasta-header-p (str)
   "Returns T if STR is a Fasta header (starts with the character

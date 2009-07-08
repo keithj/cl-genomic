@@ -209,8 +209,8 @@ dbxref list."
   (split-value str))
 
 (defun split-value (str)
-  (let ((parts (split-sequence #\Space (remove-comments str)
-                               :remove-empty-subseqs t)))
+  (let ((parts (string-split (remove-comments str) #\Space
+                             :remove-empty-subseqs t)))
     (if (endp (rest parts))
         (string-trim '(#\Space) (first parts))
       parts)))

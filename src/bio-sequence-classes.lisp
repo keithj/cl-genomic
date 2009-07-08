@@ -108,11 +108,6 @@ represented."))
   (:documentation "A token sequence whose tokens have been transformed
 to a representation other than characters, typically small integers."))
 
-(defclass mmapped-sequence (token-sequence)
-  ((mmapped-vector :initform nil
-                   :initarg :mmapped-vector
-                   :accessor mmapped-vector-of)))
-
 (defclass encoded-vector-sequence (encoded-token-sequence)
   ((vector :initform (make-array 0 :element-type 'fixnum)
            :initarg :vector
@@ -149,39 +144,36 @@ bases."))
              :initform *aa*)))
 
 (defclass encoded-dna-sequence (dna-sequence encoded-vector-sequence
-                                             identity-mixin
-                                             description-mixin)
+                                identity-mixin description-mixin)
   ())
 
 (defclass encoded-rna-sequence (rna-sequence encoded-vector-sequence
-                                             identity-mixin
-                                             description-mixin)
+                                identity-mixin description-mixin)
   ())
 
 (defclass dna-quality-sequence (encoded-dna-sequence quality-mixin
-                                                     identity-mixin
-                                                     description-mixin)
+                                identity-mixin description-mixin)
   ())
 
 (defclass virtual-dna-sequence (dna-sequence virtual-token-sequence
-                                             identity-mixin
-                                             description-mixin)
+                                identity-mixin description-mixin)
   ())
 
 (defclass virtual-rna-sequence (rna-sequence virtual-token-sequence
-                                             identity-mixin
-                                             description-mixin)
+                                identity-mixin description-mixin)
   ())
 
 (defclass encoded-aa-sequence (aa-sequence encoded-vector-sequence
-                                           identity-mixin
-                                           description-mixin)
+                               identity-mixin description-mixin)
   ())
 
 (defclass virtual-aa-sequence (aa-sequence virtual-token-sequence
-                                           identity-mixin
-                                           description-mixin)
+                               identity-mixin description-mixin)
   ())
 
+(defclass mapped-dna-sequence (dna-sequence token-sequence
+                               dxn:mapped-vector-char
+                               identity-mixin description-mixin)
+  ())
 
 ;; Also need to add circularity

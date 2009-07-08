@@ -22,7 +22,7 @@
 ;; Need to group sequences that are related in some way:
 ;; From same organism
 ;; From same sequencing experiment (may be multiple organisms)
-;; From same bioinformatc experiment
+;; From same bioinformatic experiment
 ;; Other
 
 ;; Use cases:
@@ -30,6 +30,8 @@
 ;; A GFF3 file
 ;; A genome sequence
 ;; A lane of short-read sequencing data
+
+;; Just throwing around some ideas here; this code is not for use
 
 (defun index-sequence-file (filespec format alphabet)
   (let ((index (merge-pathnames (make-pathname :type "index") filespec))
@@ -58,7 +60,7 @@
         (index-file (merge-pathnames (make-pathname :type "index") filespec))
         (data (merge-pathnames (make-pathname :type "data") filespec)))
     (tc:dbm-open index (namestring index-file) :write :create)
-    (tc:dbm-optimize index :bucket-size 10000000 :options '(:bzip :large))
+    (tc:dbm-optimize index :bucket-size 100000 :options '(:bzip :large))
     (with-open-file (data-stream data :direction :output
                                  :if-exists :supersede
                                  :element-type 'base-char
@@ -119,12 +121,12 @@
         (data (merge-pathnames (make-pathname :type "data") filespec)))
     (let ((entry (binary-search index identity :test #'string<
                                                :key #'first)))
-      (mmp:with-mapped-vector (vector 'mmp:mapped-vector-char
+      (dxn:with-mapped-vector (vector 'dxn:mapped-vector-char
                                       :filespec data
                                       :length (reduce #'+ index
                                                       :key #'third))
         (loop
            for i from (second entry) below (+ (second entry)
                                               (third entry))
-           collect (code-char (mmp:mref vector i)) into bases
+           collect (code-char (dxn:mref vector i)) into bases
            finally (return (values identity bases)))))))

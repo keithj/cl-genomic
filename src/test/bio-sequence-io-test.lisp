@@ -249,3 +249,17 @@
                                             (coerce-sequence fa 'string))))))
           (ensure-null (next fa-seqi)))))
     (delete-file out-filespec)))
+
+(addtest (bio-sequence-io-tests) mapped-dna-sequence/1
+  (let* ((seq (with-seq-input (seqi (merge-pathnames
+                                     "data/simple-dna1.fasta") :fasta)
+                (next seqi)))
+         (tmp-filespec (make-tmp-pathname :tmpdir (merge-pathnames "data"))))
+    (write-pure-sequence seq tmp-filespec)
+    (dxn:with-mapped-vector (mseq 'mapped-dna-sequence
+                                  :filespec tmp-filespec
+                                  :length (length-of seq))
+      (ensure (dna-sequence-p mseq))
+      (ensure  (string= (coerce-sequence seq 'string)
+                        (coerce-sequence mseq 'string))))
+    (delete-file tmp-filespec)))

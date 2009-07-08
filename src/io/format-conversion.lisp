@@ -19,15 +19,11 @@
 
 (in-package :bio-sequence)
 
-(defmethod convert-sequence-file (in-filespec in-format
-                                  out-filespec out-format)
-  (error 'invalid-argument-error
-         :params '(in-format out-format)
-         :args (list in-format out-format)
-         :text "automatic conversion not available"))
-
-(defmethod convert-sequence-file (in-filespec (in-format (eql :fastq))
-                                  out-filespec (out-format (eql :fasta)))
+(defun convert-sequence-file (in-filespec in-format out-filespec out-format)
+  "Converts the sequence data in the file identified
+by IN-FILESPEC in format IN-FORMAT, to OUT-FORMAT, writing the data to
+a new file identified by OUT-FILESPEC. Returns the number of records
+converted."
   (with-ascii-li-stream (in in-filespec)
     (with-open-file (out out-filespec :direction :output
                          :element-type 'base-char
@@ -35,25 +31,11 @@
                          :if-exists :supersede)
       (let ((gen (make-seq-input in in-format
                                  :parser (make-instance
-                                          'raw-sequence-parser))))
+                                          'raw-sequence-parser)))
+            (con (make-seq-output out out-format)))
         (loop
-           as raw = (next gen)
-           while raw
-           count raw
-           do (write-raw-fasta raw out))))))
+           as alist = (next gen)
+           while alist
+           count alist
+           do (funcall con alist))))))
 
-(defmethod convert-sequence-file (in-filespec (in-format (eql :fasta))
-                                  out-filespec (out-format (eql :fasta)))
-  (with-ascii-li-stream (in in-filespec)
-    (with-open-file (out out-filespec :direction :output
-                         :element-type 'base-char
-                         :external-format :ascii
-                         :if-exists :supersede)
-      (let ((gen (make-seq-input in in-format
-                                 :parser (make-instance
-                                          'raw-sequence-parser))))
-        (loop
-           as raw = (next gen)
-           while raw
-           count raw
-           do (write-raw-fasta raw out))))))
