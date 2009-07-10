@@ -119,7 +119,8 @@
 
 (defun write-powerloom-intersect (id intersect
                                   &optional (stream *standard-output*))
-  (format stream "(assert (forall ?term~%~10t(=> (and~%~{~a~^~%~})~%~12t(~a ?term))))"
+  (format stream (txt "(assert (forall ?term~%~10t(=>"
+                      "(and~%~{~a~^~%~})~%~12t(~a ?term))))")
           (mapcar (lambda (x)
                     (if (atom x)
                         (format nil "~16t(subset-of ?term ~a)" x)
@@ -170,4 +171,3 @@ id. The list is inserted into TABLE using id as the key."
           (setf (gethash id table) (nconc others val))
         (setf (gethash id table) others)))
     table))
-

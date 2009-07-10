@@ -73,7 +73,9 @@
 
 (defmethod make-seq-input ((stream line-input-stream)
                            (format (eql :gff3))
-                           &key (alphabet :dna) parser virtual))
+                           &key (alphabet :dna) parser virtual)
+  ;; FIXME -- this will be the entry point for reading GFF3 files
+  (declare (ignore alphabet parser virtual)))
 
 
 ;; (defun wibble-gff3 (filename)

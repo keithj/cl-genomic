@@ -210,7 +210,7 @@ dbxref list."
 
 (defun split-value (str)
   (let ((parts (string-split (remove-comments str) #\Space
-                             :remove-empty-subseqs t)))
+                             :remove-empty-substrings t)))
     (if (endp (rest parts))
         (string-trim '(#\Space) (first parts))
       parts)))

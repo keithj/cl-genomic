@@ -562,7 +562,7 @@ Returns:
 - A fixnum matrix band width that contains all diagonals described by
 the arguments, an odd number.
 - A fixnum diagonal about which the band is centred."
-  (declare (optimize (speed 3) (safety 1)))
+  (declare (optimize (speed 3) (safety 0)))
   (declare (type list mcoords ncoords))
   (let ((k 0)
         (c 0))
