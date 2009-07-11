@@ -218,6 +218,14 @@
       (let ((,seqi (make-seq-input ,stream ,format ,@args)))
         ,@body))))
 
+(defmacro with-mapped-dna ((seq &key filespec delete length
+                                (initial-element #\n)) &body body)
+  `(dxn:with-mapped-vector (,seq 'mapped-dna-sequence
+                                 :filespec ,filespec :delete ,delete
+                                 :length ,length
+                                 :initial-element (char-code ,initial-element))
+     ,@body))
+
 (defun skip-malformed-sequence (condition)
   "Restart function that invokes the SKIP-SEQUENCE-RECORD restart to
 skip over a malformed sequence record."

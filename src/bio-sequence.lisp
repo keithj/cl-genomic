@@ -321,6 +321,12 @@ number of strands, or NIL otherwise."
 (defmethod print-object ((seq aa-sequence) stream)
   (%print-seq "AA-SEQUENCE" seq stream))
 
+(defmethod print-object ((seq mapped-dna-sequence) stream)
+  (if (dxn:in-memory-p seq)
+      (%print-seq "MAPPED-DNA-SEQUENCE" seq stream)
+    (format stream "#<MAPPED-DNA-SEQUENCE length ~d UNMAPPED>"
+            (length-of seq))))
+
 ;;; Implementation methods
 (defmethod anonymousp ((seq identity-mixin))
   (null (identity-of seq)))
@@ -482,14 +488,15 @@ number of strands, or NIL otherwise."
   (declare (optimize (speed 3) (safety 1)))
   (with-slots ((area dxn:mmap-area))
       seq
-    (cffi:mem-aref (dxn:mmap-area-ptr area) :char index)))
+    (code-char (cffi:mem-aref (dxn:mmap-area-ptr area) :char index))))
 
 (defmethod (setf element-of) (value (seq mapped-dna-sequence) (index fixnum))
   (declare (optimize (speed 3) (safety 1)))
   (with-slots ((area dxn:mmap-area))
       seq
     (declare (type fixnum index))
-    (setf (cffi:mem-aref (dxn:mmap-area-ptr area) :char index) value)))
+    (setf (cffi:mem-aref (dxn:mmap-area-ptr area) :char index)
+          (char-code value))))
 
 (declaim (inline residue-of))
 (defun residue-of (seq index)
@@ -582,17 +589,21 @@ number of strands, or NIL otherwise."
                       :vector (token-subsequence vector start end)))))
 
 (defmethod coerce-sequence ((seq mapped-dna-sequence) (type (eql 'string))
-                            &key (start 0) (end (length-of seq)))
-  (with-slots ((area dxn:mmap-area))
+                            &key (start 0) end)
+  (with-slots ((length dxn:length) (area dxn:mmap-area))
       seq
-    (let ((str (make-array (- end start) :element-type 'base-char
-                           :adjustable t :fill-pointer 0))
-          (ptr (dxn:mmap-area-ptr area)))
-      (with-output-to-string (stream str :element-type 'base-char)
-        (loop
-           for i from start below end
-           do (write-char (code-char (cffi:mem-aref ptr :char i)) stream)
-           finally (return str))))))
+    (let* ((end (or end length))
+           (str (make-array (- end start) :element-type 'base-char
+                            :adjustable t :fill-pointer 0))
+           (ptr (dxn:mmap-area-ptr area)))
+      (if (dxn:mmap-area-live-p area) ; Only access residues if mapped
+          (with-output-to-string (stream str :element-type 'base-char)
+            (loop
+               for i from start below end
+               do (write-char (code-char (cffi:mem-aref ptr :char i)) stream)
+               finally (return str)))
+        (error 'invalid-operation-error
+               :text "cannot coerce to string when unmapped from memory")))))
 
 (defmethod subsequence ((seq encoded-vector-sequence) (start fixnum)
                         &optional end)
@@ -631,8 +642,9 @@ number of strands, or NIL otherwise."
                                 :element-type '(unsigned-byte 4)))
             (ptr (dxn:mmap-area-ptr area)))
         (loop
-           for i from start below end
-           do (setf (aref vector i)
+           for i of-type array-index from start below end
+           for j of-type array-index = 0 then (1+ j)
+           do (setf (aref vector j)
                     (encode-dna-4bit (code-char (cffi:mem-aref ptr :char i)))))
         (make-instance 'encoded-dna-sequence :vector vector)))))
 
