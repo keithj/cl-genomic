@@ -187,10 +187,10 @@
    #:finishesp
    #:finished-by-p
    #:interval-equal
-   #:slack-beforep
-   #:slack-afterp
-   #:slack-overlapsp
-   #:slack-containsp
+   #:inclusive-beforep
+   #:inclusive-afterp
+   #:inclusive-overlapsp
+   #:inclusive-containsp
    
    #:coerce-sequence
 

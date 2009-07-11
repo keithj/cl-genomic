@@ -268,6 +268,26 @@ CONSUME may be used in operations on the returned consumer."))
   (:documentation "Returns a new bio-sequence created from the state
 accumulated by PARSER."))
 
+(defgeneric read-pure-sequence (stream alphabet parser)
+  (:documentation "Reads a single pure format record of ALPHABET from
+STREAM using PARSER."))
+
+(defgeneric write-pure-sequence (bio-sequence stream &key token-case)
+  (:documentation "Writes BIO-SEQUENCE to STREAM in pure format. The
+TOKEN-CASE keyword is used to override the default character case for
+printing sequence residues, which is lowercase for DNA or RNA and
+uppercase for amino acids."))
+
+(defgeneric read-raw-sequence (stream alphabet parser)
+  (:documentation "Reads a single raw format record of ALPHABET from
+STREAM using PARSER."))
+
+(defgeneric write-raw-sequence (bio-sequence stream &key token-case)
+  (:documentation "Writes BIO-SEQUENCE to STREAM in raw format. The
+TOKEN-CASE keyword is used to override the default character case for
+printing sequence residues, which is lowercase for DNA or RNA and
+uppercase for amino acids."))
+
 (defgeneric read-fasta-sequence (stream alphabet parser)
   (:documentation "Reads a single Fasta format record of ALPHABET from
 STREAM using PARSER."))

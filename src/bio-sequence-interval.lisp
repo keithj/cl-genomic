@@ -80,11 +80,11 @@ between intervals are described using Allen interval algebra.
 
 This set of functions is extended with others that are less strict.
 
-  lax-before which is the union of before and meets
-  lax-after which is the union of after and met-by
-  lax-contains which is the union of contains, started-by, finished-by
+  inclusive-before which is the union of before and meets
+  inclusive-after which is the union of after and met-by
+  inclusive-contains which is the union of contains, started-by, finished-by
     and equals
-  lax-overlaps which is the union of overlaps and lax-contains"))
+  inclusive-overlaps which is the union of overlaps and inclusive-contains"))
 
 (defclass na-sequence-interval (na-sequence interval stranded-mixin)
   ()
@@ -102,13 +102,13 @@ This set of functions is extended with others that are less strict.
   (:documentation "Returns T if X is before Y according to Allen's
 Interval Algebra, or NIL otherwise. This definition of 'before' is
 stricter than is often used in bioinformatics. See also
-{defun slack-beforep} ."))
+{defun inclusive-beforep} ."))
 
 (defgeneric afterp (x y)
   (:documentation "Returns T if X is after Y according to Allen's
 Interval Algebra, or NIL otherwise. This definition of 'after' is
 stricter than is often used in bioinformatics. See also
-{defun slack-afterp} ."))
+{defun inclusive-afterp} ."))
 
 (defgeneric meetsp (x y)
   (:documentation "Returns T if X meets Y according to Allen's
@@ -122,7 +122,7 @@ Interval Algebra, or NIL otherwise."))
   (:documentation "Returns T if X overlaps Y according to Allen's
 Interval Algebra, or NIL otherwise. This definition of 'overlaps' is
 stricter than is often used in bioinformatics. See also
-{defun slack-overlapsp} ."))
+{defun inclusive-overlapsp} ."))
 
 (defgeneric startsp (x y)
   (:documentation "Returns T if X starts Y according to Allen's
@@ -140,7 +140,7 @@ Interval Algebra, or NIL otherwise."))
   (:documentation "Returns T if X contains Y according to Allen's
 Interval Algebra, or NIL otherwise. This definition of 'contains' is
 stricter than is often used in bioinformatics. See also
-{defun slack-containsp} ."))
+{defun inclusive-containsp} ."))
 
 (defgeneric finishesp (x y)
   (:documentation "Returns T if X finishes Y according to Allen's
@@ -154,23 +154,23 @@ Allen's Interval Algebra, or NIL otherwise."))
   (:documentation "Returns T if X is interval equal Y according to
 Allen's Interval Algebra, or NIL otherwise."))
 
-(defgeneric slack-beforep (x y)
+(defgeneric inclusive-beforep (x y)
   (:documentation "The union of beforep and meetsp. This predicate is
 often named 'before' in bioinformatics use cases. See also
 {defun beforep} ."))
 
-(defgeneric slack-afterp (x y)
+(defgeneric inclusive-afterp (x y)
   (:documentation "The union of afterp and meet-by-p. This predicate is
 often named 'after' in bioinformatics use cases. See also
 {defun beforep} ."))
 
-(defgeneric slack-containsp (x y)
+(defgeneric inclusive-containsp (x y)
   (:documentation "The union of startsp, duringp, finishesp and
 interval-equal. This predicate is often named 'contains' in
 bioinformatics use cases. See also {defun containsp} ."))
 
-(defgeneric slack-overlaps (x y)
-  (:documentation "The union of overlapsp and slack-containsp. This
+(defgeneric inclusive-overlaps (x y)
+  (:documentation "The union of overlapsp and inclusive-containsp. This
 predicate is often named 'overlaps' in bioinformatics use cases. See
 also {defun overlapsp} ."))
 
@@ -412,20 +412,18 @@ also {defun overlapsp} ."))
   (and (= (lower-of x) (lower-of y))
        (= (upper-of x) (upper-of y))))
 
-(defmethod slack-beforep ((x interval) (y interval))
+(defmethod inclusive-beforep ((x interval) (y interval))
   (or (beforep x y) (meetsp x y)))
 
-(defmethod slack-afterp ((x interval) (y interval))
+(defmethod inclusive-afterp ((x interval) (y interval))
   (or (afterp x y) (met-by-p x y)))
 
-(defmethod slack-containsp ((x interval) (y interval))
+(defmethod inclusive-containsp ((x interval) (y interval))
   (or (interval-equal x y) (containsp x y) 
       (started-by-p x y) (finished-by-p x y)))
 
-(defmethod slack-overlaps ((x interval) (y interval))
-  (or (overlapsp x y) (slack-containsp x y)))
-
-
+(defmethod inclusive-overlaps ((x interval) (y interval))
+  (or (overlapsp x y) (inclusive-containsp x y)))
 
 ;; FIXME -- circular sequences
 

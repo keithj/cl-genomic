@@ -112,7 +112,7 @@ The \href{http://common-lisp.net/project/cl-bio}{cl-bio} project.
 
 
 \section{Creating bio-sequences}
-\label{sec:makinging-bioseq}
+\label{sec:making-bioseq}
 
 \subsection{Making sequences from strings}
 \label{sec:make-bioseq-str}
@@ -438,7 +438,7 @@ former test guarantees that the strands are the same, while the latter
 guarantees only that they might be the same.
 
 The complement relationship between forward and reverse strands is
-executed by the \lstinline!complement-strand! method, while the
+executed by the \\ \lstinline!complement-strand! method, while the
 \lstinline!complementp! predicate tests for this relationship. The
 complement of the unknown strand is itself the unknown strand. The
 \lstinline!complementp! predicate is implemented using
@@ -446,7 +446,7 @@ complement of the unknown strand is itself the unknown strand. The
 only if the strands are guaranteed to be complementary.
 
 \begin{lstlisting}[caption={Sequence strand operations},
-  label=lst:testing-bioseq,float=[tbph]]
+  label=lst:strand-ops-bioseq,float=[tbph]]
   (in-package :bio-sequence)
 
   ;; Returns T
