@@ -17,22 +17,20 @@
 
 (in-package :cl-user)
 
-(asdf:operate 'asdf:load-op :cl-system-utilities)
-(asdf:operate 'asdf:load-op :cl-graphic-utilities)
 (asdf:operate 'asdf:load-op :cl-genomic)
 
-(su:document-system :cl-genomic)
+(dxs:document-system :cl-genomic)
 
-(gru:make-class-diagram
- (gpu:all-classes :bs (find-class 'bs:bio-sequence))
- "manual/bio-sequence-classes.png" :format :png)
+;; (gru:make-class-diagram
+;;  (gpu:all-classes :bs (find-class 'bs:bio-sequence))
+;;  "manual/bio-sequence-classes.png" :format :png)
 
-(gru:make-class-diagram
- (gpu:all-classes :bs (find-class 'bs:interval))
- "manual/interval-classes.png" :format :png)
+;; (gru:make-class-diagram
+;;  (gpu:all-classes :bs (find-class 'bs:interval))
+;;  "manual/interval-classes.png" :format :png)
 
-(gru:make-class-diagram
- (gpu:all-classes :bs (find-class 'bs:bio-sequence-parser))
- "manual/interval-classes.png" :format :png)
+;; (gru:make-class-diagram
+;;  (gpu:all-classes :bs (find-class 'bs:bio-sequence-parser))
+;;  "manual/interval-classes.png" :format :png)
 
 (quit)
