@@ -30,10 +30,15 @@
 
 (defsystem cl-genomic
     :name "Common Lisp Genomics"
+    :version "0.4.6"
     :author "Keith James"
     :licence "GPL v3"
-    :depends-on (:cl-ppcre :puri :deoxybyte-utilities :deoxybyte-io
-                 :deoxybyte-unix :cffi)
+    :depends-on ((:version :cffi "0.10.3")
+                 (:version :cl-ppcre "2.0.1")
+                 (:version :deoxybyte-io "0.4.3")
+                 (:version :deoxybyte-unix "0.6.1")
+                 (:version :deoxybyte-utilities "0.4.6")
+                 :puri)
     :in-order-to ((test-op (load-op :cl-genomic :cl-genomic-test)))
     :components ((:module :core
                           :pathname "src/"
