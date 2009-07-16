@@ -5,6 +5,32 @@ data, including DNA, RNA and amino-acid sequences, and the biological
 relationships between them.
 
 
+Installation
+
+cl-genomic uses ASDF for system definition. Copy or symlink
+cl-genomic.asd (and optionally cl-genomic-test.asd) to your
+asdf:*central-registry* and load cl-sam with the asdf:operate
+function:
+
+ (asdf:operate 'asdf:load-op :cl-genomic)
+
+or with the equivalent deoxybyte-systems:load-system function:
+
+ (dxs:load-system :cl-genomic)
+
+
+Tests
+
+To run the unit and regression tests you need to have LIFT
+installed. Run the tests with the asdf:operate function:
+
+ (asdf:operate 'asdf:test-op :cl-genomic)
+
+or with the equivalent deoxybyte-systems:test-system function:
+
+ (dxs:test-system :cl-genomic)
+
+
 Documentation
 
 See the Lisp docstrings, particularly the package docstrings for an
