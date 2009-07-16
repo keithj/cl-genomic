@@ -268,6 +268,9 @@ CONSUME may be used in operations on the returned consumer."))
   (:documentation "Returns a new bio-sequence created from the state
 accumulated by PARSER."))
 
+(defgeneric make-interval (bio-sequence &rest args)
+  (:documentation "Returns a new interval on BIO-SEQUENCE."))
+
 (defgeneric read-pure-sequence (stream alphabet parser)
   (:documentation "Reads a single pure format record of ALPHABET from
 STREAM using PARSER."))
