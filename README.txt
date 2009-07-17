@@ -54,3 +54,8 @@ deoxybyte-unix          git://github.com/keithj/deoxybyte-unix.git
 cl-ppcre                http://weitz.de/cl-ppcre/
 PURI                    http://puri.b9.com/
 CFFI                    http://common-lisp.net/project/cffi/
+
+Optional dependencies
+
+LIFT                    http://common-lisp.net/project/lift/
+CLDOC                   http://common-lisp.net/project/cldoc/
