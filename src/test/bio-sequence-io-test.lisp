@@ -34,6 +34,19 @@
       (with-ascii-li-stream (,stream ,fs)
         ,@body))))
 
+(defmacro with-test-mapped-seq ((mseq seq filespec) &body body)
+  (with-gensyms (tmp-filespec seqi)
+    `(let* ((,seq (with-seq-input (,seqi ,filespec :fasta)
+                    (next ,seqi)))
+            (,tmp-filespec (make-tmp-pathname
+                            :tmpdir (merge-pathnames "data"))))
+      (write-pure-sequence ,seq ,tmp-filespec)
+      (with-mapped-dna (,mseq :filespec ,tmp-filespec
+                              :length (length-of ,seq))
+        ,@body)
+      (delete-file ,tmp-filespec))))
+
+
 (deftestsuite bio-sequence-io-tests (cl-genomic-tests)
   ())
 
@@ -251,15 +264,56 @@
     (delete-file out-filespec)))
 
 (addtest (bio-sequence-io-tests) mapped-dna-sequence/1
-  (let* ((seq (with-seq-input (seqi (merge-pathnames
-                                     "data/simple-dna1.fasta") :fasta)
-                (next seqi)))
-         (tmp-filespec (make-tmp-pathname :tmpdir (merge-pathnames "data"))))
-    (write-pure-sequence seq tmp-filespec)
-    (with-mapped-dna (mseq :filespec tmp-filespec :length (length-of seq))
-      (ensure (dna-sequence-p mseq))
-      (format t "~a ~a~%" (coerce-sequence seq 'string)
-              (coerce-sequence mseq 'string))
-      (ensure  (string-equal (coerce-sequence seq 'string)
-                             (coerce-sequence mseq 'string)))
-    (delete-file tmp-filespec))))
+  (with-test-mapped-seq (mseq seq (merge-pathnames "data/simple-dna1.fasta"))
+    (ensure (dna-sequence-p mseq))
+    (ensure (double-stranded-p mseq))
+    (ensure (simplep mseq))
+    (ensure (not (ambiguousp mseq)))
+    (ensure (= (length-of seq) (length-of mseq)))
+     (dotimes (n (length-of seq))
+       (setf (residue-of mseq n) #\n)
+       (ensure (char= #\n (residue-of mseq n))))))
+
+(addtest (bio-sequence-io-tests) mapped-dna-sequence/2
+  (with-test-mapped-seq (mseq seq (merge-pathnames "data/simple-dna1.fasta"))
+    (let ((str (coerce-sequence seq 'string)))
+    ;; no args
+    (ensure (string= str (coerce-sequence mseq 'string)))
+    ;; optional arg start
+    (dotimes (n (length str))
+      (ensure (string= (subseq str n)
+                       (coerce-sequence mseq 'string :start n))))
+    ;; optional arg start end
+    (dotimes (n (length str))
+      (ensure (string= (subseq str 0 n)
+                       (coerce-sequence mseq 'string :start 0 :end n)))))))
+
+(addtest (bio-sequence-io-tests) mapped-dna-sequence/3
+  (with-test-mapped-seq (mseq seq (merge-pathnames "data/simple-dna1.fasta"))
+    (ensure (string= (coerce-sequence (reverse-sequence seq) 'string)
+                     (coerce-sequence (reverse-sequence mseq) 'string)))))
+
+(addtest (bio-sequence-io-tests) mapped-dna-sequence/4
+  (with-test-mapped-seq (mseq seq (merge-pathnames "data/simple-dna1.fasta"))
+    (ensure (string= (coerce-sequence (nreverse-sequence seq) 'string)
+                     (coerce-sequence (nreverse-sequence mseq) 'string)))))
+
+(addtest (bio-sequence-io-tests) mapped-dna-sequence/5
+  (with-test-mapped-seq (mseq seq (merge-pathnames "data/simple-dna1.fasta"))
+    (ensure (string= (coerce-sequence (complement-sequence seq) 'string)
+                     (coerce-sequence (complement-sequence mseq) 'string)))))
+
+(addtest (bio-sequence-io-tests) mapped-dna-sequence/6
+  (with-test-mapped-seq (mseq seq (merge-pathnames "data/simple-dna1.fasta"))
+    (ensure (string= (coerce-sequence (ncomplement-sequence seq) 'string)
+                     (coerce-sequence (ncomplement-sequence mseq) 'string)))))
+
+(addtest (bio-sequence-io-tests) mapped-dna-sequence/7
+  (with-test-mapped-seq (mseq seq (merge-pathnames "data/simple-dna1.fasta"))
+    (ensure (string= (coerce-sequence (reverse-complement seq) 'string)
+                     (coerce-sequence (reverse-complement mseq) 'string)))))
+
+(addtest (bio-sequence-io-tests) mapped-dna-sequence/8
+  (with-test-mapped-seq (mseq seq (merge-pathnames "data/simple-dna1.fasta"))
+    (ensure (string= (coerce-sequence (nreverse-complement seq) 'string)
+                     (coerce-sequence (nreverse-complement mseq) 'string)))))

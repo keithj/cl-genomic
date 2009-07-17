@@ -355,12 +355,13 @@
     ;; no args
     (ensure (string= residues (coerce-sequence seq 'string)))
     ;; optional arg start
-     (dotimes (n 4)
-       (ensure (string= (subseq residues n)
-                        (coerce-sequence seq 'string :start n))))
-     (dotimes (n 4)
-       (ensure (string= (subseq residues 0 n)
-                        (coerce-sequence seq 'string :start 0 :end n))))))
+    (dotimes (n (length residues))
+      (ensure (string= (subseq residues n)
+                       (coerce-sequence seq 'string :start n))))
+    ;; optional arg start end
+    (dotimes (n (length residues))
+      (ensure (string= (subseq residues 0 n)
+                       (coerce-sequence seq 'string :start 0 :end n))))))
 
 (addtest (bio-sequence-tests) dna-sequence/3
   (let* ((residues "aaccggtt")

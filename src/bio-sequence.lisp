@@ -404,10 +404,23 @@ number of strands, or NIL otherwise."
          for elt across vector
          thereis (< 1 (length (funcall fn elt)))))))
 
+(defmethod ambiguousp ((seq mapped-dna-sequence))
+  (with-slots ((area dxn:mmap-area) length)
+      seq
+    (loop
+       for i from 0 below length
+       thereis (< 1 (length
+                     (enum-dna-base
+                      (code-char
+                       (cffi:mem-aref (dxn:mmap-area-ptr area) :char i))))))))
+
 (defmethod simplep ((seq virtual-token-sequence))
   nil)
 
 (defmethod simplep ((seq encoded-vector-sequence))
+  (not (ambiguousp seq)))
+
+(defmethod simplep ((seq mapped-dna-sequence))
   (not (ambiguousp seq)))
 
 (defmethod virtualp ((seq token-sequence))
