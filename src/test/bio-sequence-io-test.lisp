@@ -256,10 +256,10 @@
                 (next seqi)))
          (tmp-filespec (make-tmp-pathname :tmpdir (merge-pathnames "data"))))
     (write-pure-sequence seq tmp-filespec)
-    (dxn:with-mapped-vector (mseq 'mapped-dna-sequence
-                                  :filespec tmp-filespec
-                                  :length (length-of seq))
+    (with-mapped-dna (mseq :filespec tmp-filespec :length (length-of seq))
       (ensure (dna-sequence-p mseq))
-      (ensure  (string= (coerce-sequence seq 'string)
-                        (coerce-sequence mseq 'string))))
-    (delete-file tmp-filespec)))
+      (format t "~a ~a~%" (coerce-sequence seq 'string)
+              (coerce-sequence mseq 'string))
+      (ensure  (string-equal (coerce-sequence seq 'string)
+                             (coerce-sequence mseq 'string)))
+    (delete-file tmp-filespec))))

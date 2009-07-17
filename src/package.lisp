@@ -42,6 +42,7 @@
 
    ;; Macros
    #:with-seq-input
+   #:with-mapped-dna
    #:with-sequence-residues
    
    ;; Functions

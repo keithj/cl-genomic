@@ -218,13 +218,31 @@
       (let ((,seqi (make-seq-input ,stream ,format ,@args)))
         ,@body))))
 
-(defmacro with-mapped-dna ((seq &key filespec delete length
-                                (initial-element #\n)) &body body)
-  `(dxn:with-mapped-vector (,seq 'mapped-dna-sequence
-                                 :filespec ,filespec :delete ,delete
-                                 :length ,length
-                                 :initial-element (char-code ,initial-element))
-     ,@body))
+(defmacro with-mapped-dna ((seq &key filespec delete length) &body body)
+  (with-gensyms (fsize len)
+    `(let ((,len (cond (,filespec
+                        (let ((,fsize (with-open-file (s ,filespec)
+                                        (file-length s))))
+                          (cond ((null ,length)
+                                 ,fsize)
+                                ((<= ,length ,fsize)
+                                 ,length)
+                                (t
+                                 (error 'invalid-argument-error
+                                        :params '(,filespec ,length)
+                                        :args (list ,filespec ,length)
+                                        :text "requested length too large")))))
+                       (,length
+                        ,length)
+                       (t
+                        (error 'invalid-argument-error
+                               :params '(,filespec ,length)
+                               :args (list ,filespec ,length)
+                               :text "no filespec or length were provided")))))
+           (dxn:with-mapped-vector (,seq 'mapped-dna-sequence
+                                         :filespec ,filespec :delete ,delete
+                                         :length ,len)
+             ,@body))))
 
 (defun skip-malformed-sequence (condition)
   "Restart function that invokes the SKIP-SEQUENCE-RECORD restart to
