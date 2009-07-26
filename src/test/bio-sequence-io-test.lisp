@@ -24,7 +24,7 @@
     (let ((seqi (make-seq-input stream format :alphabet :dna :metric :phred)))
       (loop
          as seq = (next seqi)
-         count 1 into total
+         count seq into total
          while (has-more-p seqi)
          finally (return total)))))
 
@@ -152,7 +152,7 @@
       (with-open-file (stream tmp-filespec :direction :io
                               :element-type 'base-char
                               :external-format :ascii)
-        (bs::write-fasta-sequence seq stream :token-case (first args))
+        (write-fasta-sequence seq stream :token-case (first args))
         (finish-output stream)
         (file-position stream 0)
         (ensure (string= ">foo" (read-line stream)))
@@ -204,7 +204,7 @@
       (with-open-file (stream tmp-filespec :direction :io
                               :element-type 'base-char
                               :external-format :ascii)
-        (bs::write-fastq-sequence seq stream :token-case (first args))
+        (write-fastq-sequence seq stream :token-case (first args))
         (finish-output stream)
         (file-position stream 0)
         (ensure (string= "@foo" (read-line stream)))

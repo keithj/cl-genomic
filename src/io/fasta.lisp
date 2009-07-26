@@ -99,7 +99,7 @@ becomes full of chunks of sequence tokens.")
       (values nil t))))
 
 (defmethod write-fasta-sequence ((seq bio-sequence) stream &key token-case) 
-  (declare (optimize (speed 3) (safety 1)))
+  (declare (optimize (speed 3) (safety 0)))
   (let ((*print-pretty* nil)
         (len (length-of seq)))
     (declare (type fixnum len))

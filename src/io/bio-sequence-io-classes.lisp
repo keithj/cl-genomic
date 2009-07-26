@@ -83,11 +83,13 @@ stream."))
 sequence data to build CLOS objects that do not contain explicit
 residue data."))
 
-(defclass indexing-sequence-parser (virtual-sequence-parser)
-  ((offset :initform 0
-           :accessor offset-of)
-   (stream :initarg :stream
+(defclass streaming-parser (virtual-sequence-parser)
+  ((stream :initarg :stream
            :reader stream-of)))
+
+(defclass indexing-sequence-parser (streaming-parser)
+  ((offset :initform 0
+           :accessor offset-of)))
 
 (defclass gff3-parser (bio-sequence-parser)
   ((feature-ontology)

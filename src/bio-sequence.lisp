@@ -332,6 +332,7 @@ number of strands, or NIL otherwise."
   (null (identity-of seq)))
 
 (defmethod strand-designator-p (strand)
+  (declare (ignore strand))
   nil)
 
 (defmethod strand-designator-p ((strand string))
@@ -878,6 +879,21 @@ number of strands, or NIL otherwise."
 (defmethod residue-frequencies ((seq virtual-aa-sequence))
   ;; Returns 'X' x the sequence length
   (pairlis (list #\X) (list (length-of seq))))
+
+(defmethod residue-frequencies ((seq mapped-dna-sequence))
+  (with-accessors ((alphabet alphabet-of))
+      seq
+    (with-slots ((area dxn:mmap-area) length)
+        seq
+      (let ((frequencies (make-array (size-of alphabet)
+                                     :element-type 'fixnum :initial-element 0)))
+        (loop
+           for i of-type array-index from 0 below length
+           do (let ((token (encode-dna-4bit
+                            (code-char
+                             (cffi:mem-aref (dxn:mmap-area-ptr area)
+                                            :char i)))))
+                (incf (aref frequencies (token-index token alphabet)))))))))
 
 (defmethod residue-position (character (seq encoded-dna-sequence)
                              &key from-end test test-not (start 0) end)

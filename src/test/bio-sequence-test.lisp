@@ -266,6 +266,51 @@
                                              #\+ #\- #\?
                                              :forward :reverse :unknown))))
 
+(addtest (bio-sequence-tests) forward-strand-p/1
+  (ensure (equalp '(t nil nil)
+                  (mapcar #'forward-strand-p (list *forward-strand*
+                                                   *reverse-strand*
+                                                   *unknown-strand*)))))
+
+(addtest (bio-sequence-tests) reverse-strand-p/1
+  (ensure (equalp '(nil t nil)
+                  (mapcar #'reverse-strand-p (list *forward-strand*
+                                                   *reverse-strand*
+                                                   *unknown-strand*)))))
+
+(addtest (bio-sequence-tests) unknown-strand-p/1
+  (ensure (equalp '(nil nil t)
+                  (mapcar #'unknown-strand-p (list *forward-strand*
+                                                   *reverse-strand*
+                                                   *unknown-strand*)))))
+
+(addtest (bio-sequence-tests) strand=/1
+  (ensure (strand= *forward-strand* *forward-strand*))
+  (ensure (strand= *reverse-strand* *reverse-strand*))
+  (ensure (not (strand= *unknown-strand* *forward-strand*)))
+  (ensure (not (strand= *unknown-strand* *reverse-strand*)))
+  (ensure (not (strand= *unknown-strand* *unknown-strand*)))
+  (ensure (not (strand= *forward-strand* *reverse-strand*))))
+
+(addtest (bio-sequence-tests) strand-equal/1
+  (ensure (strand-equal *forward-strand* *forward-strand*))
+  (ensure (strand-equal *reverse-strand* *reverse-strand*))
+  (ensure (strand-equal *unknown-strand* *forward-strand*))
+  (ensure (strand-equal *unknown-strand* *reverse-strand*))
+  (ensure (strand-equal *unknown-strand* *unknown-strand*))
+  (ensure (not (strand-equal *forward-strand* *reverse-strand*))))
+
+(addtest (bio-sequence-tests) complement-strand/1
+  (ensure (eql *forward-strand* (complement-strand *reverse-strand*)))
+  (ensure (eql *reverse-strand* (complement-strand *forward-strand*)))
+  (ensure (eql *unknown-strand* (complement-strand *unknown-strand*))))
+
+(addtest (bio-sequence-tests) complementp/1
+  (ensure (complementp *forward-strand* *reverse-strand*))
+  (ensure (not (complementp *forward-strand* *forward-strand*)))
+  (ensure (not (complementp *reverse-strand* *reverse-strand*)))
+  (ensure (not (complementp *forward-strand* *unknown-strand*))))
+
 (addtest (bio-sequence-tests) ambiguousp/1
   (ensure (ambiguousp (make-dna "acgn")))
   (ensure (not (ambiguousp (make-dna "acgt")))))

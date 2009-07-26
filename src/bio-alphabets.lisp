@@ -187,18 +187,18 @@ as :dna :rna or :aa."
   (gethash encoded-token (index-of alphabet)))
 
 (defmethod random-token-of ((alphabet alphabet))
-  ;; TODO: inefficient
+  ;; TODO -- inefficient
   (elt (tokens-of alphabet) (random (size-of alphabet))))
 
-(defmethod memberp ((char character) (alphabet alphabet))
-  (find char (tokens-of alphabet)))
+(defmethod memberp ((token character) (alphabet alphabet))
+  (find token (tokens-of alphabet)))
 
 (defmethod memberp ((codon list) (alphabet alphabet))
   (find codon (tokens-of alphabet) :test #'equalp))
 
-(defmethod subsumesp ((char1 character) (char2 character) (alphabet alphabet))
-  (subsetp (enum-ambiguity char1 alphabet)
-           (enum-ambiguity char2 alphabet)))
+(defmethod subsumesp ((token1 character) (token2 character) (alphabet alphabet))
+  (subsetp (enum-ambiguity token1 alphabet)
+           (enum-ambiguity token2 alphabet)))
 
 (defmethod subsumesp ((codon1 list) (codon2 list) (alphabet alphabet))
   (subsetp (enum-ambiguity codon1 alphabet)
@@ -210,20 +210,20 @@ as :dna :rna or :aa."
          :args (list token alphabet)
          :text "the token is invalid for this alphabet"))
 
-(defmethod enum-ambiguity ((char character) (alphabet (eql *simple-dna*)))
-  (list char))
+(defmethod enum-ambiguity ((token character) (alphabet (eql *simple-dna*)))
+  (list token))
 
-(defmethod enum-ambiguity ((char character) (alphabet (eql *simple-rna*)))
-  (list char))
+(defmethod enum-ambiguity ((token character) (alphabet (eql *simple-rna*)))
+  (list token))
 
-(defmethod enum-ambiguity ((char character) (alphabet (eql *dna*)))
-  (enum-dna-base char))
+(defmethod enum-ambiguity ((token character) (alphabet (eql *dna*)))
+  (enum-dna-base token))
 
-(defmethod enum-ambiguity ((char character) (alphabet (eql *rna*)))
-  (enum-rna-base char))
+(defmethod enum-ambiguity ((token character) (alphabet (eql *rna*)))
+  (enum-rna-base token))
 
-(defmethod enum-ambiguity ((char character) (alphabet (eql *aa*)))
-  (enum-aa char))
+(defmethod enum-ambiguity ((token character) (alphabet (eql *aa*)))
+  (enum-aa token))
 
 (defmethod enum-ambiguity ((codon list) (alphabet (eql *dna-codons*)))
   (enum-dna-codon codon))

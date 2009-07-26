@@ -346,7 +346,7 @@ CHAR."
 
 (defun check-tag-counts (tag-values)
   (loop
-     for (tag . value) in tag-values
+     for (tag . value) in tag-values  ; how to declare that VALUE is ignored?
      count (string= "id" tag) into id-count
      count (string= "def" tag) into def-count
      count (string= "name" tag) into name-count

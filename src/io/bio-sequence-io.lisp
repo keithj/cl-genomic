@@ -143,6 +143,12 @@
                             (residues vector))
   (incf (parsed-length-of parser) (length residues)))
 
+;;; Writing data to a stream
+
+(defmethod object-residues ((parser streaming-parser)
+                            (residues vector))
+  (princ residues vector))
+
 ;;; Collecting data into an indexed file that may be mmapped later
 (defmethod object-residues :after ((parser indexing-sequence-parser)
                                    (residues vector))

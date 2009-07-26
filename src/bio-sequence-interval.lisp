@@ -169,7 +169,7 @@ often named 'after' in bioinformatics use cases. See also
 interval-equal. This predicate is often named 'contains' in
 bioinformatics use cases. See also {defun containsp} ."))
 
-(defgeneric inclusive-overlaps (x y)
+(defgeneric inclusive-overlapsp (x y)
   (:documentation "The union of overlapsp and inclusive-containsp. This
 predicate is often named 'overlaps' in bioinformatics use cases. See
 also {defun overlapsp} ."))
@@ -422,7 +422,7 @@ also {defun overlapsp} ."))
   (or (interval-equal x y) (containsp x y) 
       (started-by-p x y) (finished-by-p x y)))
 
-(defmethod inclusive-overlaps ((x interval) (y interval))
+(defmethod inclusive-overlapsp ((x interval) (y interval))
   (or (overlapsp x y) (inclusive-containsp x y)))
 
 ;; FIXME -- circular sequences

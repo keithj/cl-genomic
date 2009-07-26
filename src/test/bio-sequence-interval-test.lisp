@@ -78,9 +78,15 @@ single-stranded reference."))
                                    :lower lower
                                    :upper upper
                                    :strand *reverse-strand*)))
+    ;; single strand
     (ensure (= lower (lower-of interval1)))
     (ensure (= upper (upper-of interval1)))
     (ensure-same ss-seq (reference-of interval1))
+    ;; double strand
+    (ensure (= lower (lower-of interval2)))
+    (ensure (= upper (upper-of interval2)))
+    (ensure-same ds-seq (reference-of interval2))
+    ;; single strand errors
     (ensure-error 'invalid-argument-error
                   (setf (reference-of interval3) ss-seq))
     (ensure-error 'invalid-argument-error
@@ -333,3 +339,43 @@ single-stranded reference."))
     (test-intervals (make-interval ref :lower 0 :upper 4)
                     (make-interval ref :lower 0 :upper 4)
                     (list #'interval-equal))))
+
+(addtest (bio-sequence-interval-tests) inclusive-beforep/1
+  (let ((ref (make-dna "acttacggccgt")))
+    (ensure (inclusive-beforep (make-interval ref :lower 0 :upper 4)
+                               (make-interval ref :lower 4 :upper 8)))
+    (ensure (inclusive-beforep (make-interval ref :lower 0 :upper 3)
+                               (make-interval ref :lower 4 :upper 8)))))
+
+(addtest (bio-sequence-interval-tests) inclusive-afterp/1
+  (let ((ref (make-dna "acttacggccgt")))
+    (ensure (inclusive-afterp (make-interval ref :lower 4 :upper 8)
+                              (make-interval ref :lower 0 :upper 4)))
+    (ensure (inclusive-afterp (make-interval ref :lower 4 :upper 8)
+                              (make-interval ref :lower 0 :upper 3)))))
+
+(addtest (bio-sequence-interval-tests) inclusive-containsp/1
+  (let ((ref (make-dna "acttacggccgt")))
+    (ensure (inclusive-containsp (make-interval ref :lower 0 :upper 8)
+                                 (make-interval ref :lower 1 :upper 7)))
+    (ensure (inclusive-containsp (make-interval ref :lower 0 :upper 8)
+                                 (make-interval ref :lower 0 :upper 7)))
+    (ensure (inclusive-containsp (make-interval ref :lower 0 :upper 8)
+                                 (make-interval ref :lower 1 :upper 8)))
+    (ensure (inclusive-containsp (make-interval ref :lower 0 :upper 8)
+                                 (make-interval ref :lower 0 :upper 8)))))
+
+(addtest (bio-sequence-interval-tests) inclusive-overlapsp/1
+  (let ((ref (make-dna "acttacggccgt")))
+    (ensure (inclusive-overlapsp (make-interval ref :lower 0 :upper 8)
+                                 (make-interval ref :lower 1 :upper 7)))
+    (ensure (inclusive-overlapsp (make-interval ref :lower 0 :upper 8)
+                                 (make-interval ref :lower 0 :upper 7)))
+    (ensure (inclusive-overlapsp (make-interval ref :lower 0 :upper 8)
+                                 (make-interval ref :lower 1 :upper 8)))
+    (ensure (inclusive-overlapsp (make-interval ref :lower 0 :upper 8)
+                                 (make-interval ref :lower 0 :upper 8)))
+    (ensure (inclusive-overlapsp (make-interval ref :lower 0 :upper 6)
+                                 (make-interval ref :lower 2 :upper 8)))
+    (ensure (inclusive-overlapsp (make-interval ref :lower 2 :upper 8)
+                                 (make-interval ref :lower 0 :upper 6)))))

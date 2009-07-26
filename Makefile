@@ -26,4 +26,3 @@ coverage: clean
 
 clean:
 	find . -name \*.fasl -o -name \*.ufsl -o -name \*.lx64fsl -exec rm {} \;
-

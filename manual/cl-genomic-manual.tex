@@ -76,13 +76,14 @@ software to use with cl-genomic is an open question. Candidates
 include PowerLoom, various OWL and RDF stores (with a plethora of
 incompatible and immature query languages), several SQL-based
 bio-ontology warehouses and Prolog. The field is very fragmented and
-the technology is not quite there yet.
+the technology is not quite there yet, particularly for cases where
+one needs to modify the knowledgebase at runtime.
 
 
 \subsubsection{Support for whole genomes and short-read sequence data}
 
 Good performance is required for datasets ranging from whole eukaryote
-chromosomes to the hundreds of millions of short sequencing reads
+chromosomes, to the hundreds of millions of short sequencing reads
 produced per experiment by newer DNA sequencing technologies.
 
 
@@ -257,7 +258,7 @@ means of preparing such files.
 
 
 \begin{lstlisting}[caption={Memory-mapping a bio-sequence},
-  label=lst:read-bioseq-stream,float=[tbph]]
+  label=lst:memory-map-bioseq,float=[tbph]]
   (in-package :bio-sequence)
 
   ;; Make a pure sequence file
@@ -273,8 +274,8 @@ means of preparing such files.
                for i from 0 below (length-of mseq)
                collect (element-of mseq i))))
 
-  ;; Create an anonymous, temporary 250,000,000 bp sequence of 'N's.
-  ;; Return a 100 bp internal subsequence.
+  ;; Create an anonymous, temporary 250,000,000 bp sequence of
+  ;; 'n's. Return a 100 bp internal subsequence.
   (with-mapped-dna (mseq :length 250000000)
     (subsequence mseq 1000000 1000100))
 \end{lstlisting}
@@ -479,8 +480,8 @@ only if the strands are guaranteed to be complementary.
 \subsection{Testing bio-sequences}
 
 The various biological types of sequence are implemented as CLOS
-classes, meaning that method dispatch may be used to select
-appropriate code branches in many cases. The predicates testing
+classes and method dispatch may be used to select appropriate code
+branches in many cases. The predicates testing
 \lstinline!bio-sequence! ambiguity, strand count and virtual state
 fall into this category, meaning that it is an error to use them on
 non-\lstinline!bio-sequence! objects.
