@@ -9,7 +9,7 @@ Installation
 
 cl-genomic uses ASDF for system definition. Copy or symlink
 cl-genomic.asd (and optionally cl-genomic-test.asd) to your
-asdf:*central-registry* and load cl-sam with the asdf:operate
+asdf:*central-registry* and load cl-genomic with the asdf:operate
 function:
 
  (asdf:operate 'asdf:load-op :cl-genomic)
