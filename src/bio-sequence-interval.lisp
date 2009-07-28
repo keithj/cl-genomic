@@ -54,7 +54,7 @@ between intervals are described using Allen interval algebra.
    ------
           -----
 
-   x meets y, y met-by x
+   x meets y, y met-by x (neither x or y are zero-width)
    ------
          -----
 
@@ -62,7 +62,7 @@ between intervals are described using Allen interval algebra.
    ------
        -----
 
-   x starts y, y started-by x
+   x starts y, y started-by x (neither x or y are zero-width)
    ----
    -------
 
@@ -70,7 +70,7 @@ between intervals are described using Allen interval algebra.
     ---
    -----
 
-   x finishes y, y finished-by x
+   x finishes y, y finished-by x (neither x or y are zero-width)
      ---
    -----
 
@@ -371,10 +371,20 @@ also {defun overlapsp} ."))
   (> (lower-of x) (upper-of y)))
 
 (defmethod meetsp ((x interval) (y interval))
-  (= (upper-of x) (lower-of y)))
+  (with-accessors ((lowx lower-of) (upx upper-of))
+      x
+    (with-accessors ((lowy lower-of) (upy upper-of))
+        y
+      (and (< lowx upx)             ; to meet y, x may not be zero-width
+           (= upx lowy)))))
 
 (defmethod met-by-p ((x interval) (y interval))
-  (= (lower-of x) (upper-of y)))
+  (with-accessors ((lowx lower-of) (upx upper-of))
+      x
+    (with-accessors ((lowy lower-of) (upy upper-of))
+        y
+      (and (< lowy upy)             ; to meet x, y may not be zero-width
+           (= lowx upy)))))
 
 (defmethod overlapsp ((x interval) (y interval))
   (with-accessors ((lowx lower-of) (upx upper-of))
@@ -385,12 +395,20 @@ also {defun overlapsp} ."))
           (< lowy lowx upy upx)))))
 
 (defmethod startsp ((x interval) (y interval))
-  (and (= (lower-of x) (lower-of y))
-       (< (upper-of x) (upper-of y))))
+   (with-accessors ((lowx lower-of) (upx upper-of))
+      x
+    (with-accessors ((lowy lower-of) (upy upper-of))
+        y
+      (and (< lowx upx) (< lowy upy)   ; neither x or y are zero-width
+           (= lowx lowy) (< upx upy)))))
 
 (defmethod started-by-p ((x interval) (y interval))
-  (and (= (lower-of x) (lower-of y))
-       (> (upper-of x) (upper-of y))))
+  (with-accessors ((lowx lower-of) (upx upper-of))
+      x
+    (with-accessors ((lowy lower-of) (upy upper-of))
+        y
+      (and (< lowx upx) (< lowy upy)   ; neither x or y are zero-width
+           (= lowx lowy) (> upx upy)))))
 
 (defmethod duringp ((x interval) (y interval))
   (and (> (lower-of x) (lower-of y))
@@ -401,12 +419,20 @@ also {defun overlapsp} ."))
        (> (upper-of x) (upper-of y))))
 
 (defmethod finishesp ((x interval) (y interval))
-  (and (> (lower-of x) (lower-of y))
-       (= (upper-of x) (upper-of y))))
+  (with-accessors ((lowx lower-of) (upx upper-of))
+      x
+    (with-accessors ((lowy lower-of) (upy upper-of))
+        y
+      (and (< lowx upx) (< lowy upy)   ; neither x or y are zero-width
+           (> lowx lowy) (= upx upy)))))
 
 (defmethod finished-by-p ((x interval) (y interval))
-  (and (< (lower-of x) (lower-of y))
-       (= (upper-of x) (upper-of y))))
+  (with-accessors ((lowx lower-of) (upx upper-of))
+      x
+    (with-accessors ((lowy lower-of) (upy upper-of))
+        y
+      (and (< lowx upx) (< lowy upy)   ; neither x or y are zero-width
+           (< lowx lowy) (= upx upy)))))
 
 (defmethod interval-equal ((x interval) (y interval))
   (and (= (lower-of x) (lower-of y))

@@ -283,11 +283,25 @@ single-stranded reference."))
                     (make-interval ref :lower 4 :upper 8)
                     (list #'meetsp))))
 
+(addtest (bio-sequence-interval-tests) meetsp/2
+  (let ((ref (make-dna "acttacggccgt")))
+    (ensure (not (meetsp (make-interval ref :lower 0 :upper 0)
+                         (make-interval ref :lower 0 :upper 0))))
+    (ensure (not (meetsp (make-interval ref :lower 0 :upper 0)
+                         (make-interval ref :lower 0 :upper 1))))))
+
 (addtest (bio-sequence-interval-tests) met-by-p/1
   (let ((ref (make-dna "acttacggccgt")))
     (test-intervals (make-interval ref :lower 4 :upper 8)
                     (make-interval ref :lower 0 :upper 4)
                     (list #'met-by-p))))
+
+(addtest (bio-sequence-interval-tests) met-by-p/2
+  (let ((ref (make-dna "acttacggccgt")))
+    (ensure (not (met-by-p (make-interval ref :lower 0 :upper 0)
+                           (make-interval ref :lower 0 :upper 0))))
+    (ensure (not (met-by-p (make-interval ref :lower 0 :upper 1)
+                           (make-interval ref :lower 0 :upper 0))))))
 
 (addtest (bio-sequence-interval-tests) overlapsp/1
   (let ((ref (make-dna "acttacggccgt")))
@@ -304,11 +318,25 @@ single-stranded reference."))
                     (make-interval ref :lower 0 :upper 8)
                     (list #'startsp))))
 
+(addtest (bio-sequence-interval-tests) startsp/2
+  (let ((ref (make-dna "acttacggccgt")))
+    (ensure (not (startsp (make-interval ref :lower 0 :upper 0)
+                          (make-interval ref :lower 0 :upper 0))))
+    (ensure (not (startsp (make-interval ref :lower 0 :upper 0)
+                          (make-interval ref :lower 0 :upper 1))))))
+
 (addtest (bio-sequence-interval-tests) started-by-p/1
   (let ((ref (make-dna "acttacggccgt")))
     (test-intervals (make-interval ref :lower 0 :upper 8)
                     (make-interval ref :lower 0 :upper 4)
                     (list #'started-by-p))))
+
+(addtest (bio-sequence-interval-tests) started-by-p/2
+  (let ((ref (make-dna "acttacggccgt")))
+    (ensure (not (started-by-p (make-interval ref :lower 0 :upper 0)
+                               (make-interval ref :lower 0 :upper 0))))
+    (ensure (not (started-by-p (make-interval ref :lower 0 :upper 1)
+                               (make-interval ref :lower 0 :upper 0))))))
 
 (addtest (bio-sequence-interval-tests) duringp/1
   (let ((ref (make-dna "acttacggccgt")))
@@ -328,24 +356,31 @@ single-stranded reference."))
                     (make-interval ref :lower 0 :upper 8)
                     (list #'finishesp))))
 
+(addtest (bio-sequence-interval-tests) finishesp/2
+  (let ((ref (make-dna "acttacggccgt")))
+    (ensure (not (finishesp (make-interval ref :lower 0 :upper 0)
+                            (make-interval ref :lower 0 :upper 0))))
+    (ensure (not (finishesp (make-interval ref :lower 1 :upper 1)
+                            (make-interval ref :lower 0 :upper 1))))))
+
 (addtest (bio-sequence-interval-tests) finished-by-p/1
   (let ((ref (make-dna "acttacggccgt")))
     (test-intervals (make-interval ref :lower 0 :upper 8)
                     (make-interval ref :lower 4 :upper 8)
                     (list #'finished-by-p))))
 
+(addtest (bio-sequence-interval-tests) finished-by-p/2
+  (let ((ref (make-dna "acttacggccgt")))
+    (ensure (not (finished-by-p (make-interval ref :lower 0 :upper 0)
+                                (make-interval ref :lower 0 :upper 0))))
+    (ensure (not (finished-by-p (make-interval ref :lower 0 :upper 1)
+                                (make-interval ref :lower 1 :upper 1))))))
+
 (addtest (bio-sequence-interval-tests) interval-equal/1
   (let ((ref (make-dna "acttacggccgt")))
     (test-intervals (make-interval ref :lower 0 :upper 4)
                     (make-interval ref :lower 0 :upper 4)
                     (list #'interval-equal))))
-
-(addtest (bio-sequence-interval-tests) inclusive-beforep/1
-  (let ((ref (make-dna "acttacggccgt")))
-    (ensure (inclusive-beforep (make-interval ref :lower 0 :upper 4)
-                               (make-interval ref :lower 4 :upper 8)))
-    (ensure (inclusive-beforep (make-interval ref :lower 0 :upper 3)
-                               (make-interval ref :lower 4 :upper 8)))))
 
 (addtest (bio-sequence-interval-tests) inclusive-afterp/1
   (let ((ref (make-dna "acttacggccgt")))
