@@ -235,7 +235,7 @@ argument of \lstinline!make-seq-input! to pass an instance of a
 subclass of \lstinline!bio-sequence-parser!. For example, passing a
 \lstinline!raw-sequence-parser!  will result in a generator that
 returns assoc lists of sequence data instead of CLOS sequence objects.
-This is useful in cases where performance is critical or wherethe
+This is useful in cases where performance is critical or where the
 functionality provided by CLOS is unecessary. The parser protocol is
 described in the API documentation.
 
@@ -249,7 +249,7 @@ read it from a stream. cl-genomic supports this mode of access by
 means of mapped-dna-sequences. In addition, arbitrary memory-mapped
 sequences may be created from automatically generated temporary
 files. Macros are provided that automatically map and unmap the
-sequence data safely.  To be memory-mapped, a sequence data file must
+sequence data safely. To be memory-mapped, a sequence data file must
 be in ``pure'' format, that is it must contain only ASCII tokens from
 the correct alphabet and optionally a single terminating new- line
 character. The \lstinline!convert-sequence-file! method provides a
@@ -433,12 +433,14 @@ global strand objects \lstinline!*forward-strand*!,
 \lstinline!*reverse-strand*! or \lstinline!*unknown-strand*!. There
 exist a number of methods for testing, comparing and converting
 strands. The convention for comparing two strands is that if either is
-unknown, they cannot be \lstinline!strand=!. However, if both strands
-are unknown they are \lstinline!strand-equal!. In other words, the
-former test guarantees that the strands are the same, while the latter
-guarantees only that they might be the same.
+unknown, they cannot be \lstinline!strand=!, that is to say
+\lstinline!strand=! guarantees that the strands are known and that
+they are the same. The \lstinline!strand-equal! function is less
+strict than \lstinline!strand=!, returning \lstinline!T! if one or
+both strands are the \lstinline!*unknown-strand*! and therefore
+testing only whether it is possible that two strands are the same.
 
-The complement relationship between forward and reverse strands is
+The complement transformation between forward and reverse strands is
 executed by the \\ \lstinline!complement-strand! method, while the
 \lstinline!complementp! predicate tests for this relationship. The
 complement of the unknown strand is itself the unknown strand. The
