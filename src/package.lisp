@@ -190,8 +190,11 @@
    #:interval-equal
    #:inclusive-beforep
    #:inclusive-afterp
-   #:inclusive-overlapsp
    #:inclusive-containsp
+   #:inclusive-duringp
+   #:inclusive-overlapsp
+
+   #:compare-intervals
    
    #:coerce-sequence
 

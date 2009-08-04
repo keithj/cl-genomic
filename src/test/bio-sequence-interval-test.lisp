@@ -406,11 +406,22 @@ single-stranded reference."))
                                  (make-interval ref :lower 1 :upper 7)))
     (ensure (inclusive-overlapsp (make-interval ref :lower 0 :upper 8)
                                  (make-interval ref :lower 0 :upper 7)))
+
     (ensure (inclusive-overlapsp (make-interval ref :lower 0 :upper 8)
                                  (make-interval ref :lower 1 :upper 8)))
+
     (ensure (inclusive-overlapsp (make-interval ref :lower 0 :upper 8)
                                  (make-interval ref :lower 0 :upper 8)))
+
     (ensure (inclusive-overlapsp (make-interval ref :lower 0 :upper 6)
                                  (make-interval ref :lower 2 :upper 8)))
     (ensure (inclusive-overlapsp (make-interval ref :lower 2 :upper 8)
-                                 (make-interval ref :lower 0 :upper 6)))))
+                                 (make-interval ref :lower 0 :upper 6)))
+
+    (ensure (inclusive-overlapsp (make-interval ref :lower 1 :upper 7)
+                                 (make-interval ref :lower 0 :upper 8)))
+    (ensure (inclusive-overlapsp (make-interval ref :lower 0 :upper 7)
+                                 (make-interval ref :lower 0 :upper 8)))
+
+    (ensure (inclusive-overlapsp (make-interval ref :lower 1 :upper 8)
+                                 (make-interval ref :lower 0 :upper 8)))))

@@ -48,11 +48,33 @@ followed by *SENTINEL*."
   `(let ((,var (make-interval-input ,obj)))
     ,@body))
 
-(defgeneric find-intervals (query-intervals reference-intervals
-                            exclude test callback)
-  (:documentation ""))
+(defgeneric compare-intervals (query-intervals reference-intervals
+                               exclude test callback)
+  (:documentation "Compares QUERY-INTERVALS with REFERENCE-INTERVALS
+using he pairwise fjoin alogorithm described in
+Richardson, J. E. (2006) Journal of Computational Biology 13 (8),
+1457-1464.
 
-(defmethod find-intervals ((x vector) (y vector) exclude test callback)
+Arguments:
+
+- query-intervals (sequence intervals): A sequence of intervals.
+- reference-intervals (sequence intervals): A sequence of intervals.
+- exclude (function): A function of two arguments used to test
+  intervals for eviction from the working window. In the fjoin paper
+  this is leftOf. The cl-genomic equivalent is {defun beforep} .
+- test (function): A function of two arguments used to test intervals
+  to determine whether they are related. This function should return T
+  if the realtionship holds, or NIL otherwise. In the fjoin paper this
+  is overlaps. The cl-genomic equivalent is {defun inclusive-overlapsp} .
+- callback (function): A function of two arguments that is called
+  whenever a pair of intervals are found to relate by function
+  TEST. CALLBACK is called with the two intervals as arguments.
+
+Returns:
+
+- T."))
+
+(defmethod compare-intervals ((x vector) (y vector) exclude test callback)
   (with-interval-input (ix x)
     (with-interval-input (iy y)
       (fjoin ix iy exclude test callback))))
@@ -105,7 +127,7 @@ Returns:
        with y = (next iy)
        while (not (and (sentinelp x) (sentinelp y)))
        do (cond ((<= (lower-of x) (lower-of y))
-                 (scan x wx y wy exclude test)
+                 (scan x wx y wy exclude test callback)
                  (setf x (next ix)))
                 (t
                  (scan y wy x wx exclude test callback)
@@ -138,4 +160,4 @@ Optional:
      for x in (queue-head (queue-dequeue-if (lambda (y)
                                               (funcall exclude y f)) wg))
      do (when (and callback (funcall test x f))
-          (funcall callback (list x f)))))
+          (funcall callback x f))))

@@ -46,5 +46,8 @@
                                                "cl-genomic-test"))
                            (:file "bio-sequence-alignment-test"
                                   :depends-on ("package"
+                                               "cl-genomic-test"))
+                           (:file "fjoin-test"
+                                  :depends-on ("package"
                                                "cl-genomic-test"))))))
 

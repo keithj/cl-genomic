@@ -72,7 +72,10 @@
                                          "bio-alphabets"
                                          "bio-sequence-encoding"
                                          "bio-sequence-classes"
-                                         "genetic-codes"))))
+                                         "genetic-codes"))
+                           (:file "fjoin"
+                            :depends-on ("package"
+                                         "bio-sequence-interval"))))
                  (:module :io
                           :pathname "src/io/"
                           :components

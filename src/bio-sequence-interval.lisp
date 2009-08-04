@@ -165,14 +165,18 @@ often named 'after' in bioinformatics use cases. See also
 {defun beforep} ."))
 
 (defgeneric inclusive-containsp (x y)
-  (:documentation "The union of startsp, duringp, finishesp and
-interval-equal. This predicate is often named 'contains' in
+  (:documentation "The union of containsp, started-by-p, finished-by-p
+and interval-equal. This predicate is often named 'contains' in
 bioinformatics use cases. See also {defun containsp} ."))
 
+(defgeneric inclusive-duringp (x y)
+  (:documentation "The union of duringp, startsp, finishesp and
+interval-equal. See also {defun duringp} ."))
+
 (defgeneric inclusive-overlapsp (x y)
-  (:documentation "The union of overlapsp and inclusive-containsp. This
-predicate is often named 'overlaps' in bioinformatics use cases. See
-also {defun overlapsp} ."))
+  (:documentation "The union of overlapsp, inclusive-duringp and
+inclusive-containsp. This predicate is often named 'overlaps' in
+bioinformatics use cases. See also {defun overlapsp} ."))
 
 ;;; Initialization methods
 (defmethod initialize-instance :after ((interval na-sequence-interval) &key)
@@ -448,8 +452,27 @@ also {defun overlapsp} ."))
   (or (interval-equal x y) (containsp x y) 
       (started-by-p x y) (finished-by-p x y)))
 
+(defmethod inclusive-duringp ((x interval) (y interval))
+  (or (interval-equal x y) (duringp x y)
+      (startsp x y) (finishesp x y)))
+
 (defmethod inclusive-overlapsp ((x interval) (y interval))
-  (or (overlapsp x y) (inclusive-containsp x y)))
+  (or (overlapsp x y) (inclusive-duringp x y) (inclusive-containsp x y)))
+
+
+;; TODO -- separate methods or add an integer parameter to existing
+;; overlapsp method?
+
+;; (defmethod min-overlapsp ((x interval) (y interval) (n fixnum))
+;;   (with-accessors ((lowx lower-of) (upx upper-of))
+;;       x
+;;     (with-accessors ((lowy lower-of) (upy upper-of))
+;;         y
+;;       (>= (- (min lowx lowy) (max upx upy)) n))))
+
+;; (defmethod min-beforep ((x interval) (y interval) (n fixnum))
+;;   (<= (upper-of x) (+ (lower-of y) n)))
+
 
 ;; FIXME -- circular sequences
 
