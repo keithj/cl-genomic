@@ -18,8 +18,7 @@
 ;;;
 
 (defpackage :bio-sequence
-  (:use #:common-lisp #:deoxybyte-utilities #:deoxybyte-io
-        #:trivial-gray-streams)
+  (:use #:common-lisp #:deoxybyte-utilities #:deoxybyte-io)
   (:nicknames #:bs)
   (:export
    ;; Types
