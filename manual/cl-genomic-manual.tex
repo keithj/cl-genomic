@@ -130,8 +130,8 @@ identifier NIL and will return T if passed to the
 sequence object will be double-stranded unless a
 \lstinline!:num-strands! argument of 1 is supplied. The strandedness
 of a sequence affects some operations. For example, it is not possible
-to request an interval from the reverse-complement strand of a such a
-sequence.
+to request an interval from the reverse-complement strand of a
+single-stranded nucleic acid sequence.
 
 \begin{lstlisting}[caption={Making DNA sequences from strings},
   label=lst:make-dnaseq-string,float=[tbph]]
@@ -183,11 +183,11 @@ closure, in fact) that may be passed to the general-purpose generator
 API functions \lstinline!has-more-p! and \lstinline!next! to return
 sequences.
 
-The parsers offer restarts for occasions where badly formatted
-sequence records are encountered, allowing such records to be skipped,
-logged or otherwise handled using the standard CL (Common Lisp)
-condition and restart system. The error conditions raised by the
-parser will be \lstinline!general-parse-error!s, or a subtype thereof.
+Restarts are offered for occasions where badly formatted sequence
+records are encountered, allowing such records to be skipped, logged
+or otherwise handled using the standard CL (Common Lisp) condition and
+restart system. The error conditions raised by the parser will be
+\lstinline!general-parse-error!s, or a subtype thereof.
 
 The basic restart function is \lstinline!skip-malformed-sequence!
 which causes the generator to return NIL and moves the stream forward
@@ -250,10 +250,10 @@ means of mapped-dna-sequences. In addition, arbitrary memory-mapped
 sequences may be created from automatically generated temporary
 files. Macros are provided that automatically map and unmap the
 sequence data safely. To be memory-mapped, a sequence data file must
-be in ``pure'' format, that is it must contain only ASCII tokens from
-the correct alphabet and optionally a single terminating new- line
-character. The \lstinline!convert-sequence-file! method provides a
-means of preparing such files.
+be in ``pure'' format, that is to say it must contain only ASCII
+tokens from the correct alphabet and optionally a single terminating
+new--line character. The \lstinline!convert-sequence-file! method
+provides a means of preparing such files.
 
 
 
@@ -285,10 +285,11 @@ means of preparing such files.
 \label{sec:alphabet-bioseq}
 
 The permitted residues of DNA, RNA and amino-acid sequences are
-represented by \lstinline!alphabet!s. Every \lstinline!bio-sequence!
-instance contains its alphabet in a class-allocated slot, accessible
-through the \lstinline!alphabet-of! reader. For reference, the list of
-all available alphabets may be obtained by calling the
+represented by tokens (often characters), collected into sets called
+\lstinline!alphabet!s. Every \lstinline!bio-sequence! instance
+contains its alphabet in a class-allocated slot, accessible through
+the \lstinline!alphabet-of! reader. For reference, the list of all
+available alphabets may be obtained by calling the
 \lstinline!registered-alphabets! function, while individual alphabets
 may be obtained by passing an alphabet name symbol (such as
 \lstinline!:dna!, \lstinline!:rna! or \lstinline!:aa!) to the
@@ -328,17 +329,17 @@ one ambiguous token are a subset of those represented by another.
             (list (name-of x) (size-of x)))
           (registered-alphabets))
 
-  ;; Is the character 't' in the DNA alphabet?
+  ;; Is the token 't' in the DNA alphabet?
   (memberp #\t (find-alphabet :dna))
 
-  ;; What characters does 'n' represent in the DNA alphabet?
+  ;; What set of tokens does 'n' represent in the DNA alphabet?
   (enum-ambiguity #\n (find-alphabet :dna))
 
   ;; What unambiguous codons do 'nnn' represent in
   ;; the DNA codon alphabet?
   (enum-ambiguity '(#\n #\n #\n) (find-alphabet :dna-codons))
 
-  ;; Does the character 'r' match the character 'n' in
+  ;; Does the token 'r' match the character 'n' in
   ;; the DNA alphabet?
   (subsumesp #\r #\n (find-alphabet :dna))
 
