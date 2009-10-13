@@ -147,7 +147,7 @@
 
 (defmethod object-residues ((parser streaming-parser)
                             (residues vector))
-  (princ residues vector))
+  (princ residues (stream-of parser)))
 
 ;;; Collecting data into an indexed file that may be mmapped later
 (defmethod object-residues :after ((parser indexing-sequence-parser)
