@@ -24,7 +24,8 @@
     (asdf:operate 'asdf:load-op :deoxybyte-systems)))
 
 (defpackage :cl-genomic-system
-  (:use :common-lisp :asdf :deoxybyte-systems))
+  (:use :common-lisp :asdf)
+  (:import-from :deoxybyte-systems :lift-test-config :cldoc-config))
 
 (in-package :cl-genomic-system)
 
