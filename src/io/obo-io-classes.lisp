@@ -43,4 +43,6 @@ format version 1.2"))
              :documentation "All OBO typedefs, indexed by id.")
    (instances :initform (make-hash-table :test #'equal)
               :accessor instances-of
-              :documentation "All OBO instances, indexed by id.")))
+              :documentation "All OBO instances, indexed by id."))
+  (:documentation "An OBO parser that collects state for conversion
+  into PowerLoom format,"))
