@@ -45,4 +45,4 @@ format version 1.2"))
               :accessor instances-of
               :documentation "All OBO instances, indexed by id."))
   (:documentation "An OBO parser that collects state for conversion
-  into PowerLoom format,"))
+  into PowerLoom format."))
