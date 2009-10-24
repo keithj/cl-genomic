@@ -20,7 +20,7 @@
 (in-package :bio-sequence)
 
 ;; This is a naive converter that builds entire sequences in memory,
-;; rather than streamoing them
+;; rather than streaming them
 (defun convert-sequence-file (in-filespec in-format out-filespec out-format)
   "Converts the sequence data in the file identified
 by IN-FILESPEC in format IN-FORMAT, to OUT-FORMAT, writing the data to

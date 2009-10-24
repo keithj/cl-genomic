@@ -98,11 +98,11 @@
                                          "fasta"
                                          "fastq"))
                            (:file "obo-io-classes")
-                           (:file "obo-io"
+                           (:file "obo"
                             :depends-on ("obo-io-classes"))
                            (:file "obo-powerloom"
                             :depends-on ("obo-io-classes"
-                                         "obo-io"))
+                                         "obo"))
                            (:file "gff3"))
                           :depends-on (:core))
                  (:module :align

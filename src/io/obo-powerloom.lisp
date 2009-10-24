@@ -19,6 +19,7 @@
 
 (in-package :bio-sequence)
 
+;;; Parser method for collecting OBO data
 (defmethod end-section ((parser obo-powerloom-parser))
   (with-accessors ((state state-of) (header header-of)
                    (tag-values tag-values-of) (terms terms-of)
@@ -33,39 +34,84 @@
     (setf state nil
           tag-values ())))
 
-(defun convert-obo-powerloom (in-filespec out-filespec module &key
-                              (base-concept 'thing) (parent-module "PL-USER"))
-  (with-open-file (out out-filespec :direction :output
-                       :if-exists :supersede)
-    (with-li-stream (in in-filespec)
+;;; This conversion has not been well tested. The output was
+;;; syntactically correct (loaded into PowerLoom without errors) for
+;;; the Sequence Ontology release 2.4. The semantics of the result
+;;; could probably be improved.
+(defun convert-obo-powerloom (obo-filespec plm-filespec module &key
+                              (base-concept 'thing) (parent-module :pl-user)
+                              (if-exists :supersede))
+  "Converts OBO ontology data to PowerLoom declarations.
+
+Arguments:
+
+- obo-filespec (pathname designator): The OBO file to be read.
+- plm-filespec (pathname designator): The PowerLoom file to be written.
+- module (symbol): A symbol naming the new PowerLoom module into which
+  the declarations will be written.
+
+Key:
+
+- base-concept (symbol): A symbol naming the base PowerLoom concept
+  that will be used as the range of all converted OBO
+  relations. Defaults to 'thing .
+- parent-module (symbol): A symbol naming the parent PowerLoom module
+  of MODULE. Defaults to :pl-user .
+
+- if-exists (symbol): One of NIL , :error or :supersede indicating the
+  behaviour if PLM-FILESPEC already exists.
+
+Returns:
+
+- A filespec  (pathname designator) for the PowerLoom file."
+  (with-open-file (plm plm-filespec :direction :output
+                       :if-exists if-exists)
+    (with-li-stream (obo obo-filespec)
       (let* ((*default-base-concept* base-concept)
-             (parser (read-obo-stream in (make-instance
-                                           'obo-powerloom-parser))))
-        (write-powerloom-module module parent-module :stream out)
-        (write-powerloom-deffunction base-concept 'name 'string out)
-        (write-powerloom-relations (typedefs-of parser) :stream out)
-        (write-powerloom-concepts (terms-of parser) :stream out)))))
+             (parser (read-obo-stream obo (make-instance
+                                           'obo-powerloom-parser)))
+             (tmpl (txt ";;; Created ~d-~2,'0d-~2,'0d ~d:~2,'0d:~2,'0d"
+                        "from OBO file ~a by"
+                        "cl-genomic OBO to PowerLoom converter.~%")))
+        (multiple-value-bind
+              (sec min hour date month year)
+            (get-decoded-time)
+          (write-line (format nil tmpl year month date
+                              hour min sec (parse-file obo-filespec)) plm))
+        (write-powerloom-module module parent-module :stream plm)
+        (write-powerloom-deffunction base-concept 'name 'string plm)
+        (write-powerloom-relations (typedefs-of parser) :stream plm)
+        (write-powerloom-concepts (terms-of parser) :stream plm))))
+  plm-filespec)
 
 (defun write-powerloom-concept (id &optional (stream *standard-output*))
+  "Writes a defconcept declaration for OBO term ID to STREAM."
   (format stream "(defconcept ~a)~%" id))
 
 (defun write-powerloom-doc (id doc &optional (stream *standard-output*))
+  "Writes a documentation declaration DOC for OBO term ID to STREAM."
   (format stream "(assert (documentation ~a ~s))~%" id doc))
 
 (defun write-powerloom-deffunction (id name type
                                     &optional (stream *standard-output*))
+  "Writes a deffunction declaration NAME for OBO term ID to STREAM."
   (format stream "(deffunction ~a ((?x ~a)) :->~%   (?~a ~a))~%"
           name id name type))
 
 (defun write-powerloom-subset (id super
                                &optional (stream *standard-output*))
+  "Writes a subset-of declaration asserting OBO term ID to be a subset
+of OBO term SUPER to STREAM."
   (format stream "(assert (subset-of ~a ~a))~%" id super))
 
 (defun write-powerloom-assert (form &optional (stream *standard-output*))
+  "Writes a PowerLoom declaration asserting FORM to STREAM."
   (format stream "(assert ~a)~%" form))
 
 (defun write-powerloom-relation (relation subject object
                                  &optional (stream *standard-output*))
+  "Writes a PowerLoom defrelation declaration declaring RELATION
+between OBO terms SUBJECT and OBJECT to STREAM."
   (format stream "(defrelation ~a ((?x ~a) (?y ~a)))~%"
           relation subject object))
 
@@ -83,6 +129,9 @@
   (format stream "(clear-module ~s)~%~%" (string-upcase module)))
 
 (defun write-powerloom-concepts (terms &key (stream *standard-output*))
+  "Writes PowerLoom concepts using OBO term data from hash-table TERMS
+to STREAM. The hash-table keys are OBO term IDs, while the hash-values
+are conses containing OBO tags and values."
   (let ((deferred ()))
     (loop
        for id being the hash-keys of terms
