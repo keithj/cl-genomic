@@ -71,6 +71,8 @@
 (defvar *obo-expected-format-version* "1.2")
 
 (defun read-obo-stream (stream parser)
+  "Reads OBO format data from STREAM using {defclass obo-parser}
+ PARSER, returning PARSER."
   (loop
      as line = (read-wrapped-line stream)
      while (not (eql :eof line))
@@ -174,6 +176,9 @@ modifiers, dbxref lists and comments."
             (string-trim trim (subseq str (1+ i))))))
 
 (defun read-value (tag-value)
+  "Returns the value part of cons TAG-VALUE after further processing
+to expand escape characters and remove trailing modifiers and
+comments."
   (let ((tag (car tag-value))
         (value (cdr tag-value)))
     (cons tag (cond ((string= "name" tag)
@@ -189,7 +194,6 @@ modifiers, dbxref lists and comments."
                     (t
                      value)))))
 
-
 ;;; Functions for specific tags
 (defun read-def (str)
   "Returns the quoted text portion of STR. Currently ignores any
@@ -197,18 +201,26 @@ dbxref list."
   (read-quoted-text str))
 
 (defun read-is-a (str)
+  "Returns STR after processing is as an is-a declaration."
   (expand-escape-chars (remove-trailing-modifiers (remove-comments str))))
 
 (defun read-name (str)
+  "Returns STR after processing is as a name."
   (expand-escape-chars (remove-comments str)))
 
 (defun read-relationship (str)
+  "Returns a list of strings created by processing STR as a
+relationship declaration."
   (split-value str))
 
 (defun read-intersection (str)
+  "Returns a list of strings created by processing STR as a
+relationship declaration."
   (split-value str))
 
 (defun split-value (str)
+  "Returns a list of strings created by splitting STR on spaces and
+removing comments."
   (let ((parts (string-split (remove-comments str) #\Space
                              :remove-empty-substrings t)))
     (if (endp (rest parts))
@@ -217,6 +229,7 @@ dbxref list."
 
 ;;; Functions for all tags
 (defun read-quoted-text (str)
+  "Returns a string created by removing bounding quotes from STR."
   (let ((start (unescaped-position #\" str)))
     (cond ((null start)
            nil)
@@ -233,18 +246,21 @@ dbxref list."
                   :text "unbalanced quotes")))))))
 
 (defun remove-comments (str)
+  "Returns a copy of STR with trailing comments removed."
   (let ((excl-index (position #\! str)))
     (if excl-index
         (subseq str 0 excl-index)
       str)))
 
 (defun remove-trailing-modifiers (str)
+  "Returns a copy of STR with trailing modifiers removed."
   (let ((brace-index (unescaped-position #\{ str :from-end t)))
     (string-trim '(#\Space) (if brace-index
                                 (subseq str 0 brace-index)
                               str))))
 
 (defun remove-dbxref-list (str)
+  "Returns a copy of STR with trailing dbxrefs removed."
   (let ((bracket-index (unescaped-position #\[ str  :from-end t)))
     (string-trim '(#\Space) (if bracket-index
                                 (subseq str 0 bracket-index)
@@ -325,6 +341,8 @@ CHAR."
     (otherwise char)))
 
 (defun check-mandatory-tags (tag-values mandatory-tags)
+  "Returns T if list TAG-VALUES contains all MANDATORY tags, or raises
+a {define-condition malformed-record-error} ."
   (loop
      for tag in mandatory-tags
      do (unless (assocdr tag tag-values :test #'string=)
