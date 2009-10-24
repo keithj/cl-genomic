@@ -1,0 +1,1409 @@
+;;; Created 2009-10-24 23:21:20 from OBO file sofa_2_4.obo by cl-genomic OBO to PowerLoom converter.
+
+(defmodule "SOFA"
+  :includes ("PL-USER"))
+(in-module "SOFA")
+(clear-module "SOFA")
+
+(deffunction NAME ((?x THING)) :->
+   (?NAME STRING))
+(defrelation adjacent_to ((?x THING) (?y THING)))
+(assert (documentation adjacent_to "A geometric operator, specified in Egenhofer 1989. Two features meet if they share a junction on the sequence."))
+
+(defrelation associated_with ((?x THING) (?y THING)))
+
+(defrelation complete_evidence_for_feature ((?x THING) (?y THING))
+   :=> (evidence_for_feature ?x ?y))
+(assert (transitive complete_evidence_for_feature))
+(assert (documentation complete_evidence_for_feature "B is complete_evidence_for_feature A if the extent (5' and 3' boundaries) and internal boundaries of B fully support the extent and internal boundaries of A."))
+
+(defrelation derives_from ((?x THING) (?y THING)))
+(assert (transitive derives_from))
+
+(defrelation edited_from ((?x THING) (?y THING)))
+
+(defrelation edited_to ((?x THING) (?y THING)))
+
+(defrelation evidence_for_feature ((?x THING) (?y THING)))
+(assert (transitive evidence_for_feature))
+(assert (documentation evidence_for_feature "B is evidence_for_feature A, if an instance of B supports the existence of A."))
+
+(defrelation exemplar_of ((?x THING) (?y THING)))
+(assert (documentation exemplar_of "X is exemplar of Y if X is the best evidence for Y."))
+
+(defrelation genome_of ((?x THING) (?y THING)))
+
+(defrelation guided_by ((?x THING) (?y THING)))
+
+(defrelation guides ((?x THING) (?y THING)))
+
+(defrelation has_genome_location ((?x THING) (?y THING)))
+
+(defrelation has_intergral_part ((?x THING) (?y THING)))
+(assert (documentation has_intergral_part "X has_integral_part Y if and only if: X has_part Y and Y part_of X."))
+
+(defrelation has_origin ((?x THING) (?y THING)))
+
+(defrelation has_part ((?x THING) (?y THING)))
+(assert (documentation has_part "Inverse of part_of."))
+
+(defrelation has_quality ((?x THING) (?y THING)))
+
+(defrelation homologous_to ((?x THING) (?y THING))
+   :=> (similar_to ?x ?y))
+(assert (symmetric homologous_to))
+
+(defrelation integral_part_of ((?x THING) (?y THING)))
+(assert (documentation integral_part_of "X integral_part_of Y if and only if: X part_of Y and Y has_part X."))
+
+(defrelation member_of ((?x THING) (?y THING)))
+(assert (transitive member_of))
+
+(defrelation non_functional_homolog_of ((?x THING) (?y THING))
+   :=> (homologous_to ?x ?y))
+(assert (documentation non_functional_homolog_of "A relationship between a pseudogenic feature and its functional ancestor."))
+
+(defrelation orthologous_to ((?x THING) (?y THING))
+   :=> (homologous_to ?x ?y))
+(assert (symmetric orthologous_to))
+
+(defrelation paralogous_to ((?x THING) (?y THING))
+   :=> (homologous_to ?x ?y))
+(assert (symmetric paralogous_to))
+
+(defrelation part_of ((?x THING) (?y THING)))
+(assert (transitive part_of))
+(assert (documentation part_of "X part_of Y if X is a subregion of Y."))
+
+(defrelation partial_evidence_for_feature ((?x THING) (?y THING))
+   :=> (evidence_for_feature ?x ?y))
+(assert (documentation partial_evidence_for_feature "B is partial_evidence_for_feature A if the extent of B supports part_of but not all of A."))
+
+(defrelation position_of ((?x THING) (?y THING)))
+
+(defrelation processed_from ((?x THING) (?y THING)))
+(assert (documentation processed_from "Inverse of processed_into."))
+
+(defrelation processed_into ((?x THING) (?y THING)))
+(assert (documentation processed_into "X is processed_into Y if a region X is modified to create Y."))
+
+(defrelation recombined_from ((?x THING) (?y THING)))
+
+(defrelation recombined_to ((?x THING) (?y THING)))
+
+(defrelation regulated_by ((?x THING) (?y THING)))
+
+(defrelation sequence_of ((?x THING) (?y THING)))
+
+(defrelation similar_to ((?x THING) (?y THING)))
+(assert (symmetric similar_to))
+
+(defrelation trans_spliced_from ((?x THING) (?y THING)))
+
+(defrelation trans_spliced_to ((?x THING) (?y THING)))
+
+(defrelation transcribed_from ((?x THING) (?y THING)))
+(assert (documentation transcribed_from "X is transcribed_from Y if X is synthesized from template Y."))
+
+(defrelation transcribed_to ((?x THING) (?y THING)))
+(assert (documentation transcribed_to "Inverse of transcribed_from."))
+
+(defrelation translates_to ((?x THING) (?y THING)))
+(assert (documentation translates_to "Inverse of translation _of."))
+
+(defrelation translation_of ((?x THING) (?y THING)))
+(assert (documentation translation_of "X is translation of Y if X is translated by ribosome to create Y."))
+
+(defrelation variant_of ((?x THING) (?y THING)))
+(assert (documentation variant_of "A' is a variant (mutation) of A = definition every instance of A' is either an immediate mutation of some instance of A, or there is a chain of immediate mutation processes linking A' to some instance of A."))
+
+(defconcept SO:0000000)
+(assert (= (name SO:0000000) "Sequence_Ontology"))
+
+(defconcept SO:0000001)
+(assert (subset-of SO:0000001 SO:0000110))
+(assert (documentation SO:0000001 "A sequence_feature with an extent greater than zero. A nucleotide region is composed of bases and a polypeptide region is composed of amino acids."))
+(assert (= (name SO:0000001) "region"))
+
+(defconcept SO:0000004)
+(assert (subset-of SO:0000004 SO:0000195))
+(assert (= (name SO:0000004) "interior_coding_exon"))
+
+(defconcept SO:0000005)
+(assert (subset-of SO:0000005 SO:0000705))
+(assert (documentation SO:0000005 "The many tandem repeats (identical or related) of a short basic repeating unit; many have a base composition or other property different from the genome average that allows them to be separated from the bulk (main band) genomic DNA."))
+(assert (= (name SO:0000005) "satellite_DNA"))
+
+(defconcept SO:0000006)
+(assert (subset-of SO:0000006 SO:0000695))
+(assert (documentation SO:0000006 "A region amplified by a PCR reaction."))
+(assert (= (name SO:0000006) "PCR_product"))
+
+(defconcept SO:0000007)
+(assert (part_of SO:0000007 SO:0000149))
+(assert (subset-of SO:0000007 SO:0000143))
+(assert (documentation SO:0000007 "A pair of sequencing reads in which the two members of the pair are related by originating at either end of a clone insert."))
+(assert (= (name SO:0000007) "read_pair"))
+
+(defconcept SO:0000013)
+(assert (subset-of SO:0000013 SO:0000655))
+(assert (documentation SO:0000013 "Any one of several small cytoplasmic RNA molecules present in the cytoplasm and sometimes nucleus of a eukaryote."))
+(assert (= (name SO:0000013) "scRNA"))
+
+(defconcept SO:0000038)
+(assert (documentation SO:0000038 "A collection of match parts."))
+(assert (= (name SO:0000038) "match_set"))
+
+(defconcept SO:0000039)
+(assert (part_of SO:0000039 SO:0000343))
+(assert (subset-of SO:0000039 SO:0001410))
+(assert (documentation SO:0000039 "A part of a match, for example an hsp from blast is a match_part."))
+(assert (= (name SO:0000039) "match_part"))
+
+(defconcept SO:0000050)
+(assert (documentation SO:0000050 "A part of a gene, that has no other route in the ontology back to region. This concept is necessary for logical inference as these parts must have the properties of region. It also allows us to associate all the parts of genes with a gene."))
+(assert (= (name SO:0000050) "gene_part"))
+
+(defconcept SO:0000057)
+(assert (subset-of SO:0000057 SO:0000752))
+(assert (documentation SO:0000057 "A regulatory element of an operon to which activators or repressors bind thereby effecting translation of genes in that operon."))
+(assert (= (name SO:0000057) "operator"))
+
+(defconcept SO:0000059)
+(assert (subset-of SO:0000059 SO:0000410))
+(assert (documentation SO:0000059 "A region of a molecule that binds to a nuclease."))
+(assert (= (name SO:0000059) "nuclease_binding_site"))
+
+(defconcept SO:0000101)
+(assert (subset-of SO:0000101 SO:0001039))
+(assert (documentation SO:0000101 "A transposon or insertion sequence. An element that can insert in a variety of DNA sequences."))
+(assert (= (name SO:0000101) "transposable_element"))
+
+(defconcept SO:0000102)
+(assert (subset-of SO:0000102 SO:0000347))
+(assert (documentation SO:0000102 "A match to an EST or cDNA sequence."))
+(assert (= (name SO:0000102) "expressed_sequence_match"))
+
+(defconcept SO:0000103)
+(assert (part_of SO:0000103 SO:0000753))
+(assert (subset-of SO:0000103 SO:0000699))
+(assert (documentation SO:0000103 "The end of the clone insert."))
+(assert (= (name SO:0000103) "clone_insert_end"))
+
+(defconcept SO:0000104)
+(assert (derives_from SO:0000104 SO:0000316))
+(assert (subset-of SO:0000104 SO:0001411))
+(assert (documentation SO:0000104 "A sequence of amino acids linked by peptide bonds which may lack appreciable tertiary structure and may not be liable to irreversible denaturation."))
+(assert (= (name SO:0000104) "polypeptide"))
+
+(defconcept SO:0000109)
+(assert (documentation SO:0000109 "A sequence_variant is a non exact copy of a sequence_feature or genome exhibiting one or more sequence_alteration."))
+(assert (= (name SO:0000109) "sequence_variant_obs"))
+
+(defconcept SO:0000110)
+(assert (documentation SO:0000110 "An extent of biological sequence."))
+(assert (= (name SO:0000110) "sequence_feature"))
+
+(defconcept SO:0000112)
+(assert (subset-of SO:0000112 SO:0000441))
+(assert (documentation SO:0000112 "A short preexisting polynucleotide chain to which new deoxyribonucleotides can be added by DNA polymerase."))
+(assert (= (name SO:0000112) "primer"))
+
+(defconcept SO:0000113)
+(assert (subset-of SO:0000113 SO:0001039))
+(assert (documentation SO:0000113 "A viral sequence which has integrated into a host genome."))
+(assert (= (name SO:0000113) "proviral_region"))
+
+(defconcept SO:0000114)
+(assert (subset-of SO:0000114 SO:0000306))
+(assert (documentation SO:0000114 "A methylated deoxy-cytosine."))
+(assert (= (name SO:0000114) "methylated_C"))
+
+(defconcept SO:0000120)
+(assert (subset-of SO:0000120 SO:0000185))
+(assert (documentation SO:0000120 "A primary transcript that, at least in part, encodes one or more proteins."))
+(assert (= (name SO:0000120) "protein_coding_primary_transcript"))
+
+(defconcept SO:0000139)
+(assert (part_of SO:0000139 SO:0000203))
+(assert (subset-of SO:0000139 SO:0000837))
+(assert (documentation SO:0000139 "Region in mRNA where ribosome assembles."))
+(assert (= (name SO:0000139) "ribosome_entry_site"))
+
+(defconcept SO:0000140)
+(assert (part_of SO:0000140 SO:0000234))
+(assert (subset-of SO:0000140 SO:0005836))
+(assert (documentation SO:0000140 "A sequence segment located within the five prime end of an mRNA that causes premature termination of translation."))
+(assert (= (name SO:0000140) "attenuator"))
+
+(defconcept SO:0000141)
+(assert (part_of SO:0000141 SO:0000673))
+(assert (subset-of SO:0000141 SO:0005836))
+(assert (documentation SO:0000141 "The sequence of DNA located either at the end of the transcript that causes RNA polymerase to terminate transcription."))
+(assert (= (name SO:0000141) "terminator"))
+
+(defconcept SO:0000143)
+(assert (subset-of SO:0000143 SO:0001410))
+(assert (documentation SO:0000143 "A region of known length which may be used to manufacture a longer region."))
+(assert (= (name SO:0000143) "assembly_component"))
+
+(defconcept SO:0000147)
+(assert (subset-of SO:0000147 SO:0000833))
+(assert (documentation SO:0000147 "A region of the transcript sequence within a gene which is not removed from the primary RNA transcript by RNA splicing."))
+(assert (= (name SO:0000147) "exon"))
+
+(defconcept SO:0000148)
+(assert (part_of SO:0000148 SO:0000719))
+(assert (subset-of SO:0000148 SO:0000353))
+(assert (documentation SO:0000148 "One or more contigs that have been ordered and oriented using end-read information. Contains gaps that are filled with N's."))
+(assert (= (name SO:0000148) "supercontig"))
+
+(defconcept SO:0000149)
+(assert (part_of SO:0000149 SO:0000148))
+(assert (subset-of SO:0000149 SO:0000353))
+(assert (subset-of SO:0000149 SO:0000143))
+(assert (documentation SO:0000149 "A contiguous sequence derived from sequence assembly. Has no gaps, but may contain N's from unvailable bases."))
+(assert (= (name SO:0000149) "contig"))
+
+(defconcept SO:0000150)
+(assert (part_of SO:0000150 SO:0000149))
+(assert (subset-of SO:0000150 SO:0000143))
+(assert (documentation SO:0000150 "A sequence obtained from a single sequencing experiment. Typically a read is produced when a base calling program interprets information from a chromatogram trace file produced from a sequencing machine."))
+(assert (= (name SO:0000150) "read"))
+
+(defconcept SO:0000151)
+(assert (subset-of SO:0000151 SO:0000695))
+(assert (documentation SO:0000151 "A piece of DNA that has been inserted in a vector so that it can be propagated in a host bacterium or some other organism."))
+(assert (= (name SO:0000151) "clone"))
+
+(defconcept SO:0000159)
+(assert (subset-of SO:0000159 SO:0001411))
+(assert (subset-of SO:0000159 SO:0001059))
+(assert (documentation SO:0000159 "The point at which one or more contiguous nucleotides were excised."))
+(assert (= (name SO:0000159) "deletion"))
+
+(defconcept SO:0000161)
+(assert (subset-of SO:0000161 SO:0000306))
+(assert (documentation SO:0000161 "A modified RNA base in which adenine has been methylated."))
+(assert (= (name SO:0000161) "methylated_A"))
+
+(defconcept SO:0000162)
+(assert (subset-of SO:0000162 SO:0000835))
+(assert (documentation SO:0000162 "Consensus region of primary transcript bordering junction of splicing. A region that overlaps exactly 2 base and adjacent_to splice_junction."))
+(assert (= (name SO:0000162) "splice_site"))
+
+(defconcept SO:0000163)
+(assert (subset-of SO:0000163 SO:0001419))
+(assert (documentation SO:0000163 "Intronic 2 bp region bordering the exon, at the 5' edge of the intron. A splice_site that is downstream_adjacent_to exon and starts intron."))
+(assert (= (name SO:0000163) "five_prime_cis_splice_site"))
+
+(defconcept SO:0000164)
+(assert (subset-of SO:0000164 SO:0001419))
+(assert (documentation SO:0000164 "Intronic 2 bp region bordering the exon, at the 3' edge of the intron. A splice_site that is upstream_adjacent_to exon and finishes intron."))
+(assert (= (name SO:0000164) "three_prime_cis_splice_site"))
+
+(defconcept SO:0000165)
+(assert (subset-of SO:0000165 SO:0000727))
+(assert (documentation SO:0000165 "A cis-acting sequence that increases the utilization of (some) eukaryotic promoters, and can function in either orientation and in any location (upstream or downstream) relative to the promoter."))
+(assert (= (name SO:0000165) "enhancer"))
+
+(defconcept SO:0000167)
+(assert (subset-of SO:0000167 SO:0001055))
+(assert (documentation SO:0000167 "A regulatory_region composed of the TSS(s) and binding sites for TF_complexes of the basal transcription machinery."))
+(assert (= (name SO:0000167) "promoter"))
+
+(defconcept SO:0000177)
+(assert (subset-of SO:0000177 SO:0000347))
+(assert (documentation SO:0000177 "A nucleotide match against a sequence from another organism."))
+(assert (= (name SO:0000177) "cross_genome_match"))
+
+(defconcept SO:0000178)
+(assert (subset-of SO:0000178 SO:0005855))
+(assert (documentation SO:0000178 "A group of contiguous genes transcribed as a single (polycistronic) mRNA from a single regulatory region."))
+(assert (= (name SO:0000178) "operon"))
+
+(defconcept SO:0000179)
+(assert (part_of SO:0000179 SO:0000753))
+(assert (subset-of SO:0000179 SO:0000699))
+(assert (documentation SO:0000179 "The start of the clone insert."))
+(assert (= (name SO:0000179) "clone_insert_start"))
+
+(defconcept SO:0000181)
+(assert (subset-of SO:0000181 SO:0000347))
+(assert (documentation SO:0000181 "A match against a translated sequence."))
+(assert (= (name SO:0000181) "translated_nucleotide_match"))
+
+(defconcept SO:0000183)
+(assert (subset-of SO:0000183 SO:0000842))
+(assert (documentation SO:0000183 "A region of the gene which is not transcribed."))
+(assert (= (name SO:0000183) "non_transcribed_region"))
+
+(defconcept SO:0000185)
+(assert (subset-of SO:0000185 SO:0000673))
+(assert (documentation SO:0000185 "A transcript that in its initial state requires modification to be functional."))
+(assert (= (name SO:0000185) "primary_transcript"))
+
+(defconcept SO:0000187)
+(assert (documentation SO:0000187 "A group of characterized repeat sequences."))
+(assert (= (name SO:0000187) "repeat_family"))
+
+(defconcept SO:0000188)
+(assert (subset-of SO:0000188 SO:0000835))
+(assert (documentation SO:0000188 "A segment of DNA that is transcribed, but removed from within the transcript by splicing together the sequences (exons) on either side of it."))
+(assert (= (name SO:0000188) "intron"))
+
+(defconcept SO:0000193)
+(assert (subset-of SO:0000193 SO:0000412))
+(assert (documentation SO:0000193 "A DNA fragment used as a reagent to detect the polymorphic genomic loci by hybridizing against the genomic DNA digested with a given restriction enzyme."))
+(assert (= (name SO:0000193) "RFLP_fragment"))
+
+(defconcept SO:0000195)
+(assert (subset-of SO:0000195 SO:0000147))
+(assert (documentation SO:0000195 "An exon whereby at least one base is part of a codon (here, 'codon'is inclusive of the stop_codon)."))
+(assert (= (name SO:0000195) "coding_exon"))
+
+(defconcept SO:0000196)
+(assert (part_of SO:0000196 SO:0000200))
+(assert (subset-of SO:0000196 SO:0001215))
+(assert (documentation SO:0000196 "The sequence of the five_prime_coding_exon that codes for protein."))
+(assert (= (name SO:0000196) "five_prime_coding_exon_coding_region"))
+
+(defconcept SO:0000197)
+(assert (subset-of SO:0000197 SO:0001215))
+(assert (documentation SO:0000197 "The sequence of the three_prime_coding_exon that codes for protein."))
+(assert (= (name SO:0000197) "three_prime_coding_exon_coding_region"))
+
+(defconcept SO:0000198)
+(assert (subset-of SO:0000198 SO:0000147))
+(assert (documentation SO:0000198 "An exon that does not contain any codons."))
+(assert (= (name SO:0000198) "noncoding_exon"))
+
+(defconcept SO:0000200)
+(assert (subset-of SO:0000200 SO:0000195))
+(assert (documentation SO:0000200 "The 5' most coding exon."))
+(assert (= (name SO:0000200) "five_prime_coding_exon"))
+
+(defconcept SO:0000203)
+(assert (subset-of SO:0000203 SO:0000836))
+(assert (documentation SO:0000203 "Messenger RNA sequences that are untranslated and lie five prime or three prime to sequences which are translated."))
+(assert (= (name SO:0000203) "UTR"))
+
+(defconcept SO:0000204)
+(assert (subset-of SO:0000204 SO:0000203))
+(assert (documentation SO:0000204 "A region at the 5' end of a mature transcript (preceding the initiation codon) that is not translated into a protein."))
+(assert (= (name SO:0000204) "five_prime_UTR"))
+
+(defconcept SO:0000205)
+(assert (subset-of SO:0000205 SO:0000203))
+(assert (documentation SO:0000205 "A region at the 3' end of a mature transcript (following the stop codon) that is not translated into a protein."))
+(assert (= (name SO:0000205) "three_prime_UTR"))
+
+(defconcept SO:0000209)
+(assert (subset-of SO:0000209 SO:0000483))
+(assert (documentation SO:0000209 "A primary transcript encoding a ribosomal RNA."))
+(assert (= (name SO:0000209) "rRNA_primary_transcript"))
+
+(defconcept SO:0000233)
+(assert (derives_from SO:0000233 SO:0000185))
+(assert (subset-of SO:0000233 SO:0000673))
+(assert (documentation SO:0000233 "A transcript which has undergone the necessary modifications, if any, for its function. In eukaryotes this includes, for example, processing of introns, cleavage, base modification, and modifications to the 5' and/or the 3' ends, other than addition of bases. In bacteria functional mRNAs are usually not modified."))
+(assert (= (name SO:0000233) "mature_transcript"))
+
+(defconcept SO:0000234)
+(assert (subset-of SO:0000234 SO:0000233))
+(assert (documentation SO:0000234 "Messenger RNA is the intermediate molecule between DNA and protein. It includes UTR and coding sequences. It does not contain introns."))
+(assert (= (name SO:0000234) "mRNA"))
+
+(defconcept SO:0000235)
+(assert (subset-of SO:0000235 SO:0005836))
+(assert (subset-of SO:0000235 SO:0000410))
+(assert (documentation SO:0000235 "A region of a molecule that binds a TF complex [GO:0005667]."))
+(assert (= (name SO:0000235) "TF_binding_site"))
+
+(defconcept SO:0000236)
+(assert (subset-of SO:0000236 SO:0000717))
+(assert (documentation SO:0000236 "The inframe interval between the stop codons of a reading frame which when read as sequential triplets, has the potential of encoding a sequential string of amino acids. TER(NNN)nTER."))
+(assert (= (name SO:0000236) "ORF"))
+
+(defconcept SO:0000239)
+(assert (subset-of SO:0000239 SO:0001412))
+(assert (documentation SO:0000239 "The sequences extending on either side of a specific region."))
+(assert (= (name SO:0000239) "flanking_region"))
+
+(defconcept SO:0000252)
+(assert (derives_from SO:0000252 SO:0000209))
+(assert (subset-of SO:0000252 SO:0000655))
+(assert (documentation SO:0000252 "RNA that comprises part of a ribosome, and that can provide both structural scaffolding and catalytic activity."))
+(assert (= (name SO:0000252) "rRNA"))
+
+(defconcept SO:0000253)
+(assert (subset-of SO:0000253 SO:0000655))
+(assert (documentation SO:0000253 "Transfer RNA (tRNA) molecules are approximately 80 nucleotides in length. Their secondary structure includes four short double-helical elements and three loops (D, anti-codon, and T loops). Further hydrogen bonds mediate the characteristic L-shaped molecular structure. Transfer RNAs have two regions of fundamental functional importance: the anti-codon, which is responsible for specific mRNA codon recognition, and the 3' end, to which the tRNA's corresponding amino acid is attached (by aminoacyl-tRNA synthetases). Transfer RNAs cope with the degeneracy of the genetic code in two manners: having more than one tRNA (with a specific anti-codon) for a particular amino acid; and 'wobble' base-pairing, i.e. permitting non-standard base-pairing at the 3rd anti-codon position."))
+(assert (= (name SO:0000253) "tRNA"))
+
+(defconcept SO:0000274)
+(assert (subset-of SO:0000274 SO:0000655))
+(assert (documentation SO:0000274 "A small nuclear RNA molecule involved in pre-mRNA splicing and processing."))
+(assert (= (name SO:0000274) "snRNA"))
+
+(defconcept SO:0000275)
+(assert (subset-of SO:0000275 SO:0000655))
+(assert (documentation SO:0000275 "A snoRNA (small nucleolar RNA) is any one of a class of small RNAs that are associated with the eukaryotic nucleus as components of small nucleolar ribonucleoproteins. They participate in the processing or modifications of many RNAs, mostly ribosomal RNAs (rRNAs) though snoRNAs are also known to target other classes of RNA, including spliceosomal RNAs, tRNAs, and mRNAs via a stretch of sequence that is complementary to a sequence in the targeted RNA."))
+(assert (= (name SO:0000275) "snoRNA"))
+
+(defconcept SO:0000276)
+(assert (subset-of SO:0000276 SO:0000370))
+(assert (documentation SO:0000276 "Small, ~22-nt, RNA molecule that is the endogenous transcript of a miRNA gene. Micro RNAs are produced from precursor molecules (SO:0000647) that can form local hairpin structures, which ordinarily are processed (via the Dicer pathway) such that a single miRNA molecule accumulates from one arm of a hairpin precursor molecule. Micro RNAs may trigger the cleavage of their target molecules or act as translational repressors."))
+(assert (= (name SO:0000276) "miRNA"))
+
+(defconcept SO:0000289)
+(assert (subset-of SO:0000289 SO:0000005))
+(assert (documentation SO:0000289 "A repeat_region containing repeat_units (2 to 4 bp) that is repeated multiple times in tandem."))
+(assert (= (name SO:0000289) "microsatellite"))
+
+(defconcept SO:0000294)
+(assert (subset-of SO:0000294 SO:0000657))
+(assert (documentation SO:0000294 "The sequence is complementarily repeated on the opposite strand. It is a palindrome, and it may, or may not be hyphenated. Examples: GCTGATCAGC, or GCTGA-----TCAGC."))
+(assert (= (name SO:0000294) "inverted_repeat"))
+
+(defconcept SO:0000296)
+(assert (part_of SO:0000296 SO:0001235))
+(assert (subset-of SO:0000296 SO:0001411))
+(assert (documentation SO:0000296 "The origin of replication; starting site for duplication of a nucleic acid molecule to give two identical copies."))
+(assert (= (name SO:0000296) "origin_of_replication"))
+
+(defconcept SO:0000303)
+(assert (subset-of SO:0000303 SO:0000835))
+(assert (documentation SO:0000303 "Part of the primary transcript that is clipped off during processing."))
+(assert (= (name SO:0000303) "clip"))
+
+(defconcept SO:0000305)
+(assert (subset-of SO:0000305 SO:0001236))
+(assert (documentation SO:0000305 "A modified nucleotide, i.e. a nucleotide other than A, T, C. G or (in RNA) U."))
+(assert (= (name SO:0000305) "modified_base_site"))
+
+(defconcept SO:0000306)
+(assert (subset-of SO:0000306 SO:0000305))
+(assert (documentation SO:0000306 "A nucleotide modified by methylation."))
+(assert (= (name SO:0000306) "methylated_base_feature"))
+
+(defconcept SO:0000307)
+(assert (subset-of SO:0000307 SO:0001411))
+(assert (documentation SO:0000307 "Regions of a few hundred to a few thousand bases in vertebrate genomes that are relatively GC and CpG rich; they are typically unmethylated and often found near the 5' ends of genes."))
+(assert (= (name SO:0000307) "CpG_island"))
+
+(defconcept SO:0000314)
+(assert (subset-of SO:0000314 SO:0000657))
+(assert (documentation SO:0000314 "A repeat where the same sequence is repeated in the same direction. Example: GCTGA-----GCTGA."))
+(assert (= (name SO:0000314) "direct_repeat"))
+
+(defconcept SO:0000315)
+(assert (subset-of SO:0000315 SO:0000835))
+(assert (documentation SO:0000315 "The first base where RNA polymerase begins to synthesize the RNA transcript."))
+(assert (= (name SO:0000315) "TSS"))
+
+(defconcept SO:0000316)
+(assert (subset-of SO:0000316 SO:0000836))
+(assert (documentation SO:0000316 "A contiguous sequence which begins with, and includes, a start codon and ends with, and includes, a stop codon."))
+(assert (= (name SO:0000316) "CDS"))
+
+(defconcept SO:0000318)
+(assert (subset-of SO:0000318 SO:0000360))
+(assert (documentation SO:0000318 "First codon to be translated by a ribosome."))
+(assert (= (name SO:0000318) "start_codon"))
+
+(defconcept SO:0000319)
+(assert (subset-of SO:0000319 SO:0000360))
+(assert (documentation SO:0000319 "In mRNA, a set of three nucleotides that indicates the end of information for protein synthesis."))
+(assert (= (name SO:0000319) "stop_codon"))
+
+(defconcept SO:0000324)
+(assert (subset-of SO:0000324 SO:0000696))
+(assert (documentation SO:0000324 "A nucleotide sequence that may be used to identify a larger sequence."))
+(assert (= (name SO:0000324) "tag"))
+
+(defconcept SO:0000325)
+(assert (subset-of SO:0000325 SO:0000209))
+(assert (documentation SO:0000325 "A primary transcript encoding a large ribosomal subunit RNA."))
+(assert (= (name SO:0000325) "rRNA_large_subunit_primary_transcript"))
+
+(defconcept SO:0000326)
+(assert (subset-of SO:0000326 SO:0000324))
+(assert (documentation SO:0000326 "A short diagnostic sequence tag, serial analysis of gene expression (SAGE), that allows the quantitative and simultaneous analysis of a large number of transcripts."))
+(assert (= (name SO:0000326) "SAGE_tag"))
+
+(defconcept SO:0000330)
+(assert (subset-of SO:0000330 SO:0001410))
+(assert (documentation SO:0000330 "Region of sequence similarity by descent from a common ancestor."))
+(assert (= (name SO:0000330) "conserved_region"))
+
+(defconcept SO:0000331)
+(assert (subset-of SO:0000331 SO:0000324))
+(assert (documentation SO:0000331 "Short (typically a few hundred base pairs) DNA sequence that has a single occurrence in a genome and whose location and base sequence are known."))
+(assert (= (name SO:0000331) "STS"))
+
+(defconcept SO:0000332)
+(assert (subset-of SO:0000332 SO:0000330))
+(assert (documentation SO:0000332 "Coding region of sequence similarity by descent from a common ancestor."))
+(assert (= (name SO:0000332) "coding_conserved_region"))
+
+(defconcept SO:0000333)
+(assert (part_of SO:0000333 SO:0000233))
+(assert (subset-of SO:0000333 SO:0000699))
+(assert (documentation SO:0000333 "The boundary between two exons in a processed transcript."))
+(assert (= (name SO:0000333) "exon_junction"))
+
+(defconcept SO:0000334)
+(assert (subset-of SO:0000334 SO:0000330))
+(assert (documentation SO:0000334 "Non-coding region of sequence similarity by descent from a common ancestor."))
+(assert (= (name SO:0000334) "nc_conserved_region"))
+
+(defconcept SO:0000336)
+(assert (non_functional_homolog_of SO:0000336 SO:0000704))
+(assert (subset-of SO:0000336 SO:0000462))
+(assert (documentation SO:0000336 "A sequence that closely resembles a known functional gene, at another locus within a genome, that is non-functional as a consequence of (usually several) mutations that prevent either its transcription or translation (or both). In general, pseudogenes result from either reverse transcription of a transcript of their \\\"normal\\\" paralog (SO:0000043) (in which case the pseudogene typically lacks introns and includes a poly(A) tail) or from recombination (SO:0000044) (in which case the pseudogene is typically a tandem duplication of its \\\"normal\\\" paralog)."))
+(assert (= (name SO:0000336) "pseudogene"))
+
+(defconcept SO:0000337)
+(assert (subset-of SO:0000337 SO:0000442))
+(assert (documentation SO:0000337 "A double stranded RNA duplex, at least 20bp long, used experimentally to inhibit gene function by RNA interference."))
+(assert (= (name SO:0000337) "RNAi_reagent"))
+
+(defconcept SO:0000340)
+(assert (subset-of SO:0000340 SO:0001235))
+(assert (documentation SO:0000340 "Structural unit composed of a nucleic acid molecule which controls its own replication through the interaction of specific proteins at one or more origins of replication."))
+(assert (= (name SO:0000340) "chromosome"))
+
+(defconcept SO:0000341)
+(assert (subset-of SO:0000341 SO:0000830))
+(assert (documentation SO:0000341 "A cytologically distinguishable feature of a chromosome, often made visible by staining, and usually alternating light and dark."))
+(assert (= (name SO:0000341) "chromosome_band"))
+
+(defconcept SO:0000343)
+(assert (subset-of SO:0000343 SO:0001410))
+(assert (documentation SO:0000343 "A region of sequence, aligned to another sequence with some statistical significance, using an algorithm such as BLAST or SIM4."))
+(assert (= (name SO:0000343) "match"))
+
+(defconcept SO:0000344)
+(assert (subset-of SO:0000344 SO:0001056))
+(assert (documentation SO:0000344 "Region of a transcript that regulates splicing."))
+(assert (= (name SO:0000344) "splice_enhancer"))
+
+(defconcept SO:0000345)
+(assert (derives_from SO:0000345 SO:0000234))
+(assert (subset-of SO:0000345 SO:0000324))
+(assert (documentation SO:0000345 "A tag produced from a single sequencing read from a cDNA clone or PCR product; typically a few hundred base pairs long."))
+(assert (= (name SO:0000345) "EST"))
+
+(defconcept SO:0000347)
+(assert (subset-of SO:0000347 SO:0000343))
+(assert (documentation SO:0000347 "A match against a nucleotide sequence."))
+(assert (= (name SO:0000347) "nucleotide_match"))
+
+(defconcept SO:0000349)
+(assert (subset-of SO:0000349 SO:0000343))
+(assert (documentation SO:0000349 "A match against a protein sequence."))
+(assert (= (name SO:0000349) "protein_match"))
+
+(defconcept SO:0000353)
+(assert (subset-of SO:0000353 SO:0001248))
+(assert (documentation SO:0000353 "A sequence of nucleotides that has been algorithmically derived from an alignment of two or more different sequences."))
+(assert (= (name SO:0000353) "sequence_assembly"))
+
+(defconcept SO:0000360)
+(assert (subset-of SO:0000360 SO:0000851))
+(assert (documentation SO:0000360 "A set of (usually) three nucleotide bases in a DNA or RNA sequence, which together code for a unique amino acid or the termination of translation and are contained within the CDS."))
+(assert (= (name SO:0000360) "codon"))
+
+(defconcept SO:0000366)
+(assert (subset-of SO:0000366 SO:0000699))
+(assert (documentation SO:0000366 "The junction where an insertion occurred."))
+(assert (= (name SO:0000366) "insertion_site"))
+
+(defconcept SO:0000368)
+(assert (subset-of SO:0000368 SO:0000366))
+(assert (documentation SO:0000368 "The junction in a genome where a transposable_element has inserted."))
+(assert (= (name SO:0000368) "transposable_element_insertion_site"))
+
+(defconcept SO:0000370)
+(assert (subset-of SO:0000370 SO:0000655))
+(assert (documentation SO:0000370 "A non-coding RNA, usually with a specific secondary structure, that acts to regulate gene expression."))
+(assert (= (name SO:0000370) "small_regulatory_ncRNA"))
+
+(defconcept SO:0000372)
+(assert (subset-of SO:0000372 SO:0000673))
+(assert (documentation SO:0000372 "An RNA sequence that has catalytic activity with or without an associated ribonucleoprotein."))
+(assert (= (name SO:0000372) "enzymatic_RNA"))
+
+(defconcept SO:0000374)
+(assert (subset-of SO:0000374 SO:0000372))
+(assert (documentation SO:0000374 "An RNA with catalytic activity."))
+(assert (= (name SO:0000374) "ribozyme"))
+
+(defconcept SO:0000375)
+(assert (subset-of SO:0000375 SO:0000651))
+(assert (documentation SO:0000375 "5_8S ribosomal RNA (5. 8S rRNA) is a component of the large subunit of the eukaryotic ribosome. It is transcribed by RNA polymerase I as part of the 45S precursor that also contains 18S and 28S rRNA. Functionally, it is thought that 5.8S rRNA may be involved in ribosome translocation. It is also known to form covalent linkage to the p53 tumour suppressor protein. 5_8S rRNA is also found in archaea."))
+(assert (= (name SO:0000375) "rRNA_5_8S"))
+
+(defconcept SO:0000380)
+(assert (subset-of SO:0000380 SO:0000715))
+(assert (documentation SO:0000380 "A small catalytic RNA motif that catalyzes self-cleavage reaction. Its name comes from its secondary structure which resembles a carpenter's hammer. The hammerhead ribozyme is involved in the replication of some viroid and some satellite RNAs."))
+(assert (= (name SO:0000380) "hammerhead_ribozyme"))
+
+(defconcept SO:0000385)
+(assert (subset-of SO:0000385 SO:0000655))
+(assert (documentation SO:0000385 "The RNA molecule essential for the catalytic activity of RNase MRP, an enzymatically active ribonucleoprotein with two distinct roles in eukaryotes. In mitochondria it plays a direct role in the initiation of mitochondrial DNA replication. In the nucleus it is involved in precursor rRNA processing, where it cleaves the internal transcribed spacer 1 between 18S and 5.8S rRNAs."))
+(assert (= (name SO:0000385) "RNase_MRP_RNA"))
+
+(defconcept SO:0000386)
+(assert (subset-of SO:0000386 SO:0000655))
+(assert (documentation SO:0000386 "The RNA component of Ribonuclease P (RNase P), a ubiquitous endoribonuclease, found in archaea, bacteria and eukarya as well as chloroplasts and mitochondria. Its best characterised activity is the generation of mature 5 prime ends of tRNAs by cleaving the 5 prime leader elements of precursor-tRNAs. Cellular RNase Ps are ribonucleoproteins. RNA from bacterial RNase Ps retains its catalytic activity in the absence of the protein subunit, i.e. it is a ribozyme. Isolated eukaryotic and archaeal RNase P RNA has not been shown to retain its catalytic function, but is still essential for the catalytic activity of the holoenzyme. Although the archaeal and eukaryotic holoenzymes have a much greater protein content than the bacterial ones, the RNA cores from all the three lineages are homologous. Helices corresponding to P1, P2, P3, P4, and P10/11 are common to all cellular RNase P RNAs. Yet, there is considerable sequence variation, particularly among the eukaryotic RNAs."))
+(assert (= (name SO:0000386) "RNase_P_RNA"))
+
+(defconcept SO:0000390)
+(assert (subset-of SO:0000390 SO:0000655))
+(assert (documentation SO:0000390 "The RNA component of telomerase, a reverse transcriptase that synthesises telomeric DNA."))
+(assert (= (name SO:0000390) "telomerase_RNA"))
+
+(defconcept SO:0000391)
+(assert (subset-of SO:0000391 SO:0000274))
+(assert (documentation SO:0000391 "U1 is a small nuclear RNA (snRNA) component of the spliceosome (involved in pre-mRNA splicing). Its 5' end forms complementary base pairs with the 5' splice junction, thus defining the 5' donor site of an intron. There are significant differences in sequence and secondary structure between metazoan and yeast U1 snRNAs, the latter being much longer (568 nucleotides as compared to 164 nucleotides in human). Nevertheless, secondary structure predictions suggest that all U1 snRNAs share a 'common core' consisting of helices I, II, the proximal region of III, and IV."))
+(assert (= (name SO:0000391) "U1_snRNA"))
+
+(defconcept SO:0000392)
+(assert (subset-of SO:0000392 SO:0000274))
+(assert (documentation SO:0000392 "U2 is a small nuclear RNA (snRNA) component of the spliceosome (involved in pre-mRNA splicing). Complementary binding between U2 snRNA (in an area lying towards the 5' end but 3' to hairpin I) and the branchpoint sequence (BPS) of the intron results in the bulging out of an unpaired adenine, on the BPS, which initiates a nucleophilic attack at the intronic 5' splice site, thus starting the first of two transesterification reactions that mediate splicing."))
+(assert (= (name SO:0000392) "U2_snRNA"))
+
+(defconcept SO:0000393)
+(assert (subset-of SO:0000393 SO:0000274))
+(assert (documentation SO:0000393 "U4 small nuclear RNA (U4 snRNA) is a component of the major U2-dependent spliceosome. It forms a duplex with U6, and with each splicing round, it is displaced from U6 (and the spliceosome) in an ATP-dependent manner, allowing U6 to refold and create the active site for splicing catalysis. A recycling process involving protein Prp24 re-anneals U4 and U6."))
+(assert (= (name SO:0000393) "U4_snRNA"))
+
+(defconcept SO:0000394)
+(assert (subset-of SO:0000394 SO:0000274))
+(assert (documentation SO:0000394 "An snRNA required for the splicing of the minor U12-dependent class of eukaryotic nuclear introns. It forms a base paired complex with U6atac_snRNA (SO:0000397)."))
+(assert (= (name SO:0000394) "U4atac_snRNA"))
+
+(defconcept SO:0000395)
+(assert (subset-of SO:0000395 SO:0000274))
+(assert (documentation SO:0000395 "U5 RNA is a component of both types of known spliceosome. The precise function of this molecule is unknown, though it is known that the 5' loop is required for splice site selection and p220 binding, and that both the 3' stem-loop and the Sm site are important for Sm protein binding and cap methylation."))
+(assert (= (name SO:0000395) "U5_snRNA"))
+
+(defconcept SO:0000396)
+(assert (subset-of SO:0000396 SO:0000274))
+(assert (documentation SO:0000396 "U6 snRNA is a component of the spliceosome which is involved in splicing pre-mRNA. The putative secondary structure consensus base pairing is confined to a short 5' stem loop, but U6 snRNA is thought to form extensive base-pair interactions with U4 snRNA."))
+(assert (= (name SO:0000396) "U6_snRNA"))
+
+(defconcept SO:0000397)
+(assert (subset-of SO:0000397 SO:0000274))
+(assert (documentation SO:0000397 "U6atac_snRNA is an snRNA required for the splicing of the minor U12-dependent class of eukaryotic nuclear introns. It forms a base paired complex with U4atac_snRNA (SO:0000394)."))
+(assert (= (name SO:0000397) "U6atac_snRNA"))
+
+(defconcept SO:0000398)
+(assert (subset-of SO:0000398 SO:0000274))
+(assert (documentation SO:0000398 "U11 snRNA plays a role in splicing of the minor U12-dependent class of eukaryotic nuclear introns, similar to U1 snRNA in the major class spliceosome it base pairs to the conserved 5' splice site sequence."))
+(assert (= (name SO:0000398) "U11_snRNA"))
+
+(defconcept SO:0000399)
+(assert (subset-of SO:0000399 SO:0000274))
+(assert (documentation SO:0000399 "The U12 small nuclear (snRNA), together with U4atac/U6atac, U5, and U11 snRNAs and associated proteins, forms a spliceosome that cleaves a divergent class of low-abundance pre-mRNA introns."))
+(assert (= (name SO:0000399) "U12_snRNA"))
+
+(defconcept SO:0000403)
+(assert (subset-of SO:0000403 SO:0000593))
+(assert (documentation SO:0000403 "U14 small nucleolar RNA (U14 snoRNA) is required for early cleavages of eukaryotic precursor rRNAs. In yeasts, this molecule possess a stem-loop region (known as the Y-domain) which is essential for function. A similar structure, but with a different consensus sequence, is found in plants, but is absent in vertebrates."))
+(assert (= (name SO:0000403) "U14_snoRNA"))
+
+(defconcept SO:0000404)
+(assert (subset-of SO:0000404 SO:0000655))
+(assert (documentation SO:0000404 "A family of RNAs are found as part of the enigmatic vault ribonucleoprotein complex. The complex consists of a major vault protein (MVP), two minor vault proteins (VPARP and TEP1), and several small untranslated RNA molecules. It has been suggested that the vault complex is involved in drug resistance."))
+(assert (= (name SO:0000404) "vault_RNA"))
+
+(defconcept SO:0000405)
+(assert (subset-of SO:0000405 SO:0000655))
+(assert (documentation SO:0000405 "Y RNAs are components of the Ro ribonucleoprotein particle (Ro RNP), in association with Ro60 and La proteins. The Y RNAs and Ro60 and La proteins are well conserved, but the function of the Ro RNP is not known. In humans the RNA component can be one of four small RNAs: hY1, hY3, hY4 and hY5. These small RNAs are predicted to fold into a conserved secondary structure containing three stem structures. The largest of the four, hY1, contains an additional hairpin."))
+(assert (= (name SO:0000405) "Y_RNA"))
+
+(defconcept SO:0000407)
+(assert (subset-of SO:0000407 SO:0000650))
+(assert (documentation SO:0000407 "A large polynucleotide in eukaryotes, which functions as the small subunit of the ribosome."))
+(assert (= (name SO:0000407) "rRNA_18S"))
+
+(defconcept SO:0000409)
+(assert (subset-of SO:0000409 SO:0001411))
+(assert (documentation SO:0000409 "A region on the surface of a molecule that may interact with another molecule. When applied to polypeptides: Amino acids involved in binding or interactions. It can also apply to an amino acid bond which is represented by the positions of the two flanking amino acids."))
+(assert (= (name SO:0000409) "binding_site"))
+
+(defconcept SO:0000410)
+(assert (subset-of SO:0000410 SO:0000409))
+(assert (documentation SO:0000410 "A region of a molecule that binds to a protein."))
+(assert (= (name SO:0000410) "protein_binding_site"))
+
+(defconcept SO:0000412)
+(assert (subset-of SO:0000412 SO:0000143))
+(assert (documentation SO:0000412 "A region of polynucleotide sequence produced by digestion with a restriction endonuclease."))
+(assert (= (name SO:0000412) "restriction_fragment"))
+
+(defconcept SO:0000413)
+(assert (subset-of SO:0000413 SO:0000700))
+(assert (documentation SO:0000413 "A region where the sequence differs from that of a specified sequence."))
+(assert (= (name SO:0000413) "sequence_difference"))
+
+(defconcept SO:0000418)
+(assert (subset-of SO:0000418 SO:0100011))
+(assert (documentation SO:0000418 "The signal_peptide is a short region of the peptide located at the N-terminus that directs the protein to be secreted or part of membrane components."))
+(assert (= (name SO:0000418) "signal_peptide"))
+
+(defconcept SO:0000419)
+(assert (part_of SO:0000419 SO:0001063))
+(assert (subset-of SO:0000419 SO:0000839))
+(assert (documentation SO:0000419 "The polypeptide sequence that remains when the cleaved peptide regions have been cleaved from the immature peptide."))
+(assert (= (name SO:0000419) "mature_protein_region"))
+
+(defconcept SO:0000436)
+(assert (subset-of SO:0000436 SO:0000296))
+(assert (documentation SO:0000436 "A sequence that can autonomously replicate, as a plasmid, when transformed into a bacterial host."))
+(assert (= (name SO:0000436) "ARS"))
+
+(defconcept SO:0000441)
+(assert (subset-of SO:0000441 SO:0000696))
+(assert (documentation SO:0000441 "A single stranded oligonucleotide."))
+(assert (= (name SO:0000441) "ss_oligo"))
+
+(defconcept SO:0000442)
+(assert (subset-of SO:0000442 SO:0000696))
+(assert (documentation SO:0000442 "A double stranded oligonucleotide."))
+(assert (= (name SO:0000442) "ds_oligo"))
+
+(defconcept SO:0000454)
+(assert (subset-of SO:0000454 SO:0000655))
+(assert (documentation SO:0000454 "A small, 17-28-nt, small interfering RNA derived from transcripts of repetitive elements."))
+(assert (= (name SO:0000454) "rasiRNA"))
+
+(defconcept SO:0000462)
+(assert (subset-of SO:0000462 SO:0001411))
+(assert (documentation SO:0000462 "A non-functional descendent of a functional entity."))
+(assert (= (name SO:0000462) "pseudogenic_region"))
+
+(defconcept SO:0000464)
+(assert (non_functional_homolog_of SO:0000464 SO:0000147))
+(assert (subset-of SO:0000464 SO:0000462))
+(assert (documentation SO:0000464 "A non-functional descendant of an exon."))
+(assert (= (name SO:0000464) "decayed_exon"))
+
+(defconcept SO:0000468)
+(assert (part_of SO:0000468 SO:0000688))
+(assert (subset-of SO:0000468 SO:0000143))
+(assert (documentation SO:0000468 "One of the pieces of sequence that make up a golden path."))
+(assert (= (name SO:0000468) "golden_path_fragment"))
+
+(defconcept SO:0000472)
+(assert (subset-of SO:0000472 SO:0000353))
+(assert (documentation SO:0000472 "A set of regions which overlap with minimal polymorphism to form a linear sequence."))
+(assert (= (name SO:0000472) "tiling_path"))
+
+(defconcept SO:0000474)
+(assert (part_of SO:0000474 SO:0000472))
+(assert (subset-of SO:0000474 SO:0000143))
+(assert (documentation SO:0000474 "A piece of sequence that makes up a tiling_path (SO:0000472)."))
+(assert (= (name SO:0000474) "tiling_path_fragment"))
+
+(defconcept SO:0000483)
+(assert (subset-of SO:0000483 SO:0000185))
+(assert (documentation SO:0000483 "A primary transcript that is never translated into a protein."))
+(assert (= (name SO:0000483) "nc_primary_transcript"))
+
+(defconcept SO:0000484)
+(assert (subset-of SO:0000484 SO:0001214))
+(assert (documentation SO:0000484 "The sequence of the 3' exon that is not coding."))
+(assert (= (name SO:0000484) "three_prime_coding_exon_noncoding_region"))
+
+(defconcept SO:0000486)
+(assert (part_of SO:0000486 SO:0000200))
+(assert (subset-of SO:0000486 SO:0001214))
+(assert (documentation SO:0000486 "The sequence of the 5' exon preceding the start codon."))
+(assert (= (name SO:0000486) "five_prime_coding_exon_noncoding_region"))
+
+(defconcept SO:0000499)
+(assert (subset-of SO:0000499 SO:0000353))
+(assert (documentation SO:0000499 "A continuous piece of sequence similar to the 'virtual contig' concept of the Ensembl database."))
+(assert (= (name SO:0000499) "virtual_sequence"))
+
+(defconcept SO:0000502)
+(assert (documentation SO:0000502 "A region of sequence that is transcribed. This region may cover the transcript of a gene, it may emcompas the sequence covered by all of the transcripts of a alternately spliced gene, or it may cover the region transcribed by a polycistronic transcript. A gene may have 1 or more transcribed regions and a transcribed_region may belong to one or more genes."))
+(assert (= (name SO:0000502) "transcribed_region"))
+
+(defconcept SO:0000551)
+(assert (subset-of SO:0000551 SO:0005836))
+(assert (documentation SO:0000551 "The recognition sequence necessary for endonuclease cleavage of an RNA transcript that is followed by polyadenylation; consensus=AATAAA."))
+(assert (= (name SO:0000551) "polyA_signal_sequence"))
+
+(defconcept SO:0000553)
+(assert (part_of SO:0000553 SO:0000233))
+(assert (part_of SO:0000553 SO:0000205))
+(assert (subset-of SO:0000553 SO:0000837))
+(assert (documentation SO:0000553 "The site on an RNA transcript to which will be added adenine residues by post-transcriptional polyadenylation."))
+(assert (= (name SO:0000553) "polyA_site"))
+
+(defconcept SO:0000577)
+(assert (subset-of SO:0000577 SO:0000628))
+(assert (documentation SO:0000577 "A region of chromosome where the spindle fibers attach during mitosis and meiosis."))
+(assert (= (name SO:0000577) "centromere"))
+
+(defconcept SO:0000581)
+(assert (subset-of SO:0000581 SO:0001411))
+(assert (documentation SO:0000581 "A structure consisting of a 7-methylguanosine in 5'-5' triphosphate linkage with the first nucleotide of an mRNA. It is added post-transcriptionally, and is not encoded in the DNA."))
+(assert (= (name SO:0000581) "cap"))
+
+(defconcept SO:0000587)
+(assert (subset-of SO:0000587 SO:0000588))
+(assert (documentation SO:0000587 "Group I catalytic introns are large self-splicing ribozymes. They catalyse their own excision from mRNA, tRNA and rRNA precursors in a wide range of organisms. The core secondary structure consists of 9 paired regions (P1-P9). These fold to essentially two domains, the P4-P6 domain (formed from the stacking of P5, P4, P6 and P6a helices) and the P3-P9 domain (formed from the P8, P3, P7 and P9 helices). Group I catalytic introns often have long ORFs inserted in loop regions."))
+(assert (= (name SO:0000587) "group_I_intron"))
+
+(defconcept SO:0000588)
+(assert (subset-of SO:0000588 SO:0000188))
+(assert (documentation SO:0000588 "A self spliced intron."))
+(assert (= (name SO:0000588) "autocatalytically_spliced_intron"))
+
+(defconcept SO:0000590)
+(assert (subset-of SO:0000590 SO:0000655))
+(assert (documentation SO:0000590 "The signal recognition particle (SRP) is a universally conserved ribonucleoprotein. It is involved in the co-translational targeting of proteins to membranes. The eukaryotic SRP consists of a 300-nucleotide 7S RNA and six proteins: SRPs 72, 68, 54, 19, 14, and 9. Archaeal SRP consists of a 7S RNA and homologues of the eukaryotic SRP19 and SRP54 proteins. In most eubacteria, the SRP consists of a 4.5S RNA and the Ffh protein (a homologue of the eukaryotic SRP54 protein). Eukaryotic and archaeal 7S RNAs have very similar secondary structures, with eight helical elements. These fold into the Alu and S domains, separated by a long linker region. Eubacterial SRP is generally a simpler structure, with the M domain of Ffh bound to a region of the 4.5S RNA that corresponds to helix 8 of the eukaryotic and archaeal SRP S domain. Some Gram-positive bacteria (e.g. Bacillus subtilis), however, have a larger SRP RNA that also has an Alu domain. The Alu domain is thought to mediate the peptide chain elongation retardation function of the SRP. The universally conserved helix which interacts with the SRP54/Ffh M domain mediates signal sequence recognition. In eukaryotes and archaea, the SRP19-helix 6 complex is thought to be involved in SRP assembly and stabilizes helix 8 for SRP54 binding."))
+(assert (= (name SO:0000590) "SRP_RNA"))
+
+(defconcept SO:0000593)
+(assert (subset-of SO:0000593 SO:0000275))
+(assert (documentation SO:0000593 "Most box C/D snoRNAs also contain long (>10 nt) sequences complementary to rRNA. Boxes C and D, as well as boxes C' and D', are usually located in close proximity, and form a structure known as the box C/D motif. This motif is important for snoRNA stability, processing, nucleolar targeting and function. A small number of box C/D snoRNAs are involved in rRNA processing; most, however, are known or predicted to serve as guide RNAs in ribose methylation of rRNA. Targeting involves direct base pairing of the snoRNA at the rRNA site to be modified and selection of a rRNA nucleotide a fixed distance from box D or D'."))
+(assert (= (name SO:0000593) "C_D_box_snoRNA"))
+
+(defconcept SO:0000602)
+(assert (subset-of SO:0000602 SO:0000655))
+(assert (documentation SO:0000602 "A short 3'-uridylated RNA that can form a duplex (except for its post-transcriptionally added oligo_U tail (SO:0000609)) with a stretch of mature edited mRNA."))
+(assert (= (name SO:0000602) "guide_RNA"))
+
+(defconcept SO:0000603)
+(assert (subset-of SO:0000603 SO:0000588))
+(assert (documentation SO:0000603 "Group II introns are found in rRNA, tRNA and mRNA of organelles in fungi, plants and protists, and also in mRNA in bacteria. They are large self-splicing ribozymes and have 6 structural domains (usually designated dI to dVI). A subset of group II introns also encode essential splicing proteins in intronic ORFs. The length of these introns can therefore be up to 3kb. Splicing occurs in almost identical fashion to nuclear pre-mRNA splicing with two transesterification steps. The 2' hydroxyl of a bulged adenosine in domain VI attacks the 5' splice site, followed by nucleophilic attack on the 3' splice site by the 3' OH of the upstream exon. Protein machinery is required for splicing in vivo, and long range intron-intron and intron-exon interactions are important for splice site positioning. Group II introns are further sub-classified into groups IIA and IIB which differ in splice site consensus, distance of bulged A from 3' splice site, some tertiary interactions, and intronic ORF phylogeny."))
+(assert (= (name SO:0000603) "group_II_intron"))
+
+(defconcept SO:0000605)
+(assert (subset-of SO:0000605 SO:0001411))
+(assert (documentation SO:0000605 "A region containing or overlapping no genes that is bounded on either side by a gene, or bounded by a gene and the end of the chromosome."))
+(assert (= (name SO:0000605) "intergenic_region"))
+
+(defconcept SO:0000610)
+(assert (adjacent_to SO:0000610 SO:0000234))
+(assert (subset-of SO:0000610 SO:0001411))
+(assert (documentation SO:0000610 "Sequence of about 100 nucleotides of A added to the 3' end of most eukaryotic mRNAs."))
+(assert (= (name SO:0000610) "polyA_sequence"))
+
+(defconcept SO:0000611)
+(assert (subset-of SO:0000611 SO:0000841))
+(assert (documentation SO:0000611 "A pyrimidine rich sequence near the 3' end of an intron to which the 5'end becomes covalently bound during nuclear splicing. The resulting structure resembles a lariat."))
+(assert (= (name SO:0000611) "branch_site"))
+
+(defconcept SO:0000612)
+(assert (subset-of SO:0000612 SO:0000841))
+(assert (documentation SO:0000612 "The polypyrimidine tract is one of the cis-acting sequence elements directing intron removal in pre-mRNA splicing."))
+(assert (= (name SO:0000612) "polypyrimidine_tract"))
+
+(defconcept SO:0000616)
+(assert (subset-of SO:0000616 SO:0000835))
+(assert (documentation SO:0000616 "The base where transcription ends."))
+(assert (= (name SO:0000616) "transcription_end_site"))
+
+(defconcept SO:0000624)
+(assert (subset-of SO:0000624 SO:0000628))
+(assert (documentation SO:0000624 "A specific structure at the end of a linear chromosome, required for the integrity and maintenance of the end."))
+(assert (= (name SO:0000624) "telomere"))
+
+(defconcept SO:0000625)
+(assert (subset-of SO:0000625 SO:0000727))
+(assert (documentation SO:0000625 "A regulatory region which upon binding of transcription factors, suppress the transcription of the gene or genes they control."))
+(assert (= (name SO:0000625) "silencer"))
+
+(defconcept SO:0000627)
+(assert (subset-of SO:0000627 SO:0001055))
+(assert (documentation SO:0000627 "A trancriptional cis regulatory region that when located between a CM and a gene's promoter prevents the CRM from modulating that genes expression."))
+(assert (= (name SO:0000627) "insulator"))
+
+(defconcept SO:0000628)
+(assert (subset-of SO:0000628 SO:0000830))
+(assert (= (name SO:0000628) "chromosomal_structural_element"))
+
+(defconcept SO:0000643)
+(assert (subset-of SO:0000643 SO:0000005))
+(assert (documentation SO:0000643 "A repeat region containing tandemly repeated sequences having a unit length of 10 to 40 bp."))
+(assert (= (name SO:0000643) "minisatellite"))
+
+(defconcept SO:0000644)
+(assert (derives_from SO:0000644 SO:0000645))
+(assert (subset-of SO:0000644 SO:0000655))
+(assert (documentation SO:0000644 "Antisense RNA is RNA that is transcribed from the coding, rather than the template, strand of DNA. It is therefore complementary to mRNA."))
+(assert (= (name SO:0000644) "antisense_RNA"))
+
+(defconcept SO:0000645)
+(assert (subset-of SO:0000645 SO:0000185))
+(assert (documentation SO:0000645 "The reverse complement of the primary transcript."))
+(assert (= (name SO:0000645) "antisense_primary_transcript"))
+
+(defconcept SO:0000646)
+(assert (subset-of SO:0000646 SO:0000655))
+(assert (documentation SO:0000646 "A small RNA molecule that is the product of a longer exogenous or endogenous dsRNA, which is either a bimolecular duplex or very long hairpin, processed (via the Dicer pathway) such that numerous siRNAs accumulate from both strands of the dsRNA. SRNAs trigger the cleavage of their target molecules."))
+(assert (= (name SO:0000646) "siRNA"))
+
+(defconcept SO:0000649)
+(assert (subset-of SO:0000649 SO:0000655))
+(assert (documentation SO:0000649 "Non-coding RNAs of about 21 nucleotides in length that regulate temporal development; first discovered in C. elegans."))
+(assert (= (name SO:0000649) "stRNA"))
+
+(defconcept SO:0000650)
+(assert (subset-of SO:0000650 SO:0000252))
+(assert (documentation SO:0000650 "Ribosomal RNA transcript that structures the small subunit of the ribosome."))
+(assert (= (name SO:0000650) "small_subunit_rRNA"))
+
+(defconcept SO:0000651)
+(assert (derives_from SO:0000651 SO:0000325))
+(assert (subset-of SO:0000651 SO:0000252))
+(assert (documentation SO:0000651 "Ribosomal RNA transcript that structures the large subunit of the ribosome."))
+(assert (= (name SO:0000651) "large_subunit_rRNA"))
+
+(defconcept SO:0000652)
+(assert (subset-of SO:0000652 SO:0000651))
+(assert (documentation SO:0000652 "5S ribosomal RNA (5S rRNA) is a component of the large ribosomal subunit in both prokaryotes and eukaryotes. In eukaryotes, it is synthesised by RNA polymerase III (the other eukaryotic rRNAs are cleaved from a 45S precursor synthesised by RNA polymerase I). In Xenopus oocytes, it has been shown that fingers 4-7 of the nine-zinc finger transcription factor TFIIIA can bind to the central region of 5S RNA. Thus, in addition to positively regulating 5S rRNA transcription, TFIIIA also stabilises 5S rRNA until it is required for transcription."))
+(assert (= (name SO:0000652) "rRNA_5S"))
+
+(defconcept SO:0000653)
+(assert (subset-of SO:0000653 SO:0000651))
+(assert (documentation SO:0000653 "A component of the large ribosomal subunit."))
+(assert (= (name SO:0000653) "rRNA_28S"))
+
+(defconcept SO:0000655)
+(assert (subset-of SO:0000655 SO:0000233))
+(assert (documentation SO:0000655 "An RNA transcript that does not encode for a protein rather the RNA molecule is the gene product."))
+(assert (= (name SO:0000655) "ncRNA"))
+
+(defconcept SO:0000657)
+(assert (subset-of SO:0000657 SO:0001412))
+(assert (documentation SO:0000657 "A region of sequence containing one or more repeat units."))
+(assert (= (name SO:0000657) "repeat_region"))
+
+(defconcept SO:0000658)
+(assert (subset-of SO:0000658 SO:0000657))
+(assert (documentation SO:0000658 "A repeat that is located at dispersed sites in the genome."))
+(assert (= (name SO:0000658) "dispersed_repeat"))
+
+(defconcept SO:0000662)
+(assert (subset-of SO:0000662 SO:0000188))
+(assert (documentation SO:0000662 "An intron which is spliced by the spliceosome."))
+(assert (= (name SO:0000662) "spliceosomal_intron"))
+
+(defconcept SO:0000667)
+(assert (subset-of SO:0000667 SO:0001411))
+(assert (subset-of SO:0000667 SO:0001059))
+(assert (documentation SO:0000667 "The sequence of one or more nucleotides added between two adjacent nucleotides in the sequence."))
+(assert (= (name SO:0000667) "insertion"))
+
+(defconcept SO:0000668)
+(assert (subset-of SO:0000668 SO:0000102))
+(assert (documentation SO:0000668 "A match against an EST sequence."))
+(assert (= (name SO:0000668) "EST_match"))
+
+(defconcept SO:0000673)
+(assert (subset-of SO:0000673 SO:0000831))
+(assert (documentation SO:0000673 "An RNA synthesized on a DNA or RNA template by an RNA polymerase."))
+(assert (= (name SO:0000673) "transcript"))
+
+(defconcept SO:0000684)
+(assert (subset-of SO:0000684 SO:0000059))
+(assert (documentation SO:0000684 "A region of nucleotide sequence targeted by a nuclease enzyme."))
+(assert (= (name SO:0000684) "nuclease_sensitive_site"))
+
+(defconcept SO:0000687)
+(assert (subset-of SO:0000687 SO:0000699))
+(assert (documentation SO:0000687 "The space between two bases in a sequence which marks the position where a deletion has occurred."))
+(assert (= (name SO:0000687) "deletion_junction"))
+
+(defconcept SO:0000688)
+(assert (subset-of SO:0000688 SO:0000353))
+(assert (documentation SO:0000688 "A set of subregions selected from sequence contigs which when concatenated form a nonredundant linear sequence."))
+(assert (= (name SO:0000688) "golden_path"))
+
+(defconcept SO:0000689)
+(assert (subset-of SO:0000689 SO:0000102))
+(assert (documentation SO:0000689 "A match against cDNA sequence."))
+(assert (= (name SO:0000689) "cDNA_match"))
+
+(defconcept SO:0000694)
+(assert (subset-of SO:0000694 SO:0001483))
+(assert (documentation SO:0000694 "SNPs are single base pair positions in genomic DNA at which different sequence alternatives exist in normal individuals in some population(s), wherein the least frequent variant has an abundance of 1% or greater."))
+(assert (= (name SO:0000694) "SNP"))
+
+(defconcept SO:0000695)
+(assert (subset-of SO:0000695 SO:0001409))
+(assert (documentation SO:0000695 "A sequence used in experiment."))
+(assert (= (name SO:0000695) "reagent"))
+
+(defconcept SO:0000696)
+(assert (subset-of SO:0000696 SO:0000695))
+(assert (documentation SO:0000696 "A short oligonucleotide sequence, of length on the order of 10's of bases; either single or double stranded."))
+(assert (= (name SO:0000696) "oligo"))
+
+(defconcept SO:0000699)
+(assert (subset-of SO:0000699 SO:0000110))
+(assert (documentation SO:0000699 "A sequence_feature with an extent of zero."))
+(assert (= (name SO:0000699) "junction"))
+
+(defconcept SO:0000700)
+(assert (subset-of SO:0000700 SO:0001410))
+(assert (documentation SO:0000700 "A comment about the sequence."))
+(assert (= (name SO:0000700) "remark"))
+
+(defconcept SO:0000701)
+(assert (subset-of SO:0000701 SO:0000413))
+(assert (documentation SO:0000701 "A region of sequence where the validity of the base calling is questionable."))
+(assert (= (name SO:0000701) "possible_base_call_error"))
+
+(defconcept SO:0000702)
+(assert (subset-of SO:0000702 SO:0000413))
+(assert (documentation SO:0000702 "A region of sequence where there may have been an error in the assembly."))
+(assert (= (name SO:0000702) "possible_assembly_error"))
+
+(defconcept SO:0000703)
+(assert (subset-of SO:0000703 SO:0000700))
+(assert (documentation SO:0000703 "A region of sequence implicated in an experimental result."))
+(assert (= (name SO:0000703) "experimental_result_region"))
+
+(defconcept SO:0000704)
+(assert (member_of SO:0000704 SO:0005855))
+(assert (subset-of SO:0000704 SO:0001411))
+(assert (documentation SO:0000704 "A region (or regions) that includes all of the sequence elements necessary to encode a functional transcript. A gene may include regulatory regions, transcribed regions and/or other functional sequence regions."))
+(assert (= (name SO:0000704) "gene"))
+
+(defconcept SO:0000705)
+(assert (subset-of SO:0000705 SO:0000657))
+(assert (documentation SO:0000705 "Two or more adjcent copies of a region (of length greater than 1)."))
+(assert (= (name SO:0000705) "tandem_repeat"))
+
+(defconcept SO:0000706)
+(assert (subset-of SO:0000706 SO:0001420))
+(assert (documentation SO:0000706 "The 3' splice site of the acceptor primary transcript."))
+(assert (= (name SO:0000706) "trans_splice_acceptor_site"))
+
+(defconcept SO:0000714)
+(assert (subset-of SO:0000714 SO:0001411))
+(assert (documentation SO:0000714 "A region of nucleotide sequence corresponding to a known motif."))
+(assert (= (name SO:0000714) "nucleotide_motif"))
+
+(defconcept SO:0000715)
+(assert (subset-of SO:0000715 SO:0000714))
+(assert (documentation SO:0000715 "A motif that is active in RNA sequence."))
+(assert (= (name SO:0000715) "RNA_motif"))
+
+(defconcept SO:0000717)
+(assert (subset-of SO:0000717 SO:0001410))
+(assert (documentation SO:0000717 "A nucleic acid sequence that when read as sequential triplets, has the potential of encoding a sequential string of amino acids. It need not contain the start or stop codon."))
+(assert (= (name SO:0000717) "reading_frame"))
+
+(defconcept SO:0000719)
+(assert (subset-of SO:0000719 SO:0000353))
+(assert (documentation SO:0000719 "An ordered and oriented set of scaffolds based on somewhat weaker sets of inferential evidence such as one set of mate pair reads together with supporting evidence from ESTs or location of markers from SNP or microsatellite maps, or cytogenetic localization of contained markers."))
+(assert (= (name SO:0000719) "ultracontig"))
+
+(defconcept SO:0000724)
+(assert (subset-of SO:0000724 SO:0000296))
+(assert (documentation SO:0000724 "A region of a DNA molecule where transfer is initiated during the process of conjugation or mobilization."))
+(assert (= (name SO:0000724) "oriT"))
+
+(defconcept SO:0000725)
+(assert (subset-of SO:0000725 SO:0100011))
+(assert (documentation SO:0000725 "The transit_peptide is a short region at the N-terminus of the peptide that directs the protein to an organelle (chloroplast, mitochondrion, microbody or cyanelle)."))
+(assert (= (name SO:0000725) "transit_peptide"))
+
+(defconcept SO:0000727)
+(assert (subset-of SO:0000727 SO:0001055))
+(assert (documentation SO:0000727 "A regulatory_region where more than 1 TF_binding_site together are regulatorily active."))
+(assert (= (name SO:0000727) "CRM"))
+
+(defconcept SO:0000730)
+(assert (part_of SO:0000730 SO:0000353))
+(assert (subset-of SO:0000730 SO:0000143))
+(assert (documentation SO:0000730 "A gap in the sequence of known length. The unknown bases are filled in with N's."))
+(assert (= (name SO:0000730) "gap"))
+
+(defconcept SO:0000752)
+(assert (member_of SO:0000752 SO:0005855))
+(assert (subset-of SO:0000752 SO:0005836))
+(assert (= (name SO:0000752) "gene_group_regulatory_region"))
+
+(defconcept SO:0000753)
+(assert (part_of SO:0000753 SO:0000151))
+(assert (subset-of SO:0000753 SO:0000695))
+(assert (documentation SO:0000753 "The region of sequence that has been inserted and is being propogated by the clone."))
+(assert (= (name SO:0000753) "clone_insert"))
+
+(defconcept SO:0000777)
+(assert (subset-of SO:0000777 SO:0000462))
+(assert (documentation SO:0000777 "A non functional descendent of an rRNA."))
+(assert (= (name SO:0000777) "pseudogenic_rRNA"))
+
+(defconcept SO:0000778)
+(assert (subset-of SO:0000778 SO:0000462))
+(assert (documentation SO:0000778 "A non functional descendent of a tRNA."))
+(assert (= (name SO:0000778) "pseudogenic_tRNA"))
+
+(defconcept SO:0000830)
+(assert (part_of SO:0000830 SO:0000340))
+(assert (subset-of SO:0000830 SO:0001411))
+(assert (documentation SO:0000830 "A region of a chromosome."))
+(assert (= (name SO:0000830) "chromosome_part"))
+
+(defconcept SO:0000831)
+(assert (member_of SO:0000831 SO:0000704))
+(assert (subset-of SO:0000831 SO:0001411))
+(assert (documentation SO:0000831 "A region of a gene."))
+(assert (= (name SO:0000831) "gene_member_region"))
+
+(defconcept SO:0000833)
+(assert (part_of SO:0000833 SO:0000673))
+(assert (subset-of SO:0000833 SO:0001411))
+(assert (documentation SO:0000833 "A region of a transcript."))
+(assert (= (name SO:0000833) "transcript_region"))
+
+(defconcept SO:0000834)
+(assert (subset-of SO:0000834 SO:0000833))
+(assert (documentation SO:0000834 "A region of a mature transcript."))
+(assert (= (name SO:0000834) "mature_transcript_region"))
+
+(defconcept SO:0000835)
+(assert (part_of SO:0000835 SO:0000185))
+(assert (subset-of SO:0000835 SO:0000833))
+(assert (documentation SO:0000835 "A part of a primary transcript."))
+(assert (= (name SO:0000835) "primary_transcript_region"))
+
+(defconcept SO:0000836)
+(assert (part_of SO:0000836 SO:0000234))
+(assert (subset-of SO:0000836 SO:0000834))
+(assert (documentation SO:0000836 "A region of an mRNA."))
+(assert (= (name SO:0000836) "mRNA_region"))
+
+(defconcept SO:0000837)
+(assert (subset-of SO:0000837 SO:0000836))
+(assert (documentation SO:0000837 "A region of UTR."))
+(assert (= (name SO:0000837) "UTR_region"))
+
+(defconcept SO:0000839)
+(assert (part_of SO:0000839 SO:0000104))
+(assert (subset-of SO:0000839 SO:0001411))
+(assert (documentation SO:0000839 "Biological sequence region that can be assigned to a specific subsequence of a polypeptide."))
+(assert (= (name SO:0000839) "polypeptide_region"))
+
+(defconcept SO:0000841)
+(assert (part_of SO:0000841 SO:0000662))
+(assert (subset-of SO:0000841 SO:0000835))
+(assert (documentation SO:0000841 "A region within an intron."))
+(assert (= (name SO:0000841) "spliceosomal_intron_region"))
+
+(defconcept SO:0000842)
+(assert (part_of SO:0000842 SO:0000704))
+(assert (subset-of SO:0000842 SO:0001411))
+(assert (= (name SO:0000842) "gene_component_region"))
+
+(defconcept SO:0000851)
+(assert (part_of SO:0000851 SO:0000316))
+(assert (subset-of SO:0000851 SO:0000836))
+(assert (documentation SO:0000851 "A region of a CDS."))
+(assert (= (name SO:0000851) "CDS_region"))
+
+(defconcept SO:0000852)
+(assert (part_of SO:0000852 SO:0000147))
+(assert (subset-of SO:0000852 SO:0000833))
+(assert (documentation SO:0000852 "A region of an exon."))
+(assert (= (name SO:0000852) "exon_region"))
+
+(defconcept SO:0001000)
+(assert (subset-of SO:0001000 SO:0000650))
+(assert (documentation SO:0001000 "A large polynucleotide in Bacteria and Archaea, which functions as the small subunit of the ribosome."))
+(assert (= (name SO:0001000) "rRNA_16S"))
+
+(defconcept SO:0001001)
+(assert (subset-of SO:0001001 SO:0000651))
+(assert (documentation SO:0001001 "A large polynucleotide in Bacteria and Archaea, which functions as the large subunit of the ribosome."))
+(assert (= (name SO:0001001) "rRNA_23S"))
+
+(defconcept SO:0001002)
+(assert (subset-of SO:0001002 SO:0000651))
+(assert (documentation SO:0001002 "A large polynucleotide which functions as part of the large subunit of the ribosome in some eukaryotes."))
+(assert (= (name SO:0001002) "rRNA_25S"))
+
+(defconcept SO:0001037)
+(assert (subset-of SO:0001037 SO:0001411))
+(assert (documentation SO:0001037 "A nucleotide region with either intra-genome or intracellular moblity, of varying length, which often carry the information necessary for transfer and recombination with the host genome."))
+(assert (= (name SO:0001037) "mobile_genetic_element"))
+
+(defconcept SO:0001039)
+(assert (subset-of SO:0001039 SO:0001037))
+(assert (documentation SO:0001039 "An MGE that is integrated into the host chromosome."))
+(assert (= (name SO:0001039) "integrated_mobile_genetic_element"))
+
+(defconcept SO:0001055)
+(assert (subset-of SO:0001055 SO:0005836))
+(assert (documentation SO:0001055 "A regulatory_region that modulates the transcription of a gene or genes."))
+(assert (= (name SO:0001055) "transcriptional_cis_regulatory_region"))
+
+(defconcept SO:0001056)
+(assert (subset-of SO:0001056 SO:0005836))
+(assert (documentation SO:0001056 "A regulatory_region that modulates splicing."))
+(assert (= (name SO:0001056) "splicing_regulatory_region"))
+
+(defconcept SO:0001059)
+(assert (subset-of SO:0001059 SO:0000110))
+(assert (documentation SO:0001059 "A sequence_alteration is a sequence_feature whose extent is the deviation from another sequence."))
+(assert (= (name SO:0001059) "sequence_alteration"))
+
+(defconcept SO:0001063)
+(assert (subset-of SO:0001063 SO:0000839))
+(assert (documentation SO:0001063 "An immature_peptide_region is the extent of the peptide after it has been translated and before any processing occurs."))
+(assert (= (name SO:0001063) "immature_peptide_region"))
+
+(defconcept SO:0001214)
+(assert (subset-of SO:0001214 SO:0000852))
+(assert (documentation SO:0001214 "The maximal intersection of exon and UTR."))
+(assert (= (name SO:0001214) "noncoding_region_of_exon"))
+
+(defconcept SO:0001215)
+(assert (subset-of SO:0001215 SO:0000852))
+(assert (documentation SO:0001215 "The region of an exon that encodes for protein sequence."))
+(assert (= (name SO:0001215) "coding_region_of_exon"))
+
+(defconcept SO:0001235)
+(assert (subset-of SO:0001235 SO:0001411))
+(assert (documentation SO:0001235 "A region containing at least one unique origin of replication and a unique termination site."))
+(assert (= (name SO:0001235) "replicon"))
+
+(defconcept SO:0001236)
+(assert (part_of SO:0001236 SO:0000001))
+(assert (subset-of SO:0001236 SO:0001411))
+(assert (documentation SO:0001236 "A base is a sequence feature that corresponds to a single unit of a nucleotide polymer."))
+(assert (= (name SO:0001236) "base"))
+
+(defconcept SO:0001248)
+(assert (subset-of SO:0001248 SO:0001410))
+(assert (documentation SO:0001248 "A region of the genome of known length that is composed by ordering and aligning two or more different regions."))
+(assert (= (name SO:0001248) "assembly"))
+
+(defconcept SO:0001409)
+(assert (subset-of SO:0001409 SO:0000001))
+(assert (documentation SO:0001409 "A region which is intended for use in an experiment."))
+(assert (= (name SO:0001409) "biomaterial_region"))
+
+(defconcept SO:0001410)
+(assert (subset-of SO:0001410 SO:0000001))
+(assert (documentation SO:0001410 "A region which is the result of some arbitrary experimental procedure. The procedure may be carried out with biological material or inside a computer."))
+(assert (= (name SO:0001410) "experimental_feature"))
+
+(defconcept SO:0001411)
+(assert (subset-of SO:0001411 SO:0000001))
+(assert (documentation SO:0001411 "A region defined by its disposition to be involved in a biological process."))
+(assert (= (name SO:0001411) "biological_region"))
+
+(defconcept SO:0001412)
+(assert (subset-of SO:0001412 SO:0000001))
+(assert (documentation SO:0001412 "A region that is defined according to its relations with other regions within the same sequence."))
+(assert (= (name SO:0001412) "topologically_defined_region"))
+
+(defconcept SO:0001419)
+(assert (subset-of SO:0001419 SO:0000162))
+(assert (documentation SO:0001419 "Intronic 2 bp region bordering exon. A splice_site that adjacent_to exon and overlaps intron."))
+(assert (= (name SO:0001419) "cis_splice_site"))
+
+(defconcept SO:0001420)
+(assert (subset-of SO:0001420 SO:0000162))
+(assert (documentation SO:0001420 "Primary transcript region bordering trans-splice junction."))
+(assert (= (name SO:0001420) "trans_splice_site"))
+
+(defconcept SO:0001483)
+(assert (subset-of SO:0001483 SO:1000002))
+(assert (documentation SO:0001483 "SNVs are single base pair positions in genomic DNA at which different sequence alternatives exist."))
+(assert (= (name SO:0001483) "SNV"))
+
+(defconcept SO:0005836)
+(assert (subset-of SO:0005836 SO:0000831))
+(assert (documentation SO:0005836 "A DNA sequence that controls the expression of a gene."))
+(assert (= (name SO:0005836) "regulatory_region"))
+
+(defconcept SO:0005855)
+(assert (subset-of SO:0005855 SO:0001411))
+(assert (documentation SO:0005855 "A collection of related genes."))
+(assert (= (name SO:0005855) "gene_group"))
+
+(defconcept SO:0100011)
+(assert (part_of SO:0100011 SO:0001063))
+(assert (subset-of SO:0100011 SO:0000839))
+(assert (documentation SO:0100011 "The cleaved_peptide_regon is the a region of peptide sequence that is cleaved during maturation."))
+(assert (= (name SO:0100011) "cleaved_peptide_region"))
+
+(defconcept SO:1000002)
+(assert (subset-of SO:1000002 SO:0001411))
+(assert (subset-of SO:1000002 SO:0001059))
+(assert (documentation SO:1000002 "Any change in genomic DNA caused by a single event."))
+(assert (= (name SO:1000002) "substitution"))
+
+(defconcept SO:1000005)
+(assert (subset-of SO:1000005 SO:1000002))
+(assert (documentation SO:1000005 "When no simple or well defined DNA mutation event describes the observed DNA change, the keyword \\\"complex\\\" should be used. Usually there are multiple equally plausible explanations for the change."))
+(assert (= (name SO:1000005) "complex_substitution"))
+
+(defconcept SO:1000008)
+(assert (subset-of SO:1000008 SO:0001483))
+(assert (documentation SO:1000008 "A single nucleotide change which has occurred at the same position of a corresponding nucleotide in a reference sequence."))
+(assert (= (name SO:1000008) "point_mutation"))
+
+(defconcept SO:1000036)
+(assert (subset-of SO:1000036 SO:0001411))
+(assert (subset-of SO:1000036 SO:0001059))
+(assert (documentation SO:1000036 "A continuous nucleotide sequence is inverted in the same position."))
+(assert (= (name SO:1000036) "inversion"))
+
+(defconcept SO:1001284)
+(assert (subset-of SO:1001284 SO:0005855))
+(assert (documentation SO:1001284 "A group of genes, whether linked as a cluster or not, that respond to a common regulatory signal."))
+(assert (= (name SO:1001284) "regulon"))
+
+(defconcept SO:2000061)
+(assert (subset-of SO:2000061 SO:0000695))
+(assert (documentation SO:2000061 "The sequence referred to by an entry in a databank such as Genbank or SwissProt."))
+(assert (= (name SO:2000061) "databank_entry"))
+
+(assert (forall ?term
+          (=> (and
+                (subset-of ?term SO:0000001))
+            (SO:0001037 ?term))))
+
+(assert (forall ?term
+          (=> (and
+                (has_part ?term SO:0000235)
+                (subset-of ?term SO:0001055))
+            (SO:0000727 ?term))))
+
+(assert (forall ?term
+          (=> (and
+                (subset-of ?term SO:0000188))
+            (SO:0000588 ?term))))
+
+(assert (forall ?term
+          (=> (and
+                (subset-of ?term SO:0000715))
+            (SO:0000380 ?term))))
+
+(assert (forall ?term
+          (=> (and
+                (subset-of ?term SO:0000372))
+            (SO:0000374 ?term))))
+
+(assert (forall ?term
+          (=> (and
+                (subset-of ?term SO:0000673))
+            (SO:0000372 ?term))))
+
+
