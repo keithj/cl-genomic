@@ -23,16 +23,16 @@
   (:export
    ;; Types
    #:quality-score
-   
+
    ;; Specials
    #:*sequence-print-limit*
-   
+
    #:*forward-strand*
    #:*reverse-strand*
    #:*unknown-strand*
 
    #:*default-knowledgebase*
-   
+
    ;; Conditions
    #:bio-sequence-error
    #:bio-sequence-warning
@@ -43,7 +43,7 @@
    #:with-seq-input
    #:with-mapped-dna
    #:with-sequence-residues
-   
+
    ;; Functions
    #:make-dna
    #:make-rna
@@ -94,6 +94,7 @@
 
    #:write-n-fastq
    #:split-fastq-file
+   #:convert-obo-powerloom
 
    ;; Classes
    #:alphabet
@@ -194,11 +195,14 @@
    #:inclusive-overlapsp
 
    #:compare-intervals
-   
+
    #:coerce-sequence
 
    #:residue-position
    #:quality-position
+
+   #:seguid
+   #:md5
    
    #:aligned-of
    #:intervals-of
@@ -225,10 +229,10 @@
    #:write-fasta-sequence
    #:read-fastq-sequence
    #:write-fastq-sequence
-   
+
    #:split-sequence-file
    #:convert-sequence-file
-   
+
    #:parsed-alphabet
    #:parsed-identity
    #:parsed-description

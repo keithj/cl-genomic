@@ -209,6 +209,15 @@ cumulative total lengths of RANGES."))
                               &key from-end test test-not start end)
   (:documentation ""))
 
+(defgeneric seguid (bio-sequence &key start end)
+  (:documentation "Returns the SEquence Globally Unique IDentifier or
+SEGUID string for BIO-SEQUENCE, between START and END. A SEGUID is
+essentially a base64-encoded SHA-1 hash of the uppercase sequence
+string. See PMID:16858731."))
+
+(defgeneric md5 (bio-sequence &key start end)
+  (:documentation "Returns the MD5 checksum of the uppercase sequence
+string of BIO-SEQUENCE, between START and END."))
 
 ;;; bio-sequence io generics
 (defgeneric begin-object (parser)
@@ -268,9 +277,20 @@ CONSUME may be used in operations on the returned consumer."))
   (:documentation "Returns a new bio-sequence created from the state
 accumulated by PARSER."))
 
+(defgeneric make-interval-input (sequence)
+  (:documentation "Returns a generator function that will return
+elements of SEQUENCE, followed by a sentinel element."))
+
 (defgeneric make-interval (bio-sequence &rest args)
   (:documentation "Returns a new interval on BIO-SEQUENCE."))
 
+(defgeneric has-sequence-p (stream format &key alphabet)
+  (:documentation "Returns T if a bio-sequence may be read from
+STREAM."))
+
+;;; Could all the read-XXXX-sequence and write-XXXX-sequence functions
+;;; be replaced sensibly by read-bio-sequence and write-bio-sequence
+;;; functions that dispatch on a format object?
 (defgeneric read-pure-sequence (stream alphabet parser)
   (:documentation "Reads a single pure format record of ALPHABET from
 STREAM using PARSER."))
@@ -316,8 +336,7 @@ uppercase for amino acids."))
   (:documentation "Splits sequence file identified by FILESPEC into
 automatically named files, each containing up to CHUNK-SIZE
 records. The new file names are created by the function
-PATHNAME-GEN. See dxi:pathname-generator and dxi:pathname-extender
-."))
+PATHNAME-GEN. See dxi:pathname-generator and dxi:pathname-extender."))
 
 (defgeneric align-local (seqm seqn subst-fn &key gap-open gap-extend
                          band-centre band-width alignment)
