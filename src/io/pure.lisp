@@ -27,7 +27,7 @@
 ;; pure sequence file can contain only a single sequence and is
 ;; suitable for mmap operations.
 
-(defmethod make-seq-input ((stream line-input-stream)
+(defmethod make-seq-input ((stream character-line-input-stream)
                            (format (eql :pure))
                            &key (alphabet :dna) parser virtual)
   (let ((parser (or parser
@@ -35,22 +35,21 @@
                            (make-instance 'virtual-sequence-parser))
                           (t
                            (make-instance 'simple-sequence-parser))))))
-    (multiple-value-bind (current more)
-        (read-pure-sequence stream alphabet parser)
-      (defgenerator
-          :current current
-          :next (prog1
-                    current
-                  (multiple-value-setq (current more)
-                    (read-pure-sequence stream alphabet parser)))
-          :more more))))
+    (defgenerator
+          :next (read-pure-sequence stream alphabet parser)
+          :more (has-sequence-p stream format))))
 
 (defmethod make-seq-output ((stream stream) (format (eql :pure))
                             &key token-case)
   (lambda (obj)
     (write-pure-sequence obj stream :token-case token-case)))
 
-(defmethod read-pure-sequence ((stream line-input-stream)
+(defmethod has-sequence-p ((stream character-line-input-stream)
+                           (format (eql :pure)) &key alphabet)
+  (declare (ignore alphabet))
+  (more-lines-p stream))
+
+(defmethod read-pure-sequence ((stream character-line-input-stream)
                                (alphabet symbol)
                                (parser bio-sequence-parser))
   (cond ((more-lines-p stream)

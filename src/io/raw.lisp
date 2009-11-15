@@ -27,7 +27,7 @@
 ;; tokens and whitespace. Any whitespace is ignored, meaning that a
 ;; raw file can contain only one sequence.
 
-(defmethod make-seq-input ((stream line-input-stream)
+(defmethod make-seq-input ((stream character-line-input-stream)
                            (format (eql :raw))
                            &key (alphabet :dna) parser virtual)
   (let ((parser (or parser
@@ -35,22 +35,26 @@
                            (make-instance 'virtual-sequence-parser))
                           (t
                            (make-instance 'simple-sequence-parser))))))
-    (multiple-value-bind (current more)
-        (read-raw-sequence stream alphabet parser)
-      (defgenerator
-          :current current
-          :next (prog1
-                    current
-                  (multiple-value-setq (current more)
-                    (read-raw-sequence stream alphabet parser)))
-          :more more))))
+    (defgenerator
+          :next (read-raw-sequence stream alphabet parser)
+          :more (has-sequence-p stream format))))
 
 (defmethod make-seq-output ((stream stream) (format (eql :raw))
                             &key token-case)
   (lambda (obj)
     (write-raw-sequence obj stream :token-case token-case)))
 
-(defmethod read-raw-sequence ((stream line-input-stream)
+(defmethod has-sequence-p ((stream character-line-input-stream)
+                           (format (eql :raw)) &key alphabet)
+  (declare (ignore alphabet))
+  (let ((line (find-line stream #'content-string-p)))
+    (cond ((eql :eof line)
+           nil)
+          (t
+           (push-line stream line)
+           t))))
+
+(defmethod read-raw-sequence ((stream character-line-input-stream)
                               (alphabet symbol)
                               (parser bio-sequence-parser))
   (let ((first-line (find-line stream #'content-string-p)))
@@ -91,3 +95,8 @@
        do (write-line residues stream
                       :start i
                       :end (min len (+ i *raw-line-width*))))))
+
+(defmethod write-raw-sequence (obj filespec &key token-case)
+  (with-open-file (stream filespec :direction :output
+                          :if-exists :supersede)
+    (write-raw-sequence obj stream :token-case token-case)))

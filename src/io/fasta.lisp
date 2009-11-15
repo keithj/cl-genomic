@@ -27,7 +27,7 @@
   "The number of elements by which the token cache is extended when it
 becomes full of chunks of sequence tokens.")
 
-(defmethod make-seq-input ((stream line-input-stream)
+(defmethod make-seq-input ((stream character-line-input-stream)
                            (format (eql :fasta))
                            &key (alphabet :dna) parser virtual)
   (let ((parser (or parser
@@ -35,15 +35,9 @@ becomes full of chunks of sequence tokens.")
                            (make-instance 'virtual-sequence-parser))
                           (t
                            (make-instance 'simple-sequence-parser))))))
-    (multiple-value-bind (current more)
-        (read-fasta-sequence stream alphabet parser)
       (defgenerator
-          :current current
-          :next (prog1
-                    current
-                  (multiple-value-setq (current more)
-                    (read-fasta-sequence stream alphabet parser)))
-          :more more))))
+          :next (read-fasta-sequence stream alphabet parser)
+          :more (has-sequence-p stream format))))
 
 (defmethod make-seq-output ((stream stream) (format (eql :fasta))
                             &key token-case)
@@ -59,7 +53,22 @@ becomes full of chunks of sequence tokens.")
                        :parser (make-instance 'raw-sequence-parser))
        #'write-fasta-sequence chunk-size pathname-gen))))
 
-(defmethod read-fasta-sequence ((stream line-input-stream)
+(defmethod has-sequence-p ((stream character-line-input-stream)
+                           (format (eql :fasta)) &key alphabet)
+  (declare (ignore alphabet))
+  (let ((seq-header (find-line stream #'content-string-p)))
+    (cond ((eql :eof seq-header)
+           nil)
+          ((char-fasta-header-p seq-header)
+           (push-line stream seq-header)
+           t)
+          (t
+           (push-line stream seq-header)
+           (error 'malformed-record-error
+                  :record seq-header
+                  :text "the stream does not contain Fasta data")))))
+
+(defmethod read-fasta-sequence ((stream character-line-input-stream)
                                 (alphabet symbol)
                                 (parser bio-sequence-parser))
   (restart-case
@@ -130,6 +139,11 @@ becomes full of chunks of sequence tokens.")
          do (write-line residues stream
                         :start i
                         :end (min len (+ i *fasta-line-width*)))))))
+
+(defmethod write-fasta-sequence (obj filespec &key token-case)
+  (with-open-file (stream filespec :direction :output
+                          :if-exists :supersede)
+    (write-fasta-sequence obj stream :token-case token-case)))
 
 (defun write-fasta-alist (alist stream)
   "Writes sequence data ALIST to STREAM in Fasta format. ALIST must

@@ -53,9 +53,7 @@
 (addtest (bio-sequence-io-tests) fasta/1
   (with-test-file (stream "data/simple-dna1.fasta")
     (let* ((seqi (make-seq-input stream :fasta :alphabet :dna))
-           (cur (current seqi))
            (seq (next seqi)))
-      (ensure (eql cur seq))
       (ensure (subtypep (type-of seq) 'dna-sequence))
       (ensure (eql (find-alphabet :dna) (alphabet-of seq)))
       (ensure (not (virtualp seq)))
@@ -65,9 +63,7 @@
 (addtest (bio-sequence-io-tests) fasta/2
   (with-test-file (stream "data/simple-dna1.fasta")
     (let* ((seqi (make-seq-input stream :fasta :alphabet :dna :virtual t))
-           (cur (current seqi))
            (seq (next seqi)))
-      (ensure (eql cur seq))
       (ensure (subtypep (type-of seq) 'dna-sequence))
       (ensure (eql (find-alphabet :dna) (alphabet-of seq)))
       (ensure (virtualp seq))
@@ -87,9 +83,7 @@
   (with-test-file (stream "data/simple-dna2.fasta")
     (let ((seqi (make-seq-input stream :fasta :alphabet :dna)))
       (dotimes (n 2)
-        (let ((cur (current seqi))
-              (seq (next seqi)))
-          (ensure (eql cur seq))
+        (let ((seq (next seqi)))
           (ensure (subtypep (type-of seq) 'dna-sequence))
           (ensure (eql (find-alphabet :dna) (alphabet-of seq)))
           (ensure (= 280 (length-of seq)))
@@ -100,9 +94,7 @@
   (with-test-file (stream "data/simple-dna2.fasta")
     (let ((seqi (make-seq-input stream :fasta :alphabet :dna :virtual t)))
       (dotimes (n 2)
-        (let ((cur (current seqi))
-              (seq (next seqi)))
-          (ensure (eql cur seq))
+        (let ((seq (next seqi)))
           (ensure (subtypep (type-of seq) 'dna-sequence))
           (ensure (eql (find-alphabet :dna) (alphabet-of seq)))
           (ensure (virtualp seq))
@@ -114,9 +106,7 @@
   (with-test-file (stream "data/iupac-dna2.fasta")
     (let ((seqi (make-seq-input stream :fasta :alphabet :dna)))
       (dotimes (n 2)
-        (let ((cur (current seqi))
-              (seq (next seqi)))
-          (ensure (eql cur seq))
+        (let ((seq (next seqi)))
           (ensure (subtypep (type-of seq) 'dna-sequence))
           (ensure (eql (find-alphabet :dna) (alphabet-of seq)))
           (ensure (= 280 (length-of seq)))
@@ -139,8 +129,8 @@
 (addtest (bio-sequence-io-tests) fasta/8
   (with-test-file (stream "data/phred.fastq") ; fastq!
     (ensure-condition malformed-record-error
-        (make-seq-input (make-line-input-stream stream) :fasta
-                        :alphabet :dna))))
+      (next (make-seq-input (make-line-input-stream stream) :fasta
+                            :alphabet :dna)))))
 
 (addtest (bio-sequence-io-tests) write-fasta-sequence/1
   (let ((seq (make-dna "acgtn" :identity "foo"))
@@ -162,10 +152,8 @@
 (addtest (bio-sequence-io-tests) fastq/1
   (with-test-file (stream "data/phred.fastq")
     (let ((seqi (make-seq-input stream :fastq :alphabet :dna)))
-      (do ((cur (current seqi) (current seqi))
-           (seq (next seqi) (next seqi)))
+      (do ((seq (next seqi) (next seqi)))
           ((null seq) t)
-        (ensure (eql cur seq))
         (ensure (subtypep (type-of seq) 'dna-quality-sequence))
         (ensure (eql (find-alphabet :dna) (alphabet-of seq)))
         (ensure (= 35 (length-of seq)))
@@ -176,10 +164,8 @@
     (let ((seqi (make-seq-input stream :fastq :alphabet :dna
                                               :parser (make-instance
                                                        'raw-sequence-parser))))
-      (do ((cur (current seqi) (current seqi))
-           (seq (next seqi) (next seqi)))
+      (do ((seq (next seqi) (next seqi)))
           ((null seq) t)
-        (ensure (eql cur seq))
         (ensure (eql :dna (assocdr :alphabet seq)))
         (ensure (= 35 (length (assocdr :residues seq))))
         (ensure (= 35 (length (assocdr :quality seq))))
@@ -189,8 +175,8 @@
 (addtest (bio-sequence-io-tests) fastq/3
   (with-test-file (stream "data/simple-dna1.fasta") ; fasta!
     (ensure-condition malformed-record-error
-      (make-seq-input (make-line-input-stream stream) :fastq
-                      :alphabet :dna :metric :phred))))
+      (next (make-seq-input (make-line-input-stream stream) :fastq
+                                  :alphabet :dna :metric :phred)))))
 
 (addtest (bio-sequence-io-tests) write-fastq-sequence/1
   (let ((seq (make-dna-quality "acgtn" "<<<<<"

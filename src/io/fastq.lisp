@@ -19,21 +19,15 @@
 
 (in-package :bio-sequence)
 
-(defmethod make-seq-input ((stream line-input-stream)
+(defmethod make-seq-input ((stream character-line-input-stream)
                            (format (eql :fastq))
                            &key (alphabet :dna) (metric :phred) parser)
   (let ((parser (or parser
                     (make-instance 'quality-sequence-parser
                                    :metric metric))))
-     (multiple-value-bind (current more)
-         (read-fastq-sequence stream alphabet parser)
-       (defgenerator
-           :current current
-           :next (prog1
-                     current
-                   (multiple-value-setq (current more)
-                     (read-fastq-sequence stream alphabet parser)))
-           :more more))))
+    (defgenerator
+        :next (read-fastq-sequence stream alphabet parser)
+        :more (has-sequence-p stream format))))
 
 (defmethod make-seq-output ((stream stream) (format (eql :fastq))
                             &key token-case)
@@ -48,6 +42,21 @@
        (make-seq-input stream :fastq
                        :parser (make-instance 'raw-sequence-parser))
        #'write-fastq-sequence chunk-size pathname-gen))))
+
+(defmethod has-sequence-p ((stream character-line-input-stream)
+                           (format (eql :fastq)) &key alphabet)
+  (declare (ignore alphabet))
+  (let ((seq-header (find-line stream #'content-string-p)))
+    (cond ((eql :eof seq-header)
+           nil)
+          ((char-fastq-header-p seq-header)
+           (push-line stream seq-header)
+           t)
+          (t
+           (push-line stream seq-header)
+           (error 'malformed-record-error
+                  :record seq-header
+                  :text "the stream does not contain Fastq data")))))
 
 (defmethod read-fastq-sequence ((stream character-line-input-stream)
                                 (alphabet symbol)
