@@ -56,7 +56,7 @@
   (with-accessors ((vector vector-of))
       seq
     (let ((end (or end (length vector)))
-          (stream (crypto:make-digesting-stream digest)))
+          (stream (ironclad:make-digesting-stream digest)))
       (loop
          for i of-type fixnum from start below end
          do (stream-write-byte stream (char-code
@@ -71,7 +71,7 @@
     (let ((end (or end length))
           (ptr (dxn:mmap-area-ptr area)))
       (if (dxn:mmap-area-live-p area) ; Only access residues if mapped
-          (let ((stream (crypto:make-digesting-stream digest)))
+          (let ((stream (ironclad:make-digesting-stream digest)))
             (loop
                for i of-type fixnum from start below end
                do (stream-write-byte

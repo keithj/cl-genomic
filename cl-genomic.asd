@@ -35,14 +35,14 @@
     :author "Keith James"
     :licence "GPL v3"
     :depends-on ((:version :cffi "0.10.3")
-                 (:version :cl-ppcre "2.0.1")
+                 (:version :cl-ppcre "2.0.0")
                  (:version :cl-base64 "3.1") ; Actually 3.3.1, but
                                              ; cl-base64's ASDF file
                                              ; is out of sync with its
                                              ; professed version
                  (:version :ironclad "0.27")
-                 (:version :deoxybyte-io "0.5.0")
-                 (:version :deoxybyte-unix "0.6.1")
+                 (:version :deoxybyte-io "0.5.3")
+                 (:version :deoxybyte-unix "0.6.3")
                  (:version :deoxybyte-utilities "0.5.4")
                  :puri)
     :in-order-to ((test-op (load-op :cl-genomic :cl-genomic-test)))
