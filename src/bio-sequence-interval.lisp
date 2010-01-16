@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (C) 2008-2009 Keith James. All rights reserved.
+;;; Copyright (C) 2008-2010 Keith James. All rights reserved.
 ;;;
 ;;; This file is part of cl-genomic.
 ;;;
@@ -193,19 +193,22 @@ bioinformatics use cases. See also {defun overlapsp} ."))
 
 ;;; Printing methods
 (defmethod print-object ((interval interval) stream)
-  (with-accessors ((lower lower-of) (upper upper-of))
-      interval
-    (format stream "#<INTERVAL ~a ~a>" lower upper)))
+  (print-unreadable-object (interval stream :type t :identity t)
+    (with-accessors ((lower lower-of) (upper upper-of))
+        interval
+      (format stream "~a ~a" lower upper))))
 
 (defmethod print-object ((interval na-sequence-interval) stream)
-  (with-accessors ((lower lower-of) (upper upper-of) (strand strand-of))
-      interval
-    (format stream "#<NA-SEQUENCE-INTERVAL ~a ~a ~a>" lower upper strand)))
+  (print-unreadable-object (interval stream :type t :identity t)
+    (with-accessors ((lower lower-of) (upper upper-of) (strand strand-of))
+        interval
+      (format stream "~a ~a ~a" lower upper strand))))
 
 (defmethod print-object ((interval aa-sequence-interval) stream)
-  (with-accessors ((lower lower-of) (upper upper-of))
-      interval
-    (format stream "#<AA-SEQUENCE-INTERVAL ~a ~a>" lower upper)))
+  (print-unreadable-object (interval stream :type t :identity t)
+    (with-accessors ((lower lower-of) (upper upper-of))
+        interval
+      (format stream "~a ~a" lower upper))))
 
 (defmethod make-interval ((reference na-sequence) &rest initargs)
   (apply #'make-instance 'na-sequence-interval :reference reference initargs))
@@ -490,31 +493,12 @@ bioinformatics use cases. See also {defun overlapsp} ."))
 (defun %check-interval-range (lower upper reference)
   "Validates interval bounds LOWER and UPPER against REFERENCE to
 ensure that the interval lies within the bounds of the reference."
-  (cond (reference
-         (let ((length (length-of reference)))
-           (cond ((or (< lower 0) (> lower length))
-                  (error 'invalid-argument-error
-                         :params '(lower length)
-                         :args (list lower length)
-                         :text "lower must be >0 and <= length"))
-                 ((or (< upper 0) (> upper length))
-                  (error 'invalid-argument-error
-                         :params '(upper length)
-                         :args (list upper length)
-                         :text "upper must be >0 and <= length"))
-                 ((< upper lower)
-                  (error 'invalid-argument-error
-                         :params '(lower upper)
-                         :args (list lower upper)
-                         :text "lower must be <= upper"))
-                 (t t))))
-          (t
-           (cond ((< upper lower)
-                  (error 'invalid-argument-error
-                         :params '(lower upper)
-                         :args (list lower upper)
-                         :text "lower must be <= upper"))
-                 (t t)))))
+  (if reference
+      (let ((length (length-of reference)))
+        (check-arguments (<= 0 lower upper length) (lower upper)
+                         "must satisfy (<= 0 lower upper ~d)" length)))
+  (check-arguments (<= lower upper) (lower upper)
+                   "must satisty (<= lower upper"))
 
 (declaim (inline %check-interval-strands))
 (defun %check-interval-strands (strand num-strands reference)
@@ -524,17 +508,12 @@ and a reverse-strand interval is not applied to a single-stranded
 reference."
   (if reference
       (let ((num-ref-strands (num-strands-of reference)))
-        (cond ((and (= 1 num-ref-strands) (= 2 num-strands))
-               (error 'invalid-argument-error
-                      :params 'reference
-                      :args reference
-                      :text (txt "a double-stranded interval may not be"
-                                 "applied to a single-stranded sequence")))
-              ((and (= 1 num-ref-strands) (eql *reverse-strand* strand))
-                 (error 'invalid-argument-error
-                        :params 'reference
-                        :args reference
-                        :text (txt "a reverse-strand interval may not be"
-                                   "applied to a single-stranded sequence")))
-              (t t))))
-  t)
+        (check-arguments (not (> num-strands num-ref-strands))
+                         (num-strands reference)
+                         (txt "a double-stranded interval may not be"
+                              "applied to a single-stranded sequence"))
+        (check-arguments (not (and (= 1 num-ref-strands)
+                                   (eql *reverse-strand* strand)))
+                         (num-strands reference)
+                         (txt "a reverse-strand interval may not be"
+                                   "applied to a single-stranded sequence")))))

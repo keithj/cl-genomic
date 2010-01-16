@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (C) 2007-2009 Keith James. All rights reserved.
+;;; Copyright (C) 2007-2010 Keith James. All rights reserved.
 ;;;
 ;;; This file is part of cl-genomic.
 ;;;
@@ -41,9 +41,9 @@
                                              ; is out of sync with its
                                              ; professed version
                  (:version :ironclad "0.27")
-                 (:version :deoxybyte-io "0.5.3")
+                 (:version :deoxybyte-io "0.5.6")
                  (:version :deoxybyte-unix "0.6.3")
-                 (:version :deoxybyte-utilities "0.5.4")
+                 (:version :deoxybyte-utilities "0.5.6")
                  :puri)
     :in-order-to ((test-op (load-op :cl-genomic :cl-genomic-test)))
     :components ((:module :core
@@ -64,6 +64,11 @@
                             :depends-on ("package"
                                          "bio-alphabets"
                                          "bio-sequence-encoding"))
+                           (:file "checksum"
+                            :depends-on ("package"
+                                         "bio-alphabets"
+                                         "bio-sequence-encoding"
+                                         "bio-sequence-classes"))
                            (:file "bio-sequence-interval"
                             :depends-on ("package"
                                          "generics"

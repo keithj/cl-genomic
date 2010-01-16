@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (C) 2007-2009 Keith James. All rights reserved.
+;;; Copyright (C) 2007-2010 Keith James. All rights reserved.
 ;;;
 ;;; This file is part of cl-genomic.
 ;;;
@@ -302,30 +302,35 @@ number of strands, or NIL otherwise."
 
 ;;; Printing methods
 (defmethod print-object ((alphabet alphabet) stream)
-  (format stream "#<ALPHABET ~a>" (slot-value alphabet 'name)))
+  (print-unreadable-object (alphabet stream :type t :identity t)
+    (princ (slot-value alphabet 'name) stream)))
 
 (defmethod print-object ((strand sequence-strand) stream)
-  (with-accessors ((name name-of) (token token-of) (number number-of))
-      strand
-    (format stream "#<SEQUENCE-STRAND ~a/~a/~a>" name token number)))
+  (print-unreadable-object (strand stream :type t :identity t)
+    (with-accessors ((name name-of) (token token-of) (number number-of))
+        strand
+      (format stream "~a/~a/~a" name token number))))
 
 (defmethod print-object ((seq dna-sequence) stream)
-  (%print-seq "DNA-SEQUENCE" seq stream))
+  (%print-seq seq stream))
+
+(defmethod print-object ((seq dna-sequence) stream)
+  (%print-seq seq stream))
 
 (defmethod print-object ((seq rna-sequence) stream)
-  (%print-seq "RNA-SEQUENCE" seq stream))
+  (%print-seq seq stream))
 
 (defmethod print-object ((seq dna-quality-sequence) stream)
-  (%print-quality-seq "DNA-QUALITY-SEQUENCE" seq stream))
+  (%print-quality-seq seq stream))
 
 (defmethod print-object ((seq aa-sequence) stream)
-  (%print-seq "AA-SEQUENCE" seq stream))
+  (%print-seq seq stream))
 
 (defmethod print-object ((seq mapped-dna-sequence) stream)
   (if (dxn:in-memory-p seq)
-      (%print-seq "MAPPED-DNA-SEQUENCE" seq stream)
-    (format stream "#<MAPPED-DNA-SEQUENCE length ~d UNMAPPED>"
-            (length-of seq))))
+      (%print-seq seq stream)
+    (print-unreadable-object (seq stream :type t :identity t)
+      (format stream "length ~d UNMAPPED" (length-of seq)))))
 
 ;;; Implementation methods
 (defmethod anonymousp ((seq identity-mixin))
@@ -963,24 +968,25 @@ number of strands, or NIL otherwise."
   (translate-encoded-4bit seq code start end initiator-codon))
 
 ;;; Utility functions
-(defun %print-seq (name seq stream)
+(defun %print-seq (seq stream)
   "Helper function for printing bio-sequence objects."
-  (let ((len (length-of seq)))
-    (if (<= len *sequence-print-limit*)
-        (format stream "#<~a ~s>" name (coerce-sequence seq 'string))
-      (format stream "#<~a length ~d>" name len))))
-
-(defun %print-quality-seq (name seq stream)
-  "Helper function for printing bio-sequence objects."
-  (with-accessors ((quality quality-of) (metric metric-of))
-      seq
+  (print-unreadable-object (seq stream :type t :identity t)
     (let ((len (length-of seq)))
       (if (<= len *sequence-print-limit*)
-          (format stream "#<~a ~s ~a quality \"~a\">"
-                  name (coerce-sequence seq 'string) metric
-                  (quality-string quality metric))
-        (format stream "#<~a ~a quality, length ~d>"
-                name metric len)))))
+          (format stream "~s" (coerce-sequence seq 'string))
+        (format stream "length ~d" len)))))
+
+(defun %print-quality-seq (seq stream)
+  "Helper function for printing bio-sequence objects."
+  (print-unreadable-object (seq stream :type t :identity t)
+    (with-accessors ((quality quality-of) (metric metric-of))
+        seq
+      (let ((len (length-of seq)))
+        (if (<= len *sequence-print-limit*)
+            (format stream "~s ~a quality \"~a\""
+                    (coerce-sequence seq 'string) metric
+                    (quality-string quality metric))
+          (format stream "~a quality, length ~d" metric len))))))
 
 (defun quality-string (quality metric)
   "Wrapper for ENCODE-QUALITY that encodes QUALITY, an array of bytes
@@ -997,11 +1003,8 @@ scores, as a string using function ENCODER."
   (declare (optimize (speed 3)))
   (declare (type (simple-array quality-score (*)) quality)
            (type function encoder))
-  (let ((quality-str (make-string (length quality)
-                                  :element-type 'base-char)))
-    (copy-array quality 0 (1- (length quality))
-                quality-str 0 encoder)
-    quality-str))
+  (map-into (make-string (length quality) :element-type 'base-char)
+            encoder quality))
 
 (defun decode-quality (quality decoder)
   "Decodes the QUALITY, a string, as into a new array using function
@@ -1009,24 +1012,18 @@ DECODER."
   (declare (optimize (speed 3)))
   (declare (type simple-string quality)
            (type function decoder))
-  (let ((quality-seq (make-array (length quality)
-                                 :element-type 'quality-score)))
-    (copy-array quality 0 (1- (length quality))
-                quality-seq 0 decoder)
-    quality-seq))
+  (map-into (make-array (length quality) :element-type 'quality-score)
+            decoder quality))
 
 (defun ensure-encoded (vector encoder element-type)
   "If VECTOR is a string, returns an encoded token vector of element
 type (unsigned-byte 4) of the same length, otherwise returns
 VECTOR. ENCODER is the encoding function used to convert characters to
-(unsigned-byte 4)."
+\(unsigned-byte 4\)."
   (if (stringp vector)
-      (let ((encoded (make-array (length vector)
-                                 :element-type element-type)))
-        (when (< 0 (length vector))
-          (copy-array vector 0 (1- (length encoded))
-                      encoded 0 encoder))
-        encoded)
+      (when (plusp (length vector))
+        (map-into (make-array (length vector) :element-type element-type)
+                  encoder vector))
     vector))
 
 (defun ensure-decoded-quality (quality metric)
@@ -1046,25 +1043,19 @@ when decoding."
   (let* ((length (length tokens))
          (end (or end length)))
     (%check-token-range (length tokens) start end)
-    (let ((sub-seq (make-array (- end start)
-                               :element-type
-                               (array-element-type tokens))))
-      (copy-array tokens start (1- end)
-                  sub-seq 0)
-      sub-seq)))
+    (replace (make-array (- end start)
+                         :element-type (array-element-type tokens))
+             tokens :start2 start :end2 end)))
 
 (defun complement-tokens (tokens comp-fn &optional (start 0) end)
   "Returns a complemented copy of TOKENS populated with elements
 from TOKENS that have been transformed by COMP-FN, starting at the
 first element, or index START, and continuing to the last residue, or
 index END."
-  (let* ((end (or end (length tokens)))
-         (comp-seq (make-array (- end start)
-                               :element-type
-                               (array-element-type tokens))))
-    (copy-array tokens start (1- end)
-                comp-seq 0 comp-fn)
-    comp-seq))
+  (let ((end (or end (length tokens))))
+    (map-into (make-array (- end start)
+                          :element-type (array-element-type tokens))
+              comp-fn tokens)))
 
 (defun %to-string-virtual (seq char start end token-case)
   (with-accessors ((length length-of))
@@ -1081,12 +1072,10 @@ index END."
   (with-accessors ((length length-of) (vector vector-of))
       seq
     (let ((end (or end length)))
-      (let ((str (make-string (- end start) :element-type 'base-char))
-            (seq-end (1- end))
-            (str-start 0))
+      (let ((str (make-string (- end start) :element-type 'base-char)))
         (when (< 0 (length str))
-          (copy-array vector start seq-end
-                      str str-start decoder))
+          (copy-array vector start (1- end)
+                      str 0 decoder))
         (ecase token-case
           ((nil) str)
           (:lower str)
@@ -1096,23 +1085,9 @@ index END."
 (defun %check-token-range (length start &optional end)
   (declare (optimize (speed 3)))
   (let ((end (or end length)))
-    (declare (type fixnum length start end))
-    (cond ((or (< start 0) (> start length))
-           (error 'invalid-argument-error
-                  :params 'start
-                  :args start
-                  :text "start must be >=0 and <= sequence length"))
-          ((or (< end 0) (> end length))
-           (error 'invalid-argument-error
-                  :params 'end
-                  :args end
-                  :text "end must be >=0 and <= sequence length"))
-          ((< end start)
-           (error 'invalid-argument-error
-                  :params '(start end)
-                  :args (list start end)
-                  :text "end must be >= start"))
-          (t t))))
+    (declare (type vector-index length start end))
+    (check-arguments (<= 0 start end length) (start end)
+                     "must satisfy (<= 0 start end ~d)" length)))
 
 (declaim (inline %aref-dna-4bit))
 (defun %aref-dna-4bit (vector i)

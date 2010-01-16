@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (C) 2007-2009 Keith James. All rights reserved.
+;;; Copyright (C) 2007-2010 Keith James. All rights reserved.
 ;;;
 ;;; This file is part of cl-genomic.
 ;;;
@@ -81,7 +81,7 @@ description to an object."))
 measured by the quality values. For example, p-value, Phred score or
 Illumina score. This should be changed to a controlled vocabulary or
 enumeration.")
-   (quality :initform (error "A quality argument is required.")
+   (quality :initform (error "Quality values are required.")
             :initarg :quality
             :accessor quality-of
             :documentation "The array of quality values which should

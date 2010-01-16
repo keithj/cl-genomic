@@ -20,7 +20,8 @@
 (in-package :cl-genomic-system)
 
 (defsystem cl-genomic-test
-    :depends-on (:cl-genomic :lift)
+    :depends-on (:cl-genomic
+                 (:version :lift "1.7.0"))
     :components ((:module :cl-genomic-test
                           :pathname "src/test/"
                           :components
