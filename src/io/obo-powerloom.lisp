@@ -77,7 +77,7 @@ Returns:
               (sec min hour date month year)
             (get-decoded-time)
           (write-line (format nil tmpl year month date
-                              hour min sec (parse-file obo-filespec)) plm))
+                              hour min sec (file-pathname obo-filespec)) plm))
         (write-powerloom-module module parent-module :stream plm)
         (write-powerloom-deffunction base-concept 'name 'string plm)
         (write-powerloom-relations (typedefs-of parser) :stream plm)
