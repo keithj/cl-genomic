@@ -56,11 +56,8 @@ Arguments:
              *unknown-strand*)
             (t
              (when strict
-               (error 'invalid-argument-error
-                      :params 'strand
-                      :args strand
-                      :text (format nil "not a valid ~a strand designator"
-                                    ',type))))))))
+               (check-arguments nil (strand)
+                                "not a valid ~a strand designator" ',type)))))))
 
 (defmacro with-sequence-residues ((var seq &key start end) &body body)
   "Executes BODY in the context of bio-sequence SEQ such that VAR is
@@ -170,11 +167,8 @@ Key:
 Returns:
 
 - A DNA sequence object."
-  (unless (= (length residues) (length quality))
-    (error 'invalid-argument-error
-           :params '(residues quality)
-           :args (list residues quality)
-           :text "the residues and quality vectors were not the same length"))
+  (check-arguments (= (length residues) (length quality)) (residues quality)
+                   "the residues and quality vectors were not the same length")
   (let ((initargs (remove-key-values '(:metric) initargs)))
     (apply #'make-instance 'dna-quality-sequence
            :vector (ensure-encoded residues #'encode-dna-4bit
@@ -206,11 +200,7 @@ Returns:
                              initargs)))
 
 (defun make-encoded-vector-seq (class residues encoder element-type initargs)
-  (unless (vectorp residues)
-    (error 'invalid-argument-error
-           :params 'residues
-           :args residues
-           :text "expected a vector"))
+  (check-arguments (vectorp residues) (residues) "expected a vector")
   (apply #'make-instance class
          :vector (ensure-encoded residues encoder element-type) initargs))
 
@@ -264,49 +254,40 @@ number of strands, or NIL otherwise."
        always (= num-strands (num-strands-of seq)))))
 
 (defun concat-sequence (&rest seqs)
-  (if (apply #'same-biotype-p seqs)
-      (let ((construct
-             (cond ((dna-sequence-p (first seqs))
-                    #'make-dna)
-                   ((rna-sequence-p (first seqs))
-                    #'make-rna)
-                   ((aa-sequence-p (first seqs))
-                    #'make-aa)
-                   (t
-                    (error 'invalid-argument-error
-                           :params 'seqs
-                           :args seqs
-                           :text (txt "expected all sequences to be"
-                                      "one of DNA, RNA or AA"))))))
-        ;; We use coerce-sequence to avoid a special case for virtual
-        ;; sequences. We can't simply concatenate the encoded residue
-        ;; vectors because virtual sequences do not have them
-        (funcall construct (apply #'concatenate 'string
-                                  (mapcar (lambda (s)
-                                            (coerce-sequence s 'string))
-                                          seqs))))
-    (error 'invalid-argument-error
-           :params 'seqs
-           :args seqs
-           :text "expected all sequences to be one of DNA, RNA or AA")))
+  (check-arguments (apply #'same-biotype-p seqs) (seqs)
+                   "expected all sequences to be one of DNA, RNA or AA")
+  (let ((construct (cond ((dna-sequence-p (first seqs))
+                          #'make-dna)
+                         ((rna-sequence-p (first seqs))
+                          #'make-rna)
+                         ((aa-sequence-p (first seqs))
+                          #'make-aa)
+                         (t
+                          (check-arguments nil (seqs)
+                                           (txt "expected all sequences to be"
+                                                "one of DNA, RNA or AA"))))))
+    ;; We use coerce-sequence to avoid a special case for virtual
+    ;; sequences. We can't simply concatenate the encoded residue
+    ;; vectors because virtual sequences do not have them
+    (funcall construct (apply #'concatenate 'string
+                              (mapcar (lambda (s)
+                                        (coerce-sequence s 'string))
+                                      seqs)))))
 
 ;;; Initialization methods
 (defmethod initialize-instance :after ((seq na-sequence) &key)
   (with-accessors ((num-strands num-strands-of))
       seq
-    (unless (< 0 num-strands 3)
-      (error 'invalid-argument-error
-             :params 'num-strands
-             :args num-strands
-             :text "nucleic acid sequences may have 1 or 2 strands"))))
+    (check-arguments (< 0 num-strands 3) (num-strands)
+                     "nucleic acid sequences may have 1 or 2 strands")))
 
 ;;; Printing methods
 (defmethod print-object ((alphabet alphabet) stream)
-  (print-unreadable-object (alphabet stream :type t :identity t)
+  (print-unreadable-object (alphabet stream :type t)
     (princ (slot-value alphabet 'name) stream)))
 
 (defmethod print-object ((strand sequence-strand) stream)
-  (print-unreadable-object (strand stream :type t :identity t)
+  (print-unreadable-object (strand stream :type t)
     (with-accessors ((name name-of) (token token-of) (number number-of))
         strand
       (format stream "~a/~a/~a" name token number))))
@@ -456,11 +437,8 @@ number of strands, or NIL otherwise."
     (= 2 num-strands)))
 
 (defmethod (setf num-strands-of) :before (value (seq na-sequence))
-  (unless (< 0 value 3)
-    (error 'invalid-argument-error
-           :params 'value
-           :args value
-           :text "nucleic acid sequences may have 1 or 2 strands")))
+  (check-arguments (< 0 num-strands 3) (num-strands)
+                   "nucleic acid sequences may have 1 or 2 strands"))
 
 (defmethod num-strands-of ((seq aa-sequence))
   (error 'bio-sequence-op-error

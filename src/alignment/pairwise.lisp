@@ -300,6 +300,8 @@ Returns:
            (type single-float gap-open gap-extend)
            (type (encoded-residues 4) vecm vecn)
            (type fixnum band-centre band-width))
+  (check-arguments (oddp band-width) (band-width)
+                   "band-width must be an odd number")
   (let* ((m (length vecm))
          (n (length vecn))
          (mdim (max m n))
@@ -307,11 +309,6 @@ Returns:
                             (1+ mdim))
                            ((and (zerop band-width) (oddp mdim))
                             mdim)
-                           ((evenp band-width)
-                            (error 'invalid-argument-error
-                                   :params 'band-width
-                                   :args band-width
-                                   :text "band-width must be an odd number"))
                            (t
                             band-width))))
     (let ((half-width (ceiling (1- band-width) 2)))
@@ -378,6 +375,8 @@ Returns:
            (type single-float gap-open gap-extend)
            (type (encoded-residues 7) vecm vecn)
            (type fixnum band-centre band-width))
+  (check-arguments (oddp band-width) (band-width)
+                   "band-width must be an odd number")
   (let* ((m (length vecm))
          (n (length vecn))
          (mdim (max m n))
@@ -385,11 +384,6 @@ Returns:
                             (1+ mdim))
                            ((and (zerop band-width) (oddp mdim))
                             mdim)
-                           ((evenp band-width)
-                            (error 'invalid-argument-error
-                                   :params 'band-width
-                                   :args band-width
-                                   :text "band-width must be an odd number"))
                            (t
                             band-width))))
     (let ((half-width (ceiling (1- band-width) 2)))

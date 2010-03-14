@@ -51,36 +51,36 @@ gaps."))
                    (aligned aligned-of))
       interval
     (when reference
-      (unless (= (- (length-of interval)
-                    (num-gaps-of reference :start lower :end upper))
-                 (- (length-of aligned)
-                    (num-gaps-of aligned)))
-        (error 'invalid-argument-error
-               :params '(reference lower upper aligned)
-               :args (list reference lower upper aligned)
-               :text "the reference subsequence and aligned sequence were different lengths, excluding gaps")))))
+      (check-arguments (= (- (length-of interval)
+                             (num-gaps-of reference :start lower :end upper))
+                          (- (length-of aligned)
+                             (num-gaps-of aligned)))
+                       (reference lower upper aligned)
+                       (txt "the reference subsequence and aligned sequence"
+                            "were different lengths, excluding gaps")))))
 
 ;;; Printing methods
 (defmethod print-object ((interval na-alignment-interval) stream)
-  (with-accessors ((lower lower-of) (upper upper-of) (strand strand-of))
-      interval
-    (format stream "#<NA-ALIGNMENT-INTERVAL ~a ~a ~a" lower upper strand)))
+  (print-unreadable-object (interval stream :type t)
+    (with-accessors ((lower lower-of) (upper upper-of) (strand strand-of))
+        interval
+      (format stream "~a ~a ~a" lower upper strand))))
 
 (defmethod print-object ((interval aa-alignment-interval) stream)
-  (with-accessors ((lower lower-of) (upper upper-of))
-      interval
-    (format stream "#<AA-ALIGNMENT-INTERVAL ~a ~a " lower upper)))
+  (print-unreadable-object (interval stream :type t)
+    (with-accessors ((lower lower-of) (upper upper-of))
+        interval
+      (format stream "~a ~a " lower upper))))
 
 (defmethod print-object ((alignment alignment) stream)
-  (with-accessors ((intervals intervals-of))
-      alignment
-    (write-line "#<ALIGNMENT" stream)
-    (dolist (interval intervals)
-      (with-accessors ((lower lower-of) (upper upper-of) (aligned aligned-of))
-          interval
-        (format stream "~7d ~a ~7a~%" lower (coerce-sequence aligned 'string)
-                upper)))
-    (write-line ">" stream)))
+  (print-unreadable-object (alignment stream :type t)
+    (with-accessors ((intervals intervals-of))
+        alignment
+      (dolist (interval intervals)
+        (with-accessors ((lower lower-of) (upper upper-of) (aligned aligned-of))
+            interval
+          (format stream "~7d ~a ~7a~%" lower (coerce-sequence aligned 'string)
+                  upper))))))
 
 ;;; Implementation methods
 (defmethod aligned-length-of ((aligned aligned-mixin))
