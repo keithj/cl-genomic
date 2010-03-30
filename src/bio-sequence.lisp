@@ -145,7 +145,7 @@ Returns:
                              initargs)))
 
 (defun make-dna-quality (residues quality &rest initargs
-                         &key (metric :phred) &allow-other-keys)
+                         &key (metric :sanger) &allow-other-keys)
   "Returns a new DNA sequence object with quality.
 
 Arguments:
@@ -162,7 +162,7 @@ Rest:
 Key:
 
 - metric (symbol): A symbol indicating the quality metric used in
-  QUALITY. Either :phred or :illumina.
+  QUALITY. Either :sanger , :solexa or :illumina.
 
 Returns:
 
@@ -437,7 +437,7 @@ number of strands, or NIL otherwise."
     (= 2 num-strands)))
 
 (defmethod (setf num-strands-of) :before (value (seq na-sequence))
-  (check-arguments (< 0 num-strands 3) (num-strands)
+  (check-arguments (< 0 value 3) (value)
                    "nucleic acid sequences may have 1 or 2 strands"))
 
 (defmethod num-strands-of ((seq aa-sequence))
@@ -969,9 +969,11 @@ number of strands, or NIL otherwise."
 (defun quality-string (quality metric)
   "Wrapper for ENCODE-QUALITY that encodes QUALITY, an array of bytes
 representing base quality scores, as a string using an encoder
-appropriate for METRIC, a quality metric ( :PHRED or :ILLUMINA )."
+appropriate for METRIC, a quality metric ( :SANGER , :SOLEXA
+or :ILLUMINA )."
   (let ((encoder (ecase metric
-                   (:phred #'encode-phred-quality)
+                   (:sanger #'encode-phred-quality)
+                   (:solexa #'encode-solexa-quality)
                    (:illumina #'encode-illumina-quality))))
     (encode-quality quality encoder)))
 
@@ -1007,11 +1009,12 @@ VECTOR. ENCODER is the encoding function used to convert characters to
 (defun ensure-decoded-quality (quality metric)
   "If QUALITY is a string, returns a decoded quality vector of
 integers of the same length, otherwise returns QUALITY. METRIC is
-either :PHRED or :ILLUMINA, denoting the quality metric to be used
-when decoding."
+either :SANGER, :SOLEXA or :ILLUMINA , denoting the quality metric to
+be used when decoding."
   (if (stringp quality)
       (let ((decoder (ecase metric
-                       (:phred #'decode-phred-quality)
+                       (:sanger #'decode-phred-quality)
+                       (:solexa #'decode-solexa-quality)
                        (:illumina #'decode-illumina-quality))))
         (decode-quality quality decoder))
     quality))

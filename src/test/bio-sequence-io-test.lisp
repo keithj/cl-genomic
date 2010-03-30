@@ -21,7 +21,7 @@
 
 (defun count-seq-records (filespec format)
   (with-ascii-li-stream (stream filespec)
-    (let ((seqi (make-seq-input stream format :alphabet :dna :metric :phred)))
+    (let ((seqi (make-seq-input stream format :alphabet :dna :metric :sanger)))
       (loop
          as seq = (next seqi)
          count seq into total
@@ -176,12 +176,12 @@
   (with-test-file (stream "data/simple-dna1.fasta") ; fasta!
     (ensure-condition malformed-record-error
       (next (make-seq-input (make-line-input-stream stream) :fastq
-                                  :alphabet :dna :metric :phred)))))
+                                  :alphabet :dna :metric :sanger)))))
 
 (addtest (bio-sequence-io-tests) write-fastq-sequence/1
   (let ((seq (make-dna-quality "acgtn" "<<<<<"
                                :identity "foo"
-                               :metric :phred))
+                               :metric :sanger))
         (tmp-filespec (make-tmp-pathname :tmpdir (merge-pathnames "data")
                                          :type "fq")))
     (dolist (args '((nil "acgtn")
@@ -236,7 +236,7 @@
     (with-ascii-li-stream (fqs in-filespec)
       (with-ascii-li-stream (fas out-filespec)
         (let ((fq-seqi (make-seq-input fqs :fastq :alphabet :dna
-                                                  :metric :phred))
+                                                  :metric :sanger))
               (fa-seqi (make-seq-input fas :fasta :alphabet :dna)))
           (ensure (loop
                      as fq = (next fq-seqi)

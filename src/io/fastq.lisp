@@ -21,7 +21,7 @@
 
 (defmethod make-seq-input ((stream character-line-input-stream)
                            (format (eql :fastq))
-                           &key (alphabet :dna) (metric :phred) parser)
+                           &key (alphabet :dna) (metric :sanger) parser)
   (let ((parser (or parser
                     (make-instance 'quality-sequence-parser
                                    :metric metric))))

@@ -546,14 +546,14 @@ score."
 
 (defun encode-phred-quality (q)
   "Returns the character encoding of the Phred quality score Q."
-  (code-char (+ 33 (min 93 q))))
+  (code-char (min 126 (+ 33 q))))
 
 (defun decode-phred-quality (c)
   "Returns the Phred quality score encoded by the character C."
   (- (char-code c) 33))
 
-(defun illumina-quality (p)
-  "Returns the Illumina score of a base where P is the error
+(defun solexa-quality (p)
+  "Returns the Solexa score of a base where P is the error
 probability."
   (let ((denom (- 1 p)))
     (if (zerop denom)
@@ -561,16 +561,25 @@ probability."
       (round (* -10 (/ (log (/ p denom))
                        (log 10)))))))
 
-(defun encode-illumina-quality (q)
-  "Returns a character encoding of the Illumina quality score Q."
+(defun encode-solexa-quality (q)
+  "Returns a character encoding of the Solexa quality score Q."
   (code-char (+ 64 q)))
 
-(defun decode-illumina-quality (c)
-  "Returns the Illumina quality score encoded by the character C."
+(defun decode-solexa-quality (c)
+  "Returns the Solexa quality score encoded by the character C."
   (- (char-code c) 64))
 
-(defun illumina-to-phred-quality (q)
-  "Returns the Phred quality score corresponding to the Illumina
+(defun solexa-to-phred-quality (q)
+  "Returns the Phred quality score corresponding to the Solexa
 quality score Q."
   (* 10 (/ (log (1+ (expt 10 (/ q 10))))
            (log 10))))
+
+(defun encode-illumina-quality (q)
+  "Returns a character encoding of the Illumina 1.3+ quality score Q."
+  (code-char (min 126 (+ 64 q))))
+
+(defun decode-illumina-quality (c)
+  "Returns the Illumina 1.3+ quality score encoded by the character
+  C."
+  (- (char-code c) 64))

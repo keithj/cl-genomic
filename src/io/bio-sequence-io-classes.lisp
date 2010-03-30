@@ -29,8 +29,13 @@ no-ops, ignoring any data and returning NIL."))
   ((metric :initform nil
            :initarg :metric
            :accessor parsed-metric-of
-           :documentation "The quality metric, e.g. :phred, :illumina,
-parsed from the input stream."))
+           :documentation "The quality metric, e.g. :sanger ,
+:illumina , parsed from the input stream. The metric is used to
+determine the quality decoding function. The Fastq file format was
+finally codified in Nucleic Acids Research, 2009, 1-5
+doi:10.1093/nar/gkp1137. The variants described therein as
+fastq-sanger, fastq-solexa and fastq-illumina are adopted here as
+quality metrics :sanger , :solexa and :illumina respectively."))
   (:documentation "A parser specialised for processing biological
 sequence data with additional residue quality information."))
 

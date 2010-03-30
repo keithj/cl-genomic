@@ -150,11 +150,11 @@
   (let ((seqs (list (make-dna-quality ; unambiguous
                      "agaatattctgaccccagttactttcaaga"
                      "<<<<<<<<<<<<<<<<<<<<<735513;3<"
-                     :metric :phred)
+                     :metric :sanger)
                     (make-dna-quality ; ambiguous
                      "ntgccaaaaaatagaaaagtcancgatatt"
                      "<<<<<<<<<<<<<<<<<8<<<<<<5<3.5:"
-                     :metric :phred)))
+                     :metric :sanger)))
         (class-names (list 'dna-quality-sequence
                            'dna-quality-sequence)))
     (mapcar (lambda (seq class-name)
@@ -164,7 +164,7 @@
     (make-dna-quality
      "agaatattctgaccccagttactttcaaga"
      "<<<<<<<"
-     :metric :phred))
+     :metric :sanger))
   (ensure-error
     (make-dna-quality
      "agaatattctgaccccagttactttcaaga"
@@ -505,7 +505,7 @@
 (addtest (bio-sequence-tests) dna-quality-sequence/3
   (let* ((residues "agaatattctgaccccagttactttcaaga")
          (quality "<<<<<<<<<<<<<<<<<<<<<735513;3<")
-         (seq (make-dna-quality residues quality :metric :phred))
+         (seq (make-dna-quality residues quality :metric :sanger))
          (rseq (reverse-sequence seq)))
     (ensure (string= (coerce-sequence rseq 'string)
                      (reverse residues)))
@@ -519,7 +519,7 @@
          (quality "<<<<<<<<<<<<<<<<<<<<<735513;3<")
          (rresidues (reverse residues))
          (rquality (reverse quality))
-         (seq (make-dna-quality residues quality :metric :phred))
+         (seq (make-dna-quality residues quality :metric :sanger))
          (rseq (nreverse-sequence seq)))
     (ensure (string= rresidues (coerce-sequence rseq 'string)))
     (ensure (equalp rquality
@@ -530,7 +530,7 @@
 (addtest (bio-sequence-tests) dna-quality-sequence/5
   (let* ((residues "agaatattctgaccccagttactttcaaga")
          (quality "<<<<<<<<<<<<<<<<<<<<<735513;3<")
-         (seq (make-dna-quality residues quality :metric :phred)))
+         (seq (make-dna-quality residues quality :metric :sanger)))
     (ensure (string= "tcttataagactggggtcaatgaaagttct"
                      (coerce-sequence (complement-sequence seq) 'string)))
     (ensure (string= quality
@@ -542,7 +542,7 @@
   (let* ((residues "agaatattctgaccccagttactttcaaga")
          (quality "<<<<<<<<<<<<<<<<<<<<<735513;3<")
          (rquality (reverse quality))
-         (seq (make-dna-quality residues quality :metric :phred)))
+         (seq (make-dna-quality residues quality :metric :sanger)))
     (ensure (string= "tcttgaaagtaactggggtcagaatattct"
                      (coerce-sequence (reverse-complement seq) 'string)))
     (let ((rcquality (quality-of (reverse-complement seq))))
@@ -554,7 +554,7 @@
   (let* ((residues "agaatattctgaccccagttactttcaaga")
          (quality "<<<<<<<<<<<<<<<<<<<<<735513;3<")
          (rquality (reverse quality))
-         (seq (make-dna-quality residues quality :metric :phred))
+         (seq (make-dna-quality residues quality :metric :sanger))
          (rseq (nreverse-complement seq)))
     (ensure (string= "tcttgaaagtaactggggtcagaatattct"
                      (coerce-sequence rseq 'string)))
@@ -566,7 +566,7 @@
 (addtest (bio-sequence-tests) dna-quality-sequence/8
   (let* ((residues "agaatattctgaccccagttactttcaaga")
          (quality "<<<<<<<<<<<<<<<<<<<<<735513;3<")
-         (seq (make-dna-quality residues quality :metric :phred)))
+         (seq (make-dna-quality residues quality :metric :sanger)))
     (ensure (string= (subseq residues 0 5)
                      (coerce-sequence (subsequence seq 0 5) 'string)))
     (loop

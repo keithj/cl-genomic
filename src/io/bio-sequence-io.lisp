@@ -23,16 +23,13 @@
 (defmethod begin-object ((parser bio-sequence-parser))
   nil)
 
-(defmethod object-alphabet ((parser bio-sequence-parser)
-                            alphabet)
+(defmethod object-alphabet ((parser bio-sequence-parser) alphabet)
   nil)
 
-(defmethod object-identity ((parser bio-sequence-parser)
-                            identity)
+(defmethod object-identity ((parser bio-sequence-parser) identity)
   nil)
 
-(defmethod object-residues ((parser bio-sequence-parser)
-                            residues)
+(defmethod object-residues ((parser bio-sequence-parser) residues)
   nil)
 
 (defmethod end-object ((parser bio-sequence-parser))
@@ -62,8 +59,7 @@
       parser
     (setf raw (acons :description description raw))))
 
-(defmethod object-residues ((parser raw-sequence-parser)
-                            (residues string))
+(defmethod object-residues ((parser raw-sequence-parser) (residues string))
   (with-accessors ((raw parsed-raw-of))
       parser
     (let ((vec (assocdr :residues raw))) 
@@ -73,8 +69,7 @@
                          (make-array 1 :adjustable t :fill-pointer t
                                      :initial-element residues) raw))))))
 
-(defmethod object-quality ((parser raw-sequence-parser)
-                           (quality string))
+(defmethod object-quality ((parser raw-sequence-parser) (quality string))
   (with-accessors ((raw parsed-raw-of))
       parser
     (let ((vec (assocdr :quality raw))) 
@@ -103,8 +98,7 @@
           description nil
           residues (make-array 0 :adjustable t :fill-pointer 0))))
 
-(defmethod object-alphabet ((parser simple-sequence-parser)
-                            alphabet)
+(defmethod object-alphabet ((parser simple-sequence-parser) alphabet)
   (setf (parsed-alphabet-of parser) alphabet))
 
 (defmethod object-identity ((parser simple-sequence-parser)
@@ -145,8 +139,7 @@
 
 ;;; Writing data to a stream
 
-(defmethod object-residues ((parser streaming-parser)
-                            (residues vector))
+(defmethod object-residues ((parser streaming-parser) (residues vector))
   (princ residues (stream-of parser)))
 
 ;;; Collecting data into an indexed file that may be mmapped later
@@ -235,15 +228,15 @@
                                  ,length)
                                 (t
                                  (error 'invalid-argument-error
-                                        :params '(,filespec ,length)
-                                        :args (list ,filespec ,length)
+                                        :parameters '(,filespec ,length)
+                                        :arguments (list ,filespec ,length)
                                         :text "requested length too large")))))
                        (,length
                         ,length)
                        (t
                         (error 'invalid-argument-error
-                               :params '(,filespec ,length)
-                               :args (list ,filespec ,length)
+                               :parameters '(,filespec ,length)
+                               :arguments (list ,filespec ,length)
                                :text "no filespec or length were provided")))))
            (dxn:with-mapped-vector (,seq 'mapped-dna-sequence
                                          :filespec ,filespec :delete ,delete
@@ -278,8 +271,8 @@ for example, {defun write-raw-fasta} and {defun write-raw-fastq} ."
            (type fixnum n))
   (unless (plusp n)
     (error 'invalid-argument-error
-           :params 'n
-           :args n
+           :parameters 'n
+           :arguments n
            :text "n must be a positive number"))
   (let ((num-written
          (with-open-file (out pathname :direction :output
