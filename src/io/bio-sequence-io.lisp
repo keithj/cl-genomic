@@ -41,20 +41,18 @@
       parser
     (setf raw ())))
 
-(defmethod object-alphabet ((parser raw-sequence-parser)
-                            alphabet)
+(defmethod object-alphabet ((parser raw-sequence-parser) alphabet)
   (with-accessors ((raw parsed-raw-of))
       parser
     (setf raw (acons :alphabet alphabet raw))))
 
-(defmethod object-identity ((parser raw-sequence-parser)
-                            (identity string))
+(defmethod object-identity ((parser raw-sequence-parser) (identity string))
   (with-accessors ((raw parsed-raw-of))
       parser
     (setf raw (acons :identity identity raw))))
 
 (defmethod object-description ((parser raw-sequence-parser)
-                               (description string))
+ (description string))
   (with-accessors ((raw parsed-raw-of))
       parser
     (setf raw (acons :description description raw))))
@@ -101,16 +99,14 @@
 (defmethod object-alphabet ((parser simple-sequence-parser) alphabet)
   (setf (parsed-alphabet-of parser) alphabet))
 
-(defmethod object-identity ((parser simple-sequence-parser)
-                            (identity string))
+(defmethod object-identity ((parser simple-sequence-parser) (identity string))
   (setf (parsed-identity-of parser) identity))
 
 (defmethod object-description ((parser simple-sequence-parser)
                                (description string))
   (setf (parsed-description-of parser) description))
 
-(defmethod object-residues ((parser simple-sequence-parser)
-                            (residues vector))
+(defmethod object-residues ((parser simple-sequence-parser) (residues vector))
   (vector-push-extend residues (parsed-residues-of parser)))
 
 (defmethod end-object ((parser simple-sequence-parser))
@@ -122,8 +118,7 @@
       parser
     (setf quality (make-array 0 :adjustable t :fill-pointer 0))))
 
-(defmethod object-quality ((parser quality-sequence-parser)
-                           (quality vector))
+(defmethod object-quality ((parser quality-sequence-parser) (quality vector))
   (vector-push-extend quality (parsed-quality-of parser)))
 
 
@@ -133,12 +128,10 @@
       parser
     (setf length 0)))
 
-(defmethod object-residues ((parser virtual-sequence-parser)
-                            (residues vector))
+(defmethod object-residues ((parser virtual-sequence-parser) (residues vector))
   (incf (parsed-length-of parser) (length residues)))
 
 ;;; Writing data to a stream
-
 (defmethod object-residues ((parser streaming-parser) (residues vector))
   (princ residues (stream-of parser)))
 
@@ -192,16 +185,17 @@
       (error 'malformed-record-error
              :record (parsed-identity-of parser)
              :text "no quality data provided"))
-    ;; TODO -- On sbcl with-output-to-string is apparently very fast
-    ;; for this sort of operation. Maybe faster than pre-allocating a
-    ;; string and copying into it?
     (let ((residues (etypecase (aref residue-chunks 0)
                       (string (concat-strings residue-chunks))
                       ((array (unsigned-byte 8))
-                       (concat-into-sb-string residue-chunks))))
+                       (with-output-to-string (s)
+                         (dolist (chunk residue-chunks)
+                           (write-string chunk s))))))
           (quality (if (= 1 (length quality-chunks))
                        (aref quality-chunks 0)
-                     (concat-quality-arrays quality-chunks))))
+                     (with-output-to-string (s)
+                       (dolist (chunk quality-chunks)
+                         (write-string chunk s))))))
       (funcall constructor residues quality
                :identity (parsed-identity-of parser)
                :description (parsed-description-of parser)
@@ -250,10 +244,10 @@ skip over a malformed sequence record."
   (invoke-restart 'skip-sequence-record))
 
 (defun split-from-generator (input-gen writer n pathname-gen)
-  "Reads raw sequence records from closure INPUT-GEN and writes up to
+  "Reads raw sequence records from function INPUT-GEN and writes up to
 N of them into a series of new files using function WRITER. The new
-files names are denoted by filespecs read from PATHNAME-GEN. Returns
-when INPUT-GEN is exhausted."
+files names are denoted by filespecs read from function
+PATHNAME-GEN. Returns when INPUT-GEN is exhausted."
   (loop
      as num-written = (write-n-raw-sequences input-gen writer n
                                              (funcall pathname-gen))
@@ -269,11 +263,7 @@ for example, {defun write-raw-fasta} and {defun write-raw-fastq} ."
   (declare (optimize (speed 3)))
   (declare (type function writer)
            (type fixnum n))
-  (unless (plusp n)
-    (error 'invalid-argument-error
-           :parameters 'n
-           :arguments n
-           :text "n must be a positive number"))
+  (check-arguments (plusp n) (n) "n must be a positive number")
   (let ((num-written
          (with-open-file (out pathname :direction :output
                           :if-exists :supersede
