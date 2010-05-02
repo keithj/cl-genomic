@@ -177,14 +177,10 @@
                        (:dna 'make-dna-quality)))
         (residue-chunks (parsed-residues-of parser))
         (quality-chunks (parsed-quality-of parser)))
-    (when (zerop (length residue-chunks))
-      (error 'malformed-record-error
-             :record (parsed-identity-of parser)
-             :text "no sequence residue data provided"))
-    (when (zerop (length quality-chunks))
-      (error 'malformed-record-error
-             :record (parsed-identity-of parser)
-             :text "no quality data provided"))
+    (check-record (plusp (length residue-chunks)) (parsed-identity-of parser)
+                  "no sequence residue data provided")
+    (check-record (plusp (length quality-chunks)) (parsed-identity-of parser)
+                  "no quality data provided")
     (let ((residues (etypecase (aref residue-chunks 0)
                       (string (concat-strings residue-chunks))
                       ((array (unsigned-byte 8))
