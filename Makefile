@@ -25,4 +25,4 @@ coverage: clean
 	sbcl --noinform --noprint --load make-coverage-report.lisp
 
 clean:
-	find . -name \*.fasl -o -name \*.ufsl -o -name \*.lx64fsl -exec rm {} \;
+	find . -delete -name \*.fasl -o -name \*.ufsl -o -name \*.lx64fsl
