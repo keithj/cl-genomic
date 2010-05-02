@@ -22,8 +22,10 @@
 (defclass bio-sequence-parser ()
   ()
   (:documentation "The base class of all biological sequence
-parsers. The default methods specialised on this class are all
-no-ops, ignoring any data and returning NIL."))
+parsers. The default methods specialised on this class are all no-ops,
+ignoring any data and returning NIL. The role of bio-sequence-parser
+objects is to act as a place for storing state during parsing,
+particularly when reading from streams."))
 
 (defclass quality-parser-mixin ()
   ((metric :initform nil
