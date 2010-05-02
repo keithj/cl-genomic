@@ -301,8 +301,7 @@ bioinformatics use cases. See also {defun overlapsp} ."))
       interval
     (coerce-sequence reference 'string :start start :end end)))
 
-(defmethod coerce-sequence ((interval na-sequence-interval)
-                            (type (eql 'string))
+(defmethod coerce-sequence ((interval na-sequence-interval) (type (eql 'string))
                             &key (start 0) (end (length-of interval)))
   (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of)
                    (strand strand-of))

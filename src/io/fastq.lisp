@@ -180,16 +180,3 @@ first character is '@'."
  "Returns T if STR is a Fastq header (starts with the character '@'),
 or NIL otherwise."
   (starts-with-char-p str #\+))
-
-(defun concat-quality-arrays (quality-arrays)
-  (let ((new-quality (make-array (reduce #'+ quality-arrays :key #'length)
-                                 :element-type 'quality-score))
-        (num-arrays (length quality-arrays)))
-    (do ((i 0 (1+ i))
-         (offset 0))
-        ((= i num-arrays) new-quality)
-      (let ((quality-array (aref quality-arrays i)))
-        (unless (zerop (length quality-array))
-          (copy-array quality-array 0 (1- (length quality-array))
-                      new-quality offset)
-          (incf offset (length quality-array)))))))

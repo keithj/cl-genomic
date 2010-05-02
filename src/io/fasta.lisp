@@ -84,7 +84,6 @@ becomes full of chunks of sequence tokens.")
                  (object-description parser description)
                  (loop
                     as line = (stream-read-line stream)
-                    with offset = 0 ; FIXME -- I'm doing nothing with offset
                     while (not (eql :eof line))
                     until (char-fasta-header-p line)
                     do (progn
