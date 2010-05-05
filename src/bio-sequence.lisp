@@ -196,8 +196,7 @@ Returns:
   (if (null residues)
       (apply #'make-instance 'virtual-aa-sequence initargs)
     (make-encoded-vector-seq 'encoded-aa-sequence residues
-                             #'encode-aa-7bit '(unsigned-byte 7)
-                             initargs)))
+                             #'encode-aa-7bit '(unsigned-byte 7) initargs)))
 
 (defun make-encoded-vector-seq (class residues encoder element-type initargs)
   (check-arguments (vectorp residues) (residues) "expected a vector")
