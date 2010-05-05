@@ -90,19 +90,30 @@
                                 (alphabet symbol)
                                 (parser quality-parser-mixin))
   (restart-case
-      (let ((seq-header (find-line stream #'content-string-p)))
+      (let ((seq-header (find-line stream #'content-string-p))
+            (seq-len 0))
         (cond ((eql :eof seq-header)
                (values nil nil))
               ((char-fastq-header-p seq-header)
-               (multiple-value-bind (residues quality-header quality)
-                   (parse-fastq-record stream #'char-fastq-quality-header-p)
-                 (declare (ignore quality-header))
-                 (begin-object parser)
-                 (object-alphabet parser alphabet)
-                 (object-identity parser (string-left-trim '(#\@) seq-header))
-                 (object-residues parser residues)
-                 (object-quality parser quality)
-                 (values (end-object parser) t)))
+               (begin-object parser)
+               (object-alphabet parser alphabet)
+               (object-identity parser (string-left-trim '(#\@) seq-header))
+               (loop
+                  for line = (stream-read-line stream)
+                  while (not (eql :eof line))
+                  until (char-fastq-quality-header-p line) ; discard this line
+                  do (progn
+                       (object-residues parser line)
+                       (incf seq-len (length line))))
+               (loop
+                  for line = (stream-read-line stream)
+                  while (not (eql :eof line))
+                  until (and (char-fastq-header-p line) (= seq-len qual-len))
+                  sum (length line) into qual-len
+                  do (object-quality parser line)
+                  finally (unless (eql :eof line) ; push back the new header
+                            (push-line stream line)))
+               (values (end-object parser) t))
               (t
                (error 'malformed-record-error
                       :text (format nil
@@ -112,7 +123,8 @@
       :report "Skip this sequence."
       ;; Restart skips on to the next header
       (let ((line (find-line stream #'char-fastq-header-p)))
-        (push-line stream line))
+        (unless (eql :eof line)
+          (push-line stream line)))
       (values nil t))))
 
 (defmethod write-fastq-sequence ((seq dna-quality-sequence) (stream stream)
@@ -145,7 +157,7 @@
 (defun write-fastq-alist (alist stream)
   "Writes sequence data ALIST to STREAM in Fastq format. ALIST
 must contain keys and values as created by {defclass raw-sequence-parser} ."
-  (let ((*print-pretty* nil))11
+  (let ((*print-pretty* nil))
     (write-char #\@ stream)
     (write-line (or (assocdr :identity alist) "") stream)
     (write-line (or (assocdr :residues alist) "") stream)

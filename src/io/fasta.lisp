@@ -87,8 +87,7 @@ becomes full of chunks of sequence tokens.")
                     while (not (eql :eof line))
                     until (char-fasta-header-p line)
                     do (object-residues parser line)
-                    finally (unless (eql :eof line)
-                              ;; push back the new header
+                    finally (unless (eql :eof line) ; push back the new header
                               (push-line stream line)))
                  (values (end-object parser) t)))
               (t
@@ -101,7 +100,8 @@ becomes full of chunks of sequence tokens.")
       :report "Skip this sequence."
       ;; Restart skips on to the next header
       (let ((line (find-line stream #'char-fasta-header-p)))
-        (push-line stream line))
+        (unless (eql :eof line)
+          (push-line stream line)))
       (values nil t))))
 
 (defmethod write-fasta-sequence ((seq bio-sequence) stream &key token-case) 
