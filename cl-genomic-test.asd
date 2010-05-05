@@ -25,7 +25,7 @@
                  (:version :deoxybyte-io "0.6.0")
                  (:version :lift "1.7.0"))
     :components ((:module :cl-genomic-test
-                          :pathname "src/test/"
+                          :pathname "test/"
                           :components
                           ((:file "package")
                            (:file "cl-genomic-test"
