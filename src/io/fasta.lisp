@@ -36,8 +36,8 @@ becomes full of chunks of sequence tokens.")
                           (t
                            (make-instance 'simple-sequence-parser))))))
       (defgenerator
-          :next (read-fasta-sequence stream alphabet parser)
-          :more (has-sequence-p stream format))))
+          (more (has-sequence-p stream format))
+          (next (read-fasta-sequence stream alphabet parser)))))
 
 (defmethod make-seq-output ((stream stream) (format (eql :fasta))
                             &key token-case)
@@ -83,12 +83,10 @@ becomes full of chunks of sequence tokens.")
                  (object-identity parser identity)
                  (object-description parser description)
                  (loop
-                    as line = (stream-read-line stream)
+                    for line = (stream-read-line stream)
                     while (not (eql :eof line))
                     until (char-fasta-header-p line)
-                    do (progn
-                         (object-residues parser line)
-                         (incf offset (length line)))
+                    do (object-residues parser line)
                     finally (unless (eql :eof line)
                               ;; push back the new header
                               (push-line stream line)))

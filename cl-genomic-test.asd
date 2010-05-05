@@ -21,6 +21,8 @@
 
 (defsystem cl-genomic-test
     :depends-on (:cl-genomic
+                 (:version :deoxybyte-utilities "0.6.0")
+                 (:version :deoxybyte-io "0.6.0")
                  (:version :lift "1.7.0"))
     :components ((:module :cl-genomic-test
                           :pathname "src/test/"

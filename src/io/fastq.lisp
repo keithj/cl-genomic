@@ -26,8 +26,8 @@
                     (make-instance 'quality-sequence-parser
                                    :metric metric))))
     (defgenerator
-        :next (read-fastq-sequence stream alphabet parser)
-        :more (has-sequence-p stream format))))
+        (more (has-sequence-p stream format))
+        (next (read-fastq-sequence stream alphabet parser)))))
 
 (defmethod make-seq-output ((stream stream) (format (eql :fastq))
                             &key token-case)

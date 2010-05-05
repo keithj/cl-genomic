@@ -36,8 +36,8 @@
                           (t
                            (make-instance 'simple-sequence-parser))))))
     (defgenerator
-          :next (read-raw-sequence stream alphabet parser)
-          :more (has-sequence-p stream format))))
+        (more (has-sequence-p stream format))
+        (next (read-raw-sequence stream alphabet parser)))))
 
 (defmethod make-seq-output ((stream stream) (format (eql :raw))
                             &key token-case)

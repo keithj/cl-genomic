@@ -70,7 +70,6 @@
 
 ;; ignore ontology directives for now
 
-
 (defparameter *expected-gff-version* 3)
 
 (defmethod make-seq-input ((stream line-input-stream)
@@ -79,8 +78,8 @@
   ;; FIXME -- this will be the entry point for reading GFF3 files
   (let ((parser (or parser (make-instance 'gff3-parser))))
     (defgenerator
-        :next (read-gff3 stream parser)
-        :more (has-sequence-p stream format))))
+        (more (has-sequence-p stream format))
+        (next (read-gff3 stream parser)))))
 
 (defmethod has-sequence-p ((stream character-line-input-stream)
                            (format (eql :gff3)) &key alphabet)

@@ -23,7 +23,7 @@
   (with-ascii-li-stream (stream filespec)
     (let ((seqi (make-seq-input stream format :alphabet :dna :metric :sanger)))
       (loop
-         as seq = (next seqi)
+         for seq = (next seqi)
          count seq into total
          while (has-more-p seqi)
          finally (return total)))))
@@ -38,8 +38,7 @@
   (with-gensyms (tmp-filespec seqi)
     `(let* ((,seq (with-seq-input (,seqi ,filespec :fasta)
                     (next ,seqi)))
-            (,tmp-filespec (make-tmp-pathname
-                            :tmpdir (merge-pathnames "data"))))
+            (,tmp-filespec (tmp-pathname :tmpdir (merge-pathnames "data"))))
       (write-pure-sequence ,seq ,tmp-filespec)
       (with-mapped-dna (,mseq :filespec ,tmp-filespec
                               :length (length-of ,seq))
@@ -134,8 +133,8 @@
 
 (addtest (bio-sequence-io-tests) write-fasta-sequence/1
   (let ((seq (make-dna "acgtn" :identity "foo"))
-        (tmp-filespec (make-tmp-pathname :tmpdir (merge-pathnames "data")
-                                         :type "fa")))
+        (tmp-filespec (tmp-pathname :tmpdir (merge-pathnames "data")
+                                    :type "fa")))
     (dolist (args '((nil "acgtn")
                     (:lower "acgtn")
                     (:upper "ACGTN")))
@@ -182,8 +181,8 @@
   (let ((seq (make-dna-quality "acgtn" "<<<<<"
                                :identity "foo"
                                :metric :sanger))
-        (tmp-filespec (make-tmp-pathname :tmpdir (merge-pathnames "data")
-                                         :type "fq")))
+        (tmp-filespec (tmp-pathname :tmpdir (merge-pathnames "data")
+                                    :type "fq")))
     (dolist (args '((nil "acgtn")
                     (:lower"acgtn")
                     (:upper "ACGTN")))
@@ -202,7 +201,7 @@
 (addtest (bio-sequence-io-tests) split-sequence-file/1
   (let ((filespec (namestring (merge-pathnames "data/split-test-dna1.fasta"))))
     (split-sequence-file filespec :fasta
-                         (make-pathname-ext filespec
+                         (pathname-extender filespec
                                             :type "fasta" :separator #\.)
                          :chunk-size 2))
   (dolist (args '(("data/split-test-dna1.0.fasta" 2)
@@ -216,7 +215,7 @@
 (addtest (bio-sequence-io-tests) split-sequence-file/2
   (let ((filespec (namestring (merge-pathnames "data/phred.fastq"))))
     (split-sequence-file filespec :fastq
-                         (make-pathname-ext filespec
+                         (pathname-extender filespec
                                             :type "fastq" :separator #\.)
                          :chunk-size 2))
   (dolist (args '(("data/phred.0.fastq" 2)
@@ -230,8 +229,8 @@
 (addtest (bio-sequence-io-tests) convert-sequence-file/1
   (let ((in-filespec (merge-pathnames "data/phred.fastq"))
         (out-filespec (namestring
-                       (make-tmp-pathname :tmpdir (merge-pathnames "data")
-                                          :type "fasta"))))
+                       (tmp-pathname :tmpdir (merge-pathnames "data")
+                                     :type "fasta"))))
     (convert-sequence-file in-filespec :fastq out-filespec :fasta)
     (with-ascii-li-stream (fqs in-filespec)
       (with-ascii-li-stream (fas out-filespec)
@@ -239,7 +238,7 @@
                                                   :metric :sanger))
               (fa-seqi (make-seq-input fas :fasta :alphabet :dna)))
           (ensure (loop
-                     as fq = (next fq-seqi)
+                     for fq = (next fq-seqi)
                      while fq
                      always (let ((fa (next fa-seqi)))
                               (and (string= (identity-of fq)

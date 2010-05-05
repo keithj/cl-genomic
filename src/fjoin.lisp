@@ -31,18 +31,19 @@
 (defmethod make-interval-input ((vector vector))
   "Returns a new generator that will return the elements of VECTOR,
 followed by *SENTINEL*."
-  (let* ((i 0)
-         (j (length vector))
-         (current (aref vector i)))
+  (let ((length (length vector))
+        (i 0)
+        (current nil))
     (defgenerator
-        :current current
-        :next (prog1
-                  current
-                (setf i (1+ i)
-                      current (if (< i j)
-                                  (aref vector i)
-                                *sentinel*)))
-        :more t)))
+        (more t)
+        (next (let ((elt (if (< i length)
+                             (aref vector i)
+                           *sentinel*)))
+                (prog1
+                    elt
+                  (incf i)
+                  (setf current elt))))
+        (current current))))
 
 (defmacro with-interval-input ((var obj) &body body)
   `(let ((,var (make-interval-input ,obj)))
