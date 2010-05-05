@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (C) 2009 Keith James. All rights reserved.
+;;; Copyright (C) 2009-2010 Keith James. All rights reserved.
 ;;;
 ;;; This file is part of cl-genomic.
 ;;;
@@ -33,6 +33,48 @@
 
 ;; Just throwing around some ideas here; this code is not for use
 
+
+;; get sequence by key (id?)
+
+;; get sequence by predicate (similar to Lisp find fn) - in fact, a
+;; find-type fn covers finding by key and other attributes.
+
+
+;; Also implement
+;; (size-of coll)
+;; (memberp seq coll :test #'test)
+;; 
+
+(defgeneric find-sequence (seq collection &key key))
+
+(defgeneric add-sequence (seq collection &key key))
+
+(defgeneric remove-sequence (seq collection &key key))
+
+(defclass bio-sequence-collection ()
+  ((sequences :initform nil
+              :initarg :sequences
+              :reader sequences-of)
+   (alphabet :initarg :alphabet
+             :reader alphabet-of)))
+
+(defclass bio-sequence-vector (bio-sequence-collection)
+  ((sequences :initform (make-array 1024 :adjustable t :fill-pointer 0))))
+
+(defclass bio-sequence-table (bio-sequence-collection)
+  ((sequences :initform (make-hash-table :test #'equal))))
+
+(defmethod find-sequence (seq (collection bio-sequence-vector) &key key)
+  (with-slots (sequences test)
+      collection
+    (find seq sequences :key key :test #'equal)))
+
+(defmethod find-sequence (seq (collection bio-sequence-table) &key key)
+  (with-slots (sequences)
+      collection
+    (gethash (funcall-if-fn key seq) collection)))
+
+
 (defun index-sequence-file (filespec format alphabet)
   (let ((index (merge-pathnames (make-pathname :type "index") filespec))
         (data (merge-pathnames (make-pathname :type "data") filespec)))
@@ -60,31 +102,36 @@
         (index-file (merge-pathnames (make-pathname :type "index") filespec))
         (data (merge-pathnames (make-pathname :type "data") filespec)))
     (tc:dbm-open index (namestring index-file) :write :create)
-    (tc:dbm-optimize index :bucket-size 100000 :options '(:bzip :large))
-    (with-open-file (data-stream data :direction :output
-                                 :if-exists :supersede
-                                 :element-type 'base-char
-                                 :external-format :ascii)
-      (let ((parser (make-instance 'indexing-sequence-parser
-                                   :stream data-stream)))
-        (with-ascii-li-stream (input-stream filespec)
-          (let ((seqi (make-seq-input input-stream format
-                                      :alphabet alphabet
-                                      :parser parser)))
-            (loop
-               for seq = (next seqi)
-               for i = 0 then (1+ i)
-               with time = (get-universal-time)
-               while (and (has-more-p seqi) (< i 10000000))
-               do (progn
-                    (tc:dbm-put index (identity-of seq)
-                                (princ-to-string i) :mode :async)
-                    (when (zerop (rem i 100000))
-                      (let* ((now (get-universal-time))
-                             (interval (- now time)))
-                        (setf time now)
-                        (format t "~d records in ~d seconds~%" i interval)))))))))
-    (tc:dbm-close index)))
+    (tc:dbm-optimize index :leaf 512 :non-leaf 256 :bucket-size 100000000
+                     :rec-align 4 :free-pool 10 :opts '(:large))
+    (tc::dbm-xmsize index 536870912)
+    (unwind-protect
+         (with-open-file (data-stream data :direction :output
+                                      :if-exists :supersede
+                                      :element-type 'base-char
+                                      :external-format :ascii)
+           (let ((parser (make-instance 'indexing-sequence-parser
+                                        :stream data-stream)))
+             (with-ascii-li-stream (input-stream filespec)
+               (let ((seqi (make-seq-input input-stream format
+                                           :alphabet alphabet
+                                           :parser parser)))
+                 (loop
+                    for seq = (next seqi)
+                    for i = 0 then (1+ i)
+                    with time = (get-universal-time)
+                    with total-time = 0
+                    while (has-more-p seqi)
+                    do (progn
+                         (tc:dbm-put index (identity-of seq) (princ-to-string i))
+                         (when (zerop (rem i 100000))
+                           (let* ((now (get-universal-time))
+                                  (interval (- now time)))
+                             (setf time now)
+                             (incf total-time interval)
+                             (format t "~d records in ~d seconds, total ~d seconds~%"
+                                     i interval total-time)))))))))
+      (tc:dbm-close index))))
 
 (defun index-sequence-file3 (filespec format alphabet)
   (let ((index (merge-pathnames (make-pathname :type "index") filespec))
@@ -130,3 +177,5 @@
                                               (third entry))
            collect (code-char (dxn:mref vector i)) into bases
            finally (return (values identity bases)))))))
+
+
