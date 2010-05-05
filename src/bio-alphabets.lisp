@@ -181,20 +181,22 @@ as :dna :rna or :aa."
   "The alphabet of 64 standard codons.")
 
 (defmethod size-of ((alphabet alphabet))
-  (length (tokens-of alphabet)))
+  (length (slot-value alphabet 'tokens)))
 
 (defmethod token-index (encoded-token (alphabet alphabet))
-  (gethash encoded-token (index-of alphabet)))
+  (gethash encoded-token (slot-value alphabet 'index)))
 
 (defmethod random-token-of ((alphabet alphabet))
   ;; TODO -- inefficient
-  (elt (tokens-of alphabet) (random (size-of alphabet))))
+  (with-slots (tokens)
+      alphabet
+    (elt tokens (random (length tokens)))))
 
 (defmethod memberp ((token character) (alphabet alphabet))
-  (find token (tokens-of alphabet)))
+  (find token (slot-value alphabet 'tokens)))
 
 (defmethod memberp ((codon list) (alphabet alphabet))
-  (find codon (tokens-of alphabet) :test #'equalp))
+  (find codon (slot-value alphabet 'tokens) :test #'equalp))
 
 (defmethod subsumesp ((token1 character) (token2 character) (alphabet alphabet))
   (subsetp (enum-ambiguity token1 alphabet)
