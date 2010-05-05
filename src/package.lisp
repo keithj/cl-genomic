@@ -41,6 +41,7 @@
 
    ;; Macros
    #:with-seq-input
+   #:with-seq-output
    #:with-mapped-dna
    #:with-sequence-residues
 
