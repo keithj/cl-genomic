@@ -26,17 +26,11 @@
 by IN-FILESPEC in format IN-FORMAT, to OUT-FORMAT, writing the data to
 a new file identified by OUT-FILESPEC. Returns the number of records
 converted."
-  (with-ascii-li-stream (in in-filespec)
-    (with-open-file (out out-filespec :direction :output
-                         :element-type 'base-char
-                         :external-format :ascii
-                         :if-exists :supersede)
-      (let ((gen (make-seq-input in in-format
-                                 :parser (make-instance
-                                          'raw-sequence-parser)))
-            (con (make-seq-output out out-format)))
-        (loop
-           as alist = (next gen)
-           while alist
-           count alist
-           do (funcall con alist))))))
+  (with-seq-input (seqi in-filespec in-format :parser (make-instance
+                                                       'raw-sequence-parser))
+    (with-seq-output (seqo out-filespec out-format)
+      (loop
+         for seq = (next seqi)
+         while seq
+         count seq
+         do (consume seqo seq)))))

@@ -208,6 +208,14 @@
       (let ((,seqi (make-seq-input ,stream ,format ,@args)))
         ,@body))))
 
+(defmacro with-seq-output ((seqo filespec format &rest args) &body body)
+  (with-gensyms (stream)
+    `(with-open-file (,stream ,filespec :direction :output
+                              :element-type 'base-char :external-format :ascii
+                              :if-exists :supersede)
+      (let ((,seqo (make-seq-output ,stream ,format ,@args)))
+        ,@body))))
+
 (defmacro with-mapped-dna ((seq &key filespec delete length) &body body)
   (with-gensyms (fsize len)
     `(let ((,len (cond (,filespec
