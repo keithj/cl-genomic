@@ -41,9 +41,9 @@
                                              ; is out of sync with its
                                              ; professed version
                  (:version :ironclad "0.27")
-                 (:version :deoxybyte-io "0.5.6")
+                 (:version :deoxybyte-io "0.6.0")
                  (:version :deoxybyte-unix "0.6.3")
-                 (:version :deoxybyte-utilities "0.5.6")
+                 (:version :deoxybyte-utilities "0.6.0")
                  :puri)
     :in-order-to ((test-op (load-op :cl-genomic :cl-genomic-test)))
     :components ((:module :core
