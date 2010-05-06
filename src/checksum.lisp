@@ -53,7 +53,7 @@
    (digest-mapped-sequence seq :md5 start end)))
 
 (defun digest-encoded-sequence (seq decoder digest start &optional end)
-  (with-accessors ((vector vector-of))
+  (with-slots (vector)
       seq
     (let ((end (or end (length vector)))
           (stream (ironclad:make-digesting-stream digest)))

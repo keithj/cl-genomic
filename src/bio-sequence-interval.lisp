@@ -180,33 +180,32 @@ bioinformatics use cases. See also {defun overlapsp} ."))
 
 ;;; Initialization methods
 (defmethod initialize-instance :after ((interval na-sequence-interval) &key)
-  (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of)
-                   (strand strand-of) (num-strands num-strands-of))
+  (with-slots (lower upper reference strand num-strands)
       interval
     (%check-interval-range lower upper reference)
     (%check-interval-strands strand num-strands reference)))
 
 (defmethod initialize-instance :after ((interval aa-sequence-interval) &key)
-  (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of))
+  (with-slots (lower upper reference)
       interval
     (%check-interval-range lower upper reference)))
 
 ;;; Printing methods
 (defmethod print-object ((interval interval) stream)
   (print-unreadable-object (interval stream :type t :identity t)
-    (with-accessors ((lower lower-of) (upper upper-of))
+    (with-slots (lower upper)
         interval
       (format stream "~a ~a" lower upper))))
 
 (defmethod print-object ((interval na-sequence-interval) stream)
   (print-unreadable-object (interval stream :type t :identity t)
-    (with-accessors ((lower lower-of) (upper upper-of) (strand strand-of))
+    (with-slots (lower upper)
         interval
-      (format stream "~a ~a ~a" lower upper strand))))
+      (format stream "~a ~a ~a" lower upper (strand-of interval)))))
 
 (defmethod print-object ((interval aa-sequence-interval) stream)
   (print-unreadable-object (interval stream :type t :identity t)
-    (with-accessors ((lower lower-of) (upper upper-of))
+    (with-slots (lower upper)
         interval
       (format stream "~a ~a" lower upper))))
 
@@ -236,7 +235,7 @@ bioinformatics use cases. See also {defun overlapsp} ."))
 
 ;;; Implementation methods
 (defmethod (setf reference-of) :before (value (interval interval))
-  (with-accessors ((lower lower-of) (upper upper-of))
+  (with-slots (lower upper)
       interval
     (%check-interval-range lower upper value)))
 
@@ -246,49 +245,48 @@ bioinformatics use cases. See also {defun overlapsp} ."))
     (%check-interval-strands strand num-strands value)))
 
 (defmethod (setf num-strands-of) :before (value (interval na-sequence-interval))
-  (with-accessors ((reference reference-of) (strand strand-of))
-      interval
-    (%check-interval-strands strand value reference)))
+  (%check-interval-strands (strand-of interval) value
+                           (slot-value interval 'reference)))
 
 (defmethod simplep ((interval na-sequence-interval))
-  (with-accessors ((reference reference-of))
+  (with-slots (reference)
       interval
     (and reference (simplep reference))))
 
 (defmethod simplep ((interval aa-sequence-interval))
-  (with-accessors ((reference reference-of))
+  (with-slots (reference)
       interval
     (and reference (simplep reference))))
 
 (defmethod ambiguousp ((interval na-sequence-interval))
-  (with-accessors ((reference reference-of))
+  (with-slots (reference)
       interval
     (or (null reference) (ambiguousp reference))))
 
 (defmethod ambiguousp ((interval aa-sequence-interval))
-  (with-accessors ((reference reference-of))
+  (with-slots (reference)
       interval
     (or (null reference) (ambiguousp reference))))
 
 (defmethod virtualp ((interval na-sequence-interval))
-  (with-accessors ((reference reference-of))
+  (with-slots (reference)
       interval
     (or (null reference) (virtualp reference))))
 
 (defmethod virtualp ((interval aa-sequence-interval))
-  (with-accessors ((reference reference-of))
+  (with-slots (reference)
       interval
     (or (null reference) (virtualp reference))))
 
 (defmethod length-of ((interval interval))
-  (with-accessors ((lower lower-of) (upper upper-of))
+  (with-slots (lower upper)
       interval
     (- upper lower)))
 
 (defmethod coerce-sequence :around ((interval interval) (type (eql 'string))
                                     &key start end)
   (declare (ignore start end))
-  (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of))
+  (with-slots (lower upper reference)
       interval
     (if reference
         (call-next-method)
@@ -297,152 +295,135 @@ bioinformatics use cases. See also {defun overlapsp} ."))
 
 (defmethod coerce-sequence ((interval interval) (type (eql 'string))
                             &key (start 0) (end (length-of interval)))
-  (with-accessors ((reference reference-of))
-      interval
-    (coerce-sequence reference 'string :start start :end end)))
+  (coerce-sequence (slot-value interval 'reference) 'string
+                   :start start :end end))
 
 (defmethod coerce-sequence ((interval na-sequence-interval) (type (eql 'string))
                             &key (start 0) (end (length-of interval)))
-  (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of)
-                   (strand strand-of))
+  (with-slots (lower upper reference strand)
       interval
-    (with-accessors ((num-strands num-strands-of))
-        reference
+    (cond ((or (eql *unknown-strand* strand) (eql *forward-strand* strand))
+           (coerce-sequence reference 'string
+                            :start (+ lower start)
+                            :end (+ lower end)))
+          ((and (eql *reverse-strand* strand) (= 2 (num-strands-of reference)))
+           (coerce-sequence
+            (nreverse-complement
+             (subsequence reference (+ lower start) (+ lower end))) 'string))
+          (t
+           (error 'bio-sequence-op-error
+                  :text (txt "a reverse-strand interval may not be created"
+                             "on a single-stranded sequence."))))))
+
+(defmethod subsequence ((interval na-sequence-interval) (start fixnum)
+                        &optional end)
+  (let ((end (or end (length-of interval))))
+    (with-slots (lower upper reference strand num-strands)
+        interval
       (cond ((or (eql *unknown-strand* strand) (eql *forward-strand* strand))
-             (coerce-sequence reference 'string :start (+ lower start)
-                              :end (+ lower end)))
-            ((and (eql *reverse-strand* strand) (= 2 num-strands))
-             (coerce-sequence
-              (nreverse-complement
-               (subsequence reference (+ lower start) (+ lower end))) 'string))
+             (subsequence reference (+ lower start) (+ lower end)))
+            ((and (eql *reverse-strand* strand) (= 2 (num-strands-of reference)))
+             (nreverse-complement
+              (subsequence reference (+ lower start) (+ lower end))))
             (t
              (error 'bio-sequence-op-error
-                    :text (txt "a reverse-strand interval may not be created"
-                               "on a single-stranded sequence.")))))))
-
-(defmethod subsequence ((interval na-sequence-interval)
-                        (start fixnum) &optional end)
-  (let ((end (or end (length-of interval))))
-    (with-slots (reference lower upper strand num-strands)
-        interval
-      (let ((ref-num-strands (num-strands-of reference)))
-        (cond ((or (eql *unknown-strand* strand) (eql *forward-strand* strand))
-               (subsequence reference (+ lower start) (+ lower end)))
-              ((and (eql *reverse-strand* strand) (= ref-num-strands 2))
-               (nreverse-complement
-                (subsequence reference (+ lower start) (+ lower end))))
-              (t
-               (error 'bio-sequence-op-error
-                      :text (txt "a reverse-strand interval may not be applied"
-                                 "to a single-stranded sequence."))))))))
+                    :text (txt "a reverse-strand interval may not be applied"
+                               "to a single-stranded sequence.")))))))
 
 (defmethod subsequence ((interval aa-sequence-interval) (start fixnum)
                         &optional end)
   (let ((end (or end (length-of interval))))
-    (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of))
+    (with-slots (lower upper reference)
         interval
       (subsequence reference (+ lower start) (+ lower end)))))
 
 (defmethod reverse-complement ((interval na-sequence-interval))
-  (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of)
-                   (strand strand-of))
+  (with-slots (lower upper reference)
       interval
     (let ((ref-length (length-of reference))
           (int-length (- upper lower)))
-      (make-instance 'na-sequence-interval
-                     :lower (- ref-length upper)
+      (make-instance 'na-sequence-interval :lower (- ref-length upper)
                      :upper (+ (- ref-length upper) int-length)
-                     :strand (complement-strand strand)
+                     :strand (complement-strand (strand-of interval))
                      :reference reference))))
 
 (defmethod nreverse-complement ((interval na-sequence-interval))
-  (with-accessors ((reference reference-of)
-                   (strand strand-of) (num-strands num-strands-of))
+  (with-slots (lower upper reference strand) ; direct slot access to
+                                             ; allow inversion in
+                                             ; place
       interval
-    (%check-interval-strands (complement-strand strand) num-strands reference)
-    (with-slots (lower upper strand) ; direct slot access to allow
-                                     ; inversion in place
-        interval
-      (let ((ref-length (length-of reference))
-            (int-length (- upper lower)))
-        (setf lower (- ref-length upper)
-              upper (+ lower int-length)
-              strand (complement-strand strand)))))
+    (%check-interval-strands (complement-strand strand)
+                             (num-strands-of interval) reference)
+    (let ((ref-length (length-of reference))
+          (int-length (- upper lower)))
+      (setf lower (- ref-length upper)
+            upper (+ lower int-length)
+            strand (complement-strand strand))))
   interval)
 
+(defmacro with-interval-slots (((lower-x upper-x interval-x)
+                                (lower-y upper-y interval-y)) &body body)
+  "Utility macro for lower and upper bound comparisions between a pair
+of intervals."
+  `(with-slots ((,lower-x lower) (,upper-x upper))
+       ,interval-x
+     (with-slots ((,lower-y lower) (,upper-y upper))
+         ,interval-y
+       ,@body)))
+
 (defmethod beforep ((x interval) (y interval))
-  (< (upper-of x) (lower-of y)))
+  (< (slot-value x 'upper) (slot-value y 'lower)))
 
 (defmethod afterp ((x interval) (y interval))
-  (> (lower-of x) (upper-of y)))
+  (> (slot-value x 'lower) (slot-value y 'upper)))
 
 (defmethod meetsp ((x interval) (y interval))
-  (with-accessors ((lowx lower-of) (upx upper-of))
-      x
-    (with-accessors ((lowy lower-of) (upy upper-of))
-        y
-      (and (< lowx upx)             ; to meet y, x may not be zero-width
-           (= upx lowy)))))
+  (with-interval-slots ((lowx upx x) (lowy upy y))
+    (and (< lowx upx) (= upx lowy)))) ; to meet y, x may not be zero-width
 
 (defmethod met-by-p ((x interval) (y interval))
-  (with-accessors ((lowx lower-of) (upx upper-of))
-      x
-    (with-accessors ((lowy lower-of) (upy upper-of))
-        y
-      (and (< lowy upy)             ; to meet x, y may not be zero-width
-           (= lowx upy)))))
+  (with-interval-slots ((lowx upx x) (lowy upy y))
+    (and (< lowy upy) (= lowx upy)))) ; to meet x, y may not be zero-width
 
 (defmethod overlapsp ((x interval) (y interval))
-  (with-accessors ((lowx lower-of) (upx upper-of))
-      x
-    (with-accessors ((lowy lower-of) (upy upper-of))
-        y
-      (or (< lowx lowy upx upy)
-          (< lowy lowx upy upx)))))
+  (with-interval-slots ((lowx upx x) (lowy upy y))
+    (or (< lowx lowy upx upy)
+        (< lowy lowx upy upx))))
 
 (defmethod startsp ((x interval) (y interval))
-   (with-accessors ((lowx lower-of) (upx upper-of))
-      x
-    (with-accessors ((lowy lower-of) (upy upper-of))
-        y
-      (and (< lowx upx) (< lowy upy)   ; neither x or y are zero-width
-           (= lowx lowy) (< upx upy)))))
+  (with-interval-slots ((lowx upx x) (lowy upy y))
+    (and (< lowx upx) (< lowy upy)   ; neither x or y are zero-width
+         (= lowx lowy) (< upx upy))))
 
 (defmethod started-by-p ((x interval) (y interval))
-  (with-accessors ((lowx lower-of) (upx upper-of))
-      x
-    (with-accessors ((lowy lower-of) (upy upper-of))
-        y
-      (and (< lowx upx) (< lowy upy)   ; neither x or y are zero-width
-           (= lowx lowy) (> upx upy)))))
+  (with-interval-slots ((lowx upx x) (lowy upy y))
+    (and (< lowx upx) (< lowy upy)   ; neither x or y are zero-width
+         (= lowx lowy) (> upx upy))))
 
 (defmethod duringp ((x interval) (y interval))
-  (and (> (lower-of x) (lower-of y))
-       (< (upper-of x) (upper-of y))))
+  (with-interval-slots ((lowx upx x) (lowy upy y))
+    (and (> lowx lowy)
+         (< upx upy))))
 
 (defmethod containsp ((x interval) (y interval))
-  (and (< (lower-of x) (lower-of y))
-       (> (upper-of x) (upper-of y))))
+  (with-interval-slots ((lowx upx x) (lowy upy y))
+    (and (< lowx lowy)
+         (> upx upy))))
 
 (defmethod finishesp ((x interval) (y interval))
-  (with-accessors ((lowx lower-of) (upx upper-of))
-      x
-    (with-accessors ((lowy lower-of) (upy upper-of))
-        y
-      (and (< lowx upx) (< lowy upy)   ; neither x or y are zero-width
-           (> lowx lowy) (= upx upy)))))
+  (with-interval-slots ((lowx upx x) (lowy upy y))
+    (and (< lowx upx) (< lowy upy)     ; neither x or y are zero-width
+         (> lowx lowy) (= upx upy))))
 
 (defmethod finished-by-p ((x interval) (y interval))
-  (with-accessors ((lowx lower-of) (upx upper-of))
-      x
-    (with-accessors ((lowy lower-of) (upy upper-of))
-        y
-      (and (< lowx upx) (< lowy upy)   ; neither x or y are zero-width
-           (< lowx lowy) (= upx upy)))))
+  (with-interval-slots ((lowx upx x) (lowy upy y))
+    (and (< lowx upx) (< lowy upy)     ; neither x or y are zero-width
+         (< lowx lowy) (= upx upy))))
 
 (defmethod interval-equal ((x interval) (y interval))
-  (and (= (lower-of x) (lower-of y))
-       (= (upper-of x) (upper-of y))))
+  (with-interval-slots ((lowx upx x) (lowy upy y))
+    (and (= lowx lowy)
+         (= upx upy))))
 
 (defmethod inclusive-beforep ((x interval) (y interval))
   (or (beforep x y) (meetsp x y)))

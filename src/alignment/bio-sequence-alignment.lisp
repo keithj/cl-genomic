@@ -47,8 +47,7 @@ gaps."))
 
 ;;; Initialization methods
 (defmethod initialize-instance :after ((interval na-alignment-interval) &key)
-  (with-accessors ((lower lower-of) (upper upper-of) (reference reference-of)
-                   (aligned aligned-of))
+  (with-slots (lower upper reference aligned)
       interval
     (when reference
       (check-arguments (= (- (length-of interval)
@@ -62,38 +61,35 @@ gaps."))
 ;;; Printing methods
 (defmethod print-object ((interval na-alignment-interval) stream)
   (print-unreadable-object (interval stream :type t)
-    (with-accessors ((lower lower-of) (upper upper-of) (strand strand-of))
+    (with-slots (lower upper strand)
         interval
       (format stream "~a ~a ~a" lower upper strand))))
 
 (defmethod print-object ((interval aa-alignment-interval) stream)
   (print-unreadable-object (interval stream :type t)
-    (with-accessors ((lower lower-of) (upper upper-of))
+    (with-slots (lower upper)
         interval
       (format stream "~a ~a " lower upper))))
 
 (defmethod print-object ((alignment alignment) stream)
   (print-unreadable-object (alignment stream :type t)
-    (with-accessors ((intervals intervals-of))
+    (with-slots (intervals)
         alignment
       (dolist (interval intervals)
-        (with-accessors ((lower lower-of) (upper upper-of) (aligned aligned-of))
+        (with-slots (lower upper aligned)
             interval
           (format stream "~7d ~a ~7a~%" lower (coerce-sequence aligned 'string)
                   upper))))))
 
 ;;; Implementation methods
 (defmethod aligned-length-of ((aligned aligned-mixin))
-  (with-accessors ((aligned aligned-of))
-      aligned
-    (length-of aligned)))
+  (length-of (slot-value aligned 'aligned)))
 
 (defmethod coerce-sequence ((interval na-alignment-interval)
                             (type (eql 'string))
                             &key (start 0) (end (aligned-length-of interval)))
-  (with-accessors ((aligned aligned-of))
-      interval
-    (coerce-sequence aligned 'string :start start :end end)))
+  (coerce-sequence (slot-value interval 'aligned) 'string
+                   :start start :end end))
 
 (defmethod nreverse-complement :before ((interval na-alignment-interval))
   (error 'bio-sequence-op-error

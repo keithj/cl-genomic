@@ -123,11 +123,7 @@ Key:
 such as :standard, :vert-mito or :bacterial."
   (multiple-value-bind (genetic-code presentp)
       (gethash name *genetic-codes*)
-    (unless presentp
-      (error 'invalid-argument-error
-             :params 'name
-             :args name
-             :text "no such genetic code"))
+    (check-arguments presentp (name) "no such genetic code")
     genetic-code))
 
 (defun registered-genetic-codes ()
@@ -149,8 +145,10 @@ such as :standard, :vert-mito or :bacterial."
   (:documentation "A genetic code translating codons to amino acids."))
 
 (defmethod print-object ((code genetic-code) stream)
-  (format stream "#<GENETIC-CODE ~a ~a>" (slot-value code 'identity)
-          (slot-value code 'name)))
+  (print-unreadable-object (code stream :type t :identity t)
+    (with-slots (identity name)
+        code
+      (format stream "~a ~a" identity name))))
 
 (define-genetic-code *standard*
     :name :standard :id 1

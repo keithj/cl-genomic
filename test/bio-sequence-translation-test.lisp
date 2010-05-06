@@ -66,6 +66,26 @@
   "KNKNKNTTTTTTTTTTTTTTTRSRSRSIIMIIIIIQHQHQHPPPPPPPPPPPPPPPRRRRRRRRRRRRRRRLLLLLLLLLLLLLLLEDEDEDAAAAAAAAAAAAAAAGGGGGGGGGGGGGGGVVVVVVVVVVVVVVV*Y*Y*YSSSSSSSSSSSSSSS*CWCCLFLFLF*ZZZLLLRRRBBB"
   "Corresponding translations of codons that do not encode for X.")
 
+(addtest (bio-sequence-translation-tests) registered-genetic-codes/1
+  (let ((codes (registered-genetic-codes)))
+    (ensure (listp codes))
+    (mapc (lambda (code)
+            (ensure (subtypep (class-name (class-of code)) 'genetic-code)))
+          codes)))
+
+(addtest (bio-sequence-translation-tests) find-genetic-code/1
+  (mapc (lambda (name)
+          (ensure (find-genetic-code name)))
+        (mapcar #'name-of (registered-genetic-codes))))
+
+(addtest (bio-sequence-translation-tests) find-genetic-code/2
+  (ensure-condition invalid-argument-error
+    (find-genetic-code :no-such-genetic-code))
+  (ensure-condition invalid-argument-error
+    (find-genetic-code nil))
+  (ensure-condition invalid-argument-error
+    (find-genetic-code "standard")))
+
 (addtest (bio-sequence-translation-tests) translate-codon-standard/1
    (ensure (every #'char= *test-amino-acids*
                   (loop
