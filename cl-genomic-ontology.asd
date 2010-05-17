@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (C) 2009-2010 Keith James. All rights reserved.
+;;; Copyright (C) 2010 Keith James. All rights reserved.
 ;;;
 ;;; This file is part of cl-genomic.
 ;;;
@@ -17,23 +17,14 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;
 
-;;; PowerLoom and Stella do not use ASDF. This system definition file
-;;; may be copied to the root directory of a PowerLoom installation to
-;;; allow loading of PowerLoom by ASDF.
-
-;;; PowerLoom is a registered trademark of the University of Southern
-;;; California.
-
 (in-package :cl-user)
 
-(defpackage :powerloom-system
-  (:use :common-lisp :asdf))
-
-(in-package :powerloom-system)
-
-(defsystem powerloom
-  :name "PowerLoom"
-  :depends-on (:stella)
-  :components ((:module :powerloom
-                        :pathname ""
-                        :components ((:file "load-powerloom")))))
+(asdf:defsystem cl-genomic-ontology
+    :depends-on (:cl-genomic
+                 :powerloom)
+    :components ((:module :powerloom
+                          :pathname "src/ontology/"
+                          :components
+                          ((:file "powerloom")
+                           (:file "sofa-knowledgebase"
+                                  :depends-on ("powerloom"))))))
