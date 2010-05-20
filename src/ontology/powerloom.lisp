@@ -71,7 +71,7 @@ becomes
   (let ((value (read stream t nil t)))
     (etypecase value
       (symbol `(get-concept ',value))
-      (string `(s-get-concept ,value)))))
+      (string `(get-concept ,value)))))
 
 (defun setup-dollar-reader (&optional (readtable *readtable*))
   "Sets the {defun dollar-reader} to be used in READTABLE, dispatching
@@ -79,21 +79,20 @@ on the $ character."
   (set-macro-character #\$ #'dollar-reader nil readtable)
   readtable)
 
-(defun ensure-string (name)
-  (etypecase name
-    (string name)
-    (symbol (symbol-name name))))
-
 (defun stella-symbol (name &optional (module *current-module*)
                       (env *current-environment*))
   "Returns a new Stella symbol given symbol or string NAME."
-  (pli:create-symbol (ensure-string name) module env))
+  (pli:create-symbol (%ensure-string name) module env))
 
 (defun to-stella (form &optional (module *current-module*)
                          (env *current-environment*))
   "Recursively converts FORM to a Stella equivalent. The result may be
 used for PowerLoom queries."
-  (cond ((symbolp form)
+  (cond ((and (listp form)
+              (eql (first form) 'get-concept)
+              (fboundp (first form)))
+         (apply (first form) (rest form))) ; evaluate get-concept calls
+        ((symbolp form)
          (stella-symbol form module env))
         ((listp form)
          (mapcar (lambda (x)
@@ -124,26 +123,44 @@ used for PowerLoom queries."
 (defparameter *current-environment* pli:null
   "The current PowerLoom environment.")
 
+;; Wrap some PowerLoom functions
 (define-pli-wrapper get-concept-instances (concept))
 (define-pli-wrapper get-direct-concept-instances (concept))
+(define-pli-wrapper get-concept-instances-matching-value (concept relation value))
 (define-pli-wrapper get-direct-subrelations (relation))
 (define-pli-wrapper get-direct-superrelations (relation))
+(define-pli-wrapper get-proper-subrelations (relation))
+(define-pli-wrapper get-proper-superrelations (relation))
+(define-pli-wrapper get-types (object))
 (define-pli-wrapper get-direct-types (object))
 (define-pli-wrapper is-subrelation (sub super))
 (define-pli-wrapper is-a (object concept))
+(define-pli-wrapper get-object (name))
 
-(defun load-file (filespec &optional (env *current-environment*))
+;; Import some PowerLoom functions
+(import 'pli:clear-module :bio-sequence)
+(import 'pli-get-modules :bio-sequence)
+(import 'pli:get-current-module :bio-sequence)
+(import 'pli:get-child-modules :bio-sequence)
+(import 'pli:get-parent-modules :bio-sequence)
+(import 'pli:get-home-module :bio-sequence)
+(import 'pli:get-name :bio-sequence)
+(import 'pli:get-domain :bio-sequence)
+(import 'pli:get-range :bio-sequence)
+(import 'pli:get-arity :bio-sequence)
+
+(defun load-ontology (filespec &optional (env *current-environment*))
   (etypecase filespec
     (string (pli:load filespec env))
     (pathname (pli:load (namestring filespec) env))
     (stream (pli:load-native-stream filespec env))))
 
 (defun get-module (name &optional (env *current-environment*))
-  (pli:get-module (ensure-string name) env))
+  (pli:get-module (%ensure-string name) env))
 
 (defun get-concept (name &key (module *current-module*)
                     (env *current-environment*))
-  (pli:get-concept (ensure-string name) module env))
+  (pli:get-concept (%ensure-string name) module env))
 
 (defun evaluate (expression &key (module *current-module*)
                  (env *current-environment*))
@@ -154,8 +171,17 @@ used for PowerLoom queries."
   (pli:ask (to-stella query module env) module env))
 
 (defun retrieve (query &key (module *current-module*)
-                 (env *current-environment*))
-  (pli:retrieve (to-stella query module env) module env))
+                 (env *current-environment*) (realise :collect))
+  (let ((pl-iter (pli:retrieve (to-stella query module env) module env)))
+    (ecase realise
+      (:collect (collect-tuples pl-iter))
+      (:nconc (nconc-tuples pl-iter))
+      ((nil) (defgenerator
+                 (more (not (pli:empty? pl-iter)))
+                 (next (if (pli:next? pl-iter)
+                           (tuple pl-iter)
+                         (error 'invalid-operation-error
+                                :text "iterator exhausted"))))))))
 
 (defun tuple (pl-iter &key (module *current-module*)
               (env *current-environment*))
@@ -189,3 +215,12 @@ used for PowerLoom queries."
       (cons relation (mapcar (lambda (sub)
                                (subrelation-tree sub :module module :env env))
                              subs)))))
+
+(defun %ensure-string (name)
+  (etypecase name
+    (string name)
+    (symbol (symbol-name name))
+    (list (check-arguments (and (eql 'quote (first name))
+                                (symbolp (second name)))
+                           (name) "expected a quoted symbol")
+          (symbol-name (second name)))))

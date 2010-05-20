@@ -21,17 +21,7 @@
 
 (in-syntax *powerloom-readtable*)
 
-;; (load-file "/home/keith/dev/lisp/cl-genomic.git/ontology/sofa_2_4.plm")
-
-;; These are all equivalent
-;; (with-module (:sofa)
-;;    (get-concept "SO:0000001"))
-;; (with-module (:sofa)
-;;   $"SO:0000001")
-;; (with-module (:sofa)
-;;   $|SO:0000001|)
-
-(defun traverse (tree fn)
+(defun traverse (tree fn) ; move this to utilities
   (cond ((null tree)
          nil)
         ((atom tree)
@@ -41,36 +31,68 @@
                (traverse (rest tree) fn)))))
 
 (defun term-name (concept)
-  (first (next-tuple
-          (retrieve `(1 ?name (and (concept ,concept)
-                                   (= (name ,concept) ?name)))))))
+  (first (retrieve `(1 ?n (and (concept ,concept)
+                               (= (name ,concept) ?n))) :realise :nconc)))
 
 (defun term-doc (concept)
-  (first (next-tuple
-          (retrieve `(1 ?doc (and (concept ,concept)
-                                  (= (documentation ,concept) ?doc)))))))
+  (first (retrieve `(1 ?d (and (concept ,concept)
+                               (= (documentation ,concept) ?d)))
+                   :realise :nconc)))
+
+(defun find-term (name)
+  (first (retrieve `(1 ?c (and (concept ?c)
+                               (= (name ?c) ,name))) :realise :nconc)))
+
+(defun find-doc (name)
+  (first (retrieve `(1 ?d (and (concept ?c)
+                               (= (name ?c) ,name)
+                               (= (documentation ?c) ?d))) :realise :nconc)))
 
 ;; At REPL:
+;; (load-ontology "/home/keith/dev/lisp/cl-genomic.git/ontology/sofa_2_4.plm")
 ;;
-;; Use syntax
+;; Use syntax:
 ;; (in-syntax *powerloom-readtable*)
+;;
+;; These are all equivalent
+;; (with-module (:sofa)
+;;    (get-concept "SO:0000001"))
+;; (with-module (:sofa)
+;;   $"SO:0000001")
+;; (with-module (:sofa)
+;;   $|SO:0000001|)
+;;
 ;; Switch to module
 ;; (in-module :sofa)
+;;
+;; With the dollar reader syntax enabled:
+;; (retrieve '(all ?x (part_of $"SO:0000179" ?x)))
+;; (retrieve '(all ?x (part_of $|SO:0000179| ?x)))
+;; (retrieve '(all ?x (part_of $|SO:0000179| ?x)) :realise :nconc)
+;; (retrieve '(all (?x ?n ?d) (and (part_of $"SO:0000179" ?x)
+;;                                 (= (documentation ?x) ?d))))
+;;
+;; Splice in Lisp values with backquote:
+;;
+;; (let ((name "TSS"))
+;;   (retrieve `(1 (and (concept ?c)
+;;                      (= (name ?c) ,name))) :realise :nconc))
+;;
+;;
 ;; Get tree of sub-terms
 ;; (subrelation-tree $|SO:0000001|)
+;;
 ;; Apply term-name function to all nodes to get new tree
 ;; (traverse * #'term-name)
-
-(defun find-by-name (name)
-  (first (next-tuple
-          (retrieve `(1 ?concept (and (concept ?concept)
-                                      (= (name ?concept) ,name)))))))
-
-(defun find-all-by-name (name)
-  (nconc-tuples (retrieve `(all (?concept ?doc)
-                                (and (concept ?concept)
-                                     (= (name ?concept) ,name)
-                                     (= (documentation ?concept) ?doc))))))
-
+;;
 ;; Get all part_of SO:0000179
-;; (collect-tuples (retrieve `(all ?x  (part_of ,$|SO:0000179| ?x))))
+;; (retrieve '(all ?x (part_of $|SO:0000179| ?x)))
+;;
+;; or just
+;; (retrieve '(all (part_of $|SO:0000179| ?x)))
+;;
+;; or flattened
+;; (retrieve '(all (part_of $|SO:0000179| ?x)) :realise :nconc)
+;;
+;; or as generator function
+;; (retrieve '(all (part_of $|SO:0000179| ?x)) :realise nil)
