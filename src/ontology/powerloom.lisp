@@ -44,17 +44,13 @@ arguments required by many PLI functions to be made optional."
 
 (defmacro with-module ((module) &body body)
   "Evaluates BODY with the PowerLoom module bound to MODULE."
-  `(let ((*current-module* (if (symbolp ,module)
-                               (get-module ,module)
-                             ,module)))
+  `(let ((*current-module* (get-module ,module)))
     ,@body))
 
 (defmacro in-module (module)
   "Sets *current-module* to PowerLoom MODULE. Analagous to CL:IN-PACKAGE."
   `(progn
-     (setf *current-module* (if (symbolp ,module)
-                                (get-module ,module)
-                              module))
+     (setf *current-module* (get-module ,module))
      (pli:change-module *current-module*)))
 
 (defun dollar-reader (stream char)
@@ -150,28 +146,62 @@ used for PowerLoom queries."
 (import 'pli:get-arity :bio-sequence)
 
 (defun load-ontology (filespec &optional (env *current-environment*))
+  "Loads the PowerLoom format ontology from FILESPEC."
   (etypecase filespec
     (string (pli:load filespec env))
     (pathname (pli:load (namestring filespec) env))
     (stream (pli:load-native-stream filespec env))))
 
 (defun get-module (name &optional (env *current-environment*))
-  (pli:get-module (%ensure-string name) env))
+  "Returns the PowerLoom module named NAME."
+  (let ((module (pli:get-module (%ensure-string name) env)))
+    (check-arguments (not (eql pli:null module)) (name) "no such module")
+    module))
 
 (defun get-concept (name &key (module *current-module*)
                     (env *current-environment*))
+  "Identical to PLI:GET-CONCEPT, but with keyword arguments."
   (pli:get-concept (%ensure-string name) module env))
 
 (defun evaluate (expression &key (module *current-module*)
                  (env *current-environment*))
+  "Identical to PLI:EVALUATE, but with keyword arguments."
   (pli:evaluate (to-stella expression module env) module env))
 
 (defun ask (query &key (module *current-module*)
             (env *current-environment*))
+  "Identical to PLI:ASK, but with keyword arguments."
   (pli:ask (to-stella query module env) module env))
 
 (defun retrieve (query &key (module *current-module*)
                  (env *current-environment*) (realise :collect))
+  "Calls PLI:RETRIEVE with QUERY.
+
+Arguments:
+
+- query (list): A list containing the query. The list is converted to
+a Stella language form and passed to PLI:RETRIEVE. If the dollar
+reader syntax is enabled, it may be used here.
+
+e.g.
+
+;;; (retrieve '(all ?x (part_of $\"SO:0000179\" ?x)))
+;;; (retrieve '(all ?x (part_of $|SO:0000179| ?x)))
+;;; (retrieve '(all ?x (part_of $|SO:0000179| ?x)) :realise :nconc)
+;;; (retrieve '(all (?x ?n ?d) (and (part_of $\"SO:0000179\" ?x)
+;;;                                 (= (documentation ?x) ?d))))
+
+Key:
+
+- module (module): A PowerLoom module.
+- env (env): A PowerLoom environment.
+
+- realise (symbol): Indicates how results are to be collected. Valid
+  values are:
+
+- :COLLECT : collect into a list (the default).
+- :NCONC : nconc into a list.
+- NIL : return a generator function."
   (let ((pl-iter (pli:retrieve (to-stella query module env) module env)))
     (ecase realise
       (:collect (collect-tuples pl-iter))

@@ -31,25 +31,39 @@
                (traverse (rest tree) fn)))))
 
 (defun term-name (concept)
-  (first (retrieve `(1 ?n (and (concept ,concept)
-                               (= (name ,concept) ?n))) :realise :nconc)))
+  "Returns the name of term CONCEPT."
+  (first (retrieve `(1 (and (concept ,concept)
+                            (= (name ,concept) ?n))) :realise :nconc)))
 
 (defun term-doc (concept)
-  (first (retrieve `(1 ?d (and (concept ,concept)
-                               (= (documentation ,concept) ?d)))
-                   :realise :nconc)))
+  "Returns the documentation of term CONCEPT."
+  (first (retrieve `(1 (and (concept ,concept)
+                            (= (documentation ,concept) ?d))) :realise :nconc)))
 
 (defun find-term (name)
-  (first (retrieve `(1 ?c (and (concept ?c)
-                               (= (name ?c) ,name))) :realise :nconc)))
+  "Returns the term named NAME, or NIL if there os not such term."
+  (first (retrieve `(1 (and (concept ?c)
+                            (= (name ?c) ,name))) :realise :nconc)))
 
 (defun find-doc (name)
-  (first (retrieve `(1 ?d (and (concept ?c)
-                               (= (name ?c) ,name)
-                               (= (documentation ?c) ?d))) :realise :nconc)))
+  "Returns the documentation of a term with NAME, or NIL if there os
+not such term."
+  (first (retrieve `(1 (?d ?c)
+                       (and (concept ?c)
+                            (= (name ?c) ,name)
+                            (= (documentation ?c) ?d))) :realise :nconc)))
+
+(defun term-parents (child)
+  "Return a list of the \"parent\" terms of term CHILD. This is
+parenthood in the GFF3 sense; meaning the terms which CHILD is a
+part_of."
+  (retrieve `(all ?p (and (concept ?p)
+                          (concept ,child)
+                          (part_of ,child ?p))) :realise :nconc))
 
 ;; At REPL:
-;; (load-ontology "/home/keith/dev/lisp/cl-genomic.git/ontology/sofa_2_4.plm")
+;; (load-ontology "/home/keith/dev/lisp/cl-genomic.git/ontology/sofa_2_4_2.plm")
+;; (load-ontology "/home/keith/dev/lisp/cl-genomic.git/ontology/sofa_addenda.plm")
 ;;
 ;; Use syntax:
 ;; (in-syntax *powerloom-readtable*)

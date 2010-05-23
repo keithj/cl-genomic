@@ -1,0 +1,40 @@
+;;;
+;;; Copyright (C) 2010 Keith James. All rights reserved.
+;;;
+;;; This file is part of cl-genomic.
+;;;
+;;; This program is free software: you can redistribute it and/or modify
+;;; it under the terms of the GNU General Public License as published by
+;;; the Free Software Foundation, either version 3 of the License, or
+;;; (at your option) any later version.
+;;;
+;;; This program is distributed in the hope that it will be useful,
+;;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;;; GNU General Public License for more details.
+;;;
+;;; You should have received a copy of the GNU General Public License
+;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;;;
+
+(in-module "SOFA")
+
+(defrelation member_of ((?x THING) (?y THING))
+             :=> (part_of ?x ?y)
+  :documentation "SO member_of is_a part_of. This relation is missing
+from the SOFA 2.4.2 release.")
+(assert (transitive member_of))
+
+(defrule "subset-of && part_of"
+    (<= (part_of ?x ?z)
+        (and (subset-of ?x ?y)
+             (part_of ?y ?z)))  
+  :documentation "Chained rule to allow navigation of SO part_of
+hierarchy.")
+
+(defrule "part_of && subset-of"
+    (<= (part_of ?x ?z)
+        (and (part_of ?x ?y)
+             (subset-of ?y ?z)))
+  :documentation "Chained rule to allow navigation of SO part_of
+hierarchy.")
