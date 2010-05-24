@@ -37,6 +37,25 @@ arguments required by many PLI functions to be made optional."
                   (env *current-environment*))
      (,(find-symbol (symbol-name fname) "PLI") ,@args module env)))
 
+(defmacro define-pli-iter-wrapper (fname (&rest args))
+  "Defines a wrapper function which calls an iterator-returning
+PowerLoom function of the same name. The wrapper function allows the
+module and environment arguments required by many PLI functions to be
+made optional."
+  `(defun ,fname (,@args &key (module *current-module*)
+                  (env *current-environment*) (realise :collect))
+     (let ((pl-iter (,(find-symbol (symbol-name fname) "PLI") ,@args
+                      module env)))
+       (ecase realise
+         (:collect (collect-tuples pl-iter))
+         (:nconc (nconc-tuples pl-iter))
+         ((nil) (defgenerator
+                    (more (not (pli:empty? pl-iter)))
+                    (next (if (pli:next? pl-iter)
+                              (tuple pl-iter)
+                            (error 'invalid-operation-error
+                                   :text "iterator exhausted")))))))))
+
 (defmacro with-environment ((env) &body body)
   "Evaluates BODY with the PowerLoom environment bound to ENV."
   `(let ((*current-environment* ,env))
@@ -120,15 +139,16 @@ used for PowerLoom queries."
   "The current PowerLoom environment.")
 
 ;; Wrap some PowerLoom functions
-(define-pli-wrapper get-concept-instances (concept))
-(define-pli-wrapper get-direct-concept-instances (concept))
-(define-pli-wrapper get-concept-instances-matching-value (concept relation value))
-(define-pli-wrapper get-direct-subrelations (relation))
-(define-pli-wrapper get-direct-superrelations (relation))
-(define-pli-wrapper get-proper-subrelations (relation))
-(define-pli-wrapper get-proper-superrelations (relation))
-(define-pli-wrapper get-types (object))
-(define-pli-wrapper get-direct-types (object))
+(define-pli-iter-wrapper get-concept-instances (concept))
+(define-pli-iter-wrapper get-direct-concept-instances (concept))
+(define-pli-iter-wrapper get-concept-instances-matching-value
+    (concept relation value))
+(define-pli-iter-wrapper get-direct-subrelations (relation))
+(define-pli-iter-wrapper get-direct-superrelations (relation))
+(define-pli-iter-wrapper get-proper-subrelations (relation))
+(define-pli-iter-wrapper get-proper-superrelations (relation))
+(define-pli-iter-wrapper get-types (object))
+(define-pli-iter-wrapper get-direct-types (object))
 (define-pli-wrapper is-subrelation (sub super))
 (define-pli-wrapper is-a (object concept))
 (define-pli-wrapper get-object (name))
@@ -215,29 +235,41 @@ Key:
 
 (defun tuple (pl-iter &key (module *current-module*)
               (env *current-environment*))
+  "Returns a list of all values current in PowerLoom iterator
+PL-ITER. The values are in the same order as the iterator columns."
   (loop
      for n from 0 below (pli:get-column-count pl-iter)
      collect (pli:get-nth-value pl-iter n module env)))
 
 (defun tuple-size (pl-iter)
+  "Returns the size of the tuple that may currently be obtained from
+PowerLoom iterator PL-ITER."
   (pli:get-column-count pl-iter))
 
 (defun next-tuple (pl-iter)
+  "Returns a list of all next values in PowerLoom iterator PL-ITER, or
+NIL if the iterator is exhausted. The values are in the same order as
+the iterator columns."
   (when (pli:next? pl-iter)
     (tuple pl-iter)))
 
 (defun collect-tuples (pl-iter)
+  "Returns a list of all tuples available from PowerLoom iterator
+PL-ITER."
   (loop
      while (pli:next? pl-iter)
      collect (tuple pl-iter)))
 
 (defun nconc-tuples (pl-iter)
+  "Returns a list of all tuples available from PowerLoom iterator
+PL-ITER, merging the tuples with nconc."
   (loop
      while (pli:next? pl-iter)
      nconc (tuple pl-iter)))
 
 (defun subrelation-tree (relation &key (module *current-module*)
                          (env *current-environment*))
+  "Returns a cons tree of all the subrelations of REALTION."
   (let ((subs (nconc-tuples (get-direct-subrelations
                              relation :module module :env env))))
     (if (null subs)
