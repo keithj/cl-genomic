@@ -82,7 +82,7 @@ Forms to be executed in the context of these bindings."
            (,upper (or ,end (length-of ,seq))))
       (etypecase ,seq
         (encoded-dna-sequence
-         (with-slots (,vector)
+         (with-slots ((,vector vector))
              ,seq
            (loop
               for i of-type array-index from ,lower below ,upper
