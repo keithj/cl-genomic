@@ -19,15 +19,9 @@
 
 (in-package :cl-user)
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (when (asdf:find-system :deoxybyte-systems nil)
-    (asdf:operate 'asdf:load-op :deoxybyte-systems)))
+(asdf:load-system :deoxybyte-systems)
 
-(defpackage :cl-genomic-system
-  (:use :common-lisp :asdf)
-  (:import-from :deoxybyte-systems :lift-test-config :cldoc-config))
-
-(in-package :cl-genomic-system)
+(in-package :uk.co.deoxybyte-systems)
 
 (defsystem cl-genomic
     :name "Common Lisp Genomics"
@@ -125,9 +119,8 @@
                                          "bio-sequence-alignment")))
                           :depends-on (:core))
                  (:lift-test-config :lift-tests
-                                    :pathname "cl-genomic-test.config"
+                                    :pathname "cl-genomic-test"
                                     :target-system :cl-genomic)
                  (:cldoc-config :cldoc-documentation
                                 :pathname "doc/html/"
                                 :target-system :cl-genomic)))
-

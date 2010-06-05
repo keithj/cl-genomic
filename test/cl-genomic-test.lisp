@@ -19,7 +19,7 @@
 
 (in-package :cl-genomic-test)
 
-;; The base test of all cl-genomic tests
+;; The base test suite of all cl-genomic tests
 (deftestsuite cl-genomic-tests ()
   ())
 

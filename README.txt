@@ -53,13 +53,16 @@ deoxybyte-unix          git://github.com/keithj/deoxybyte-unix.git
 
 cl-ppcre                http://weitz.de/cl-ppcre/
 PURI                    http://puri.b9.com/
+                        git://git.b9.com/puri.git
 CFFI                    http://common-lisp.net/project/cffi/
 Ironclad                http://method-combination.net/lisp/ironclad/
                         git://github.com/froydnj/ironclad.git
-cl-base64               http://www.cliki.net/CL-Base64/
+cl-base64               http://www.cliki.net/cl-base64/
+                        git://git.b9.com/cl-base64.git
 
 
 Optional dependencies
 
 LIFT                    http://common-lisp.net/project/lift/
+                        git://github.com/gwkkwg/lift.git
 CLDOC                   http://common-lisp.net/project/cldoc/
