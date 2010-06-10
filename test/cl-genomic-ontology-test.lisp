@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (C) 2007-2010 Keith James. All rights reserved.
+;;; Copyright (C) 2010 Keith James. All rights reserved.
 ;;;
 ;;; This file is part of cl-genomic.
 ;;;
@@ -17,13 +17,20 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;
 
-(defpackage :cl-genomic-test
-  (:use #:common-lisp #:deoxybyte-utilities #:deoxybyte-io
-        #:bio-sequence #:lift)
-  (:export #:cl-genomic-tests)
-  (:documentation "cl-genomic tests."))
+(in-package :cl-genomic-ontology-test)
 
-(defpackage :cl-genomic-ontology-test
-  (:use #:common-lisp #:bio-sequence #:bio-ontology #:lift)
-  (:export #:cl-genomic-ontology-tests)
-  (:documentation "cl-genomic-ontology tests."))
+;; The base test of all cl-genomic-ontology tests
+(deftestsuite cl-genomic-ontology-tests ()
+  ()
+  (:setup (unless (modulep :sofa)
+            (load-ontology (merge-pathnames "ontology/sofa_2_4_2.plm"))
+            (load-ontology (merge-pathnames "ontology/sofa_addenda.plm")))))
+
+(addtest (cl-genomic-ontology-tests) modulep/1
+  (ensure (modulep "SOFA"))
+  (ensure (modulep :sofa))
+  (ensure (not (modulep :foo))))
+
+(addtest (cl-genomic-ontology-tests) get-module/1
+  (ensure (get-module "SOFA"))
+  (ensure (get-module :sofa)))
