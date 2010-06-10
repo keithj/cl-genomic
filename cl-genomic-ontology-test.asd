@@ -17,22 +17,12 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;
 
-(in-package :cl-user)
-
-(asdf:load-system :deoxybyte-systems)
-
-(in-package :deoxybyte-systems)
-
-(defsystem cl-genomic-ontology
-  :depends-on (:cl-genomic :powerloom)
-  :in-order-to ((test-op (load-op :cl-genomic-ontology
-                                  :cl-genomic-ontology-test)))
-  :components ((:module :powerloom
-                        :serial t
-                        :pathname "src/ontology/"
-                        :components
-                        ((:file "powerloom")
-                         (:file "sofa-knowledgebase")))
-               (:lift-test-config :lift-tests
-                                  :pathname "cl-genomic-ontology-test"
-                                  :target-system :cl-genomic-ontology)))
+(defsystem cl-genomic-ontology-test
+    :depends-on (:cl-genomic-ontology
+                 (:version :lift "1.7.0"))
+    :components ((:module :cl-genomic-ontology-test
+                          :pathname "test/"
+                          :components
+                          ((:file "package")
+                           (:file "cl-genomic-ontology-test"
+                                  :depends-on ("package"))))))
