@@ -17,7 +17,12 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;
 
-(in-package :bio-sequence)
+(in-package :bio-ontology)
+
+(defparameter *current-module* pli:null
+  "The current PowerLoom module.")
+(defparameter *current-environment* pli:null
+  "The current PowerLoom environment.")
 
 (defmacro in-syntax (readtable-expression)
   "Sets the readtable to the result of READTABLE-EXPRESSION for the
@@ -28,6 +33,24 @@ the file is compiled or loaded.
 This code by Kent Pitman, see X3J13 Cleanup Issue IN-SYNTAX:MINIMAL."
   `(eval-when (:compile-toplevel :load-toplevel :execute)
      (setq *readtable* ,readtable-expression)))
+
+(defmacro with-pli-iterator ((realise &body body))
+  (with-gensyms (var)
+    `(let ((,var (progn ,@body)))
+       (ecase ,realise
+         (:collect (collect-tuples ,var))
+         (:nconc (nconc-tuples ,var))
+         ((nil) (defgenerator
+                    (more (not (pli:empty? ,var)))
+                    (next (if (pli:next? ,var)
+                              (tuple ,var)
+                            (error 'invalid-operation-error
+                                   :text "iterator exhausted")))))))))
+
+(defmacro define-simple-pli-wrapper (fname arg)
+  `(defun ,fname (,arg &key (realise :collect))
+     (with-pli-iterator (realise (,(find-symbol (symbol-name fname) "PLI")
+                                   ,arg)))))
 
 (defmacro define-pli-wrapper (fname (&rest args))
   "Defines a wrapper function which calls a PowerLoom function of the
@@ -44,17 +67,8 @@ module and environment arguments required by many PLI functions to be
 made optional."
   `(defun ,fname (,@args &key (module *current-module*)
                   (env *current-environment*) (realise :collect))
-     (let ((pl-iter (,(find-symbol (symbol-name fname) "PLI") ,@args
-                      module env)))
-       (ecase realise
-         (:collect (collect-tuples pl-iter))
-         (:nconc (nconc-tuples pl-iter))
-         ((nil) (defgenerator
-                    (more (not (pli:empty? pl-iter)))
-                    (next (if (pli:next? pl-iter)
-                              (tuple pl-iter)
-                            (error 'invalid-operation-error
-                                   :text "iterator exhausted")))))))))
+     (with-pli-iterator (realise (,(find-symbol (symbol-name fname) "PLI")
+                                   ,@args module env)))))
 
 (defmacro with-environment ((env) &body body)
   "Evaluates BODY with the PowerLoom environment bound to ENV."
@@ -133,12 +147,19 @@ used for PowerLoom queries."
 (defvar *powerloom-readtable*
   (setup-dollar-reader (copy-readtable nil))
   "The PowerLoom reader with dollar syntax for concepts.")
-(defparameter *current-module* pli:null
-  "The current PowerLoom module.")
-(defparameter *current-environment* pli:null
-  "The current PowerLoom environment.")
 
 ;; Wrap some PowerLoom functions
+(define-simple-pli-wrapper get-modules kb-modules-only-p)
+(define-simple-pli-wrapper get-child-modules module)
+(define-simple-pli-wrapper get-parent-modules module)
+
+(define-pli-wrapper is-subrelation (sub super))
+(define-pli-wrapper is-a (object concept))
+(define-pli-wrapper is-true-binary-proposition (relation arg value))
+(define-pli-wrapper is-true-proposition (proposition))
+(define-pli-wrapper is-true-unary-proposition (relation arg))
+(define-pli-wrapper get-object (name))
+
 (define-pli-iter-wrapper get-concept-instances (concept))
 (define-pli-iter-wrapper get-direct-concept-instances (concept))
 (define-pli-iter-wrapper get-concept-instances-matching-value
@@ -149,21 +170,28 @@ used for PowerLoom queries."
 (define-pli-iter-wrapper get-proper-superrelations (relation))
 (define-pli-iter-wrapper get-types (object))
 (define-pli-iter-wrapper get-direct-types (object))
-(define-pli-wrapper is-subrelation (sub super))
-(define-pli-wrapper is-a (object concept))
-(define-pli-wrapper get-object (name))
 
 ;; Import some PowerLoom functions
 (import 'pli:clear-module :bio-sequence)
-(import 'pli-get-modules :bio-sequence)
 (import 'pli:get-current-module :bio-sequence)
-(import 'pli:get-child-modules :bio-sequence)
-(import 'pli:get-parent-modules :bio-sequence)
 (import 'pli:get-home-module :bio-sequence)
 (import 'pli:get-name :bio-sequence)
 (import 'pli:get-domain :bio-sequence)
 (import 'pli:get-range :bio-sequence)
 (import 'pli:get-arity :bio-sequence)
+
+(import 'pli:is-default :bio-sequence)
+(import 'pli:is-enumerated-collection :bio-sequence)
+(import 'pli:is-enumerated-list :bio-sequence)
+(import 'pli:is-enumerated-set :bio-sequence)
+(import 'pli:is-false :bio-sequence)
+(import 'pli:is-float :bio-sequence)
+(import 'pli:is-integer :bio-sequence)
+(import 'pli:is-logic-object :bio-sequence)
+(import 'pli:is-number :bio-sequence)
+(import 'pli:is-string :bio-sequence)
+(import 'pli:is-true :bio-sequence)
+(import 'pli:is-unknown :bio-sequence)
 
 (defun load-ontology (filespec &optional (env *current-environment*))
   "Loads the PowerLoom format ontology from FILESPEC."
@@ -172,11 +200,13 @@ used for PowerLoom queries."
     (pathname (pli:load (namestring filespec) env))
     (stream (pli:load-native-stream filespec env))))
 
+(defun modulep (name &optional (env *current-environment*))
+  (not (eql pli:null (pli:get-module (%ensure-string name) env))))
+
 (defun get-module (name &optional (env *current-environment*))
   "Returns the PowerLoom module named NAME."
-  (let ((module (pli:get-module (%ensure-string name) env)))
-    (check-arguments (not (eql pli:null module)) (name) "no such module")
-    module))
+  (check-arguments (modulep name) (name) "no such module")
+  (pli:get-module (%ensure-string name) env))
 
 (defun get-concept (name &key (module *current-module*)
                     (env *current-environment*))
@@ -222,16 +252,8 @@ Key:
 - :COLLECT : collect into a list (the default).
 - :NCONC : nconc into a list.
 - NIL : return a generator function."
-  (let ((pl-iter (pli:retrieve (to-stella query module env) module env)))
-    (ecase realise
-      (:collect (collect-tuples pl-iter))
-      (:nconc (nconc-tuples pl-iter))
-      ((nil) (defgenerator
-                 (more (not (pli:empty? pl-iter)))
-                 (next (if (pli:next? pl-iter)
-                           (tuple pl-iter)
-                         (error 'invalid-operation-error
-                                :text "iterator exhausted"))))))))
+  (with-pli-iterator (realise (pli:retrieve (to-stella query module env)
+                                            module env))))
 
 (defun tuple (pl-iter &key (module *current-module*)
               (env *current-environment*))

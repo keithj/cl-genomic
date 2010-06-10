@@ -17,7 +17,7 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;
 
-(in-package :bio-sequence)
+(in-package :bio-ontology)
 
 (in-syntax *powerloom-readtable*)
 
@@ -29,6 +29,11 @@
         (t
          (cons (traverse (first tree) fn)
                (traverse (rest tree) fn)))))
+
+;;; term-* functions take a concept argument (an OBO term).
+;;;
+;;; find-* functions take a string argument that is used to find a
+;;; concept (an OBO term).
 
 (defun term-name (concept)
   "Returns the name of term CONCEPT."
@@ -60,6 +65,9 @@ part_of."
   (retrieve `(all ?p (and (concept ?p)
                           (concept ,child)
                           (part_of ,child ?p))) :realise :nconc))
+
+(defun term-parent-p (parent child)
+  (ask `(part_of ,child ,parent)))
 
 ;; At REPL:
 ;; (load-ontology "/home/keith/dev/lisp/cl-genomic.git/ontology/sofa_2_4_2.plm")
