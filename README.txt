@@ -9,26 +9,18 @@ Installation
 
 cl-genomic uses ASDF for system definition. Copy or symlink
 cl-genomic.asd (and optionally cl-genomic-test.asd) to your
-asdf:*central-registry* and load cl-genomic with the asdf:operate
+asdf:*central-registry* and load cl-genomic with the asdf:load-system
 function:
 
- (asdf:operate 'asdf:load-op :cl-genomic)
-
-or with the equivalent deoxybyte-systems:load-system function:
-
- (dxs:load-system :cl-genomic)
+ (asdf:load-system :cl-genomic)
 
 
 Tests
 
 To run the unit and regression tests you need to have LIFT
-installed. Run the tests with the asdf:operate function:
+installed. Run the tests with the asdf:test-system function:
 
- (asdf:operate 'asdf:test-op :cl-genomic)
-
-or with the equivalent deoxybyte-systems:test-system function:
-
- (dxs:test-system :cl-genomic)
+ (asdf:test-system :cl-genomic)
 
 
 Documentation
@@ -62,6 +54,8 @@ cl-base64               http://www.cliki.net/cl-base64/
 
 
 Optional dependencies
+
+PowerLoom               http://www.isi.edu/isd/LOOM/PowerLoom/
 
 LIFT                    http://common-lisp.net/project/lift/
                         git://github.com/gwkkwg/lift.git
