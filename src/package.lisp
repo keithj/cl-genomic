@@ -17,6 +17,8 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;
 
+(in-package :cl-user)
+
 (defpackage :bio-sequence
   (:use #:common-lisp #:deoxybyte-utilities #:deoxybyte-io)
   (:nicknames #:bs)
@@ -251,47 +253,6 @@ represented as CLOS classes.
 An event-based parsing interface enables reading of some common,
 simple biological sequence file formats into primitive Lisp data
 structures or CLOS instances."))
-
-(defpackage :bio-ontology
-  (:use #:common-lisp #:deoxybyte-utilities)
-  (:nicknames #:bo)
-  (:export
-
-   #:load-ontology
-   #:in-syntax
-
-   #:with-environment
-
-   #:with-module
-   #:in-module
-   #:modulep
-   #:get-module
-   #:get-home-module
-   #:get-child-modules
-   #:get-parent-modules
-
-   #:get-concept
-
-   #:is-subrelation
-   #:is-a
-   #:is-true-binary-proposition
-   #:is-true-proposition
-   #:is-true-unary-proposition
-
-   #:evaluate
-   #:ask
-   #:retrieve
-
-   #:subrelation-tree
-   #:traverse
-   
-   #:term-name
-   #:term-doc
-   #:term-parents
-   #:term-parent-p
-
-   #:find-term
-   #:find-doc))
 
 (defpackage :bio-sequence-user
   (:use #:common-lisp #:bio-sequence

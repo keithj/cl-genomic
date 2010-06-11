@@ -171,28 +171,6 @@ used for PowerLoom queries."
 (define-pli-iter-wrapper get-types (object))
 (define-pli-iter-wrapper get-direct-types (object))
 
-;; Import some PowerLoom functions
-(import 'pli:clear-module :bio-sequence)
-(import 'pli:get-current-module :bio-sequence)
-(import 'pli:get-home-module :bio-sequence)
-(import 'pli:get-name :bio-sequence)
-(import 'pli:get-domain :bio-sequence)
-(import 'pli:get-range :bio-sequence)
-(import 'pli:get-arity :bio-sequence)
-
-(import 'pli:is-default :bio-sequence)
-(import 'pli:is-enumerated-collection :bio-sequence)
-(import 'pli:is-enumerated-list :bio-sequence)
-(import 'pli:is-enumerated-set :bio-sequence)
-(import 'pli:is-false :bio-sequence)
-(import 'pli:is-float :bio-sequence)
-(import 'pli:is-integer :bio-sequence)
-(import 'pli:is-logic-object :bio-sequence)
-(import 'pli:is-number :bio-sequence)
-(import 'pli:is-string :bio-sequence)
-(import 'pli:is-true :bio-sequence)
-(import 'pli:is-unknown :bio-sequence)
-
 (defun load-ontology (filespec &optional (env *current-environment*))
   "Loads the PowerLoom format ontology from FILESPEC."
   (etypecase filespec

@@ -24,14 +24,16 @@
 (in-package :deoxybyte-systems)
 
 (defsystem cl-genomic-ontology
-  :depends-on (:cl-genomic :powerloom)
+  :depends-on (:cl-genomic)
   :in-order-to ((test-op (load-op :cl-genomic-ontology
                                   :cl-genomic-ontology-test)))
   :components ((:module :powerloom
                         :serial t
                         :pathname "src/ontology/"
                         :components
-                        ((:file "powerloom")
+                        ((:file "powerloom-loader")
+                         (:file "package")
+                         (:file "powerloom")
                          (:file "sofa-knowledgebase")))
                (:lift-test-config :lift-tests
                                   :pathname "cl-genomic-ontology-test"
