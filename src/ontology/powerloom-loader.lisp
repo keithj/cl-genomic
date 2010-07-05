@@ -40,4 +40,9 @@
           (t
            (error "The *powerloom-home* was not set. See README.txt for help.")))))
 
+;; These are setq'd in PowerLoom's load-stella file, but are not
+;; defined on SBCL. Defining them here avoids compiler warnings.
+#+:sbcl(defparameter *stella-compiler-optimization* nil)
+#+:sbcl(defparameter *gc-verbose* nil)
+
 (load-powerloom)
