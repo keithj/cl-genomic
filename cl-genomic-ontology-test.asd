@@ -21,7 +21,7 @@
     :depends-on (:cl-genomic-ontology
                  (:version :lift "1.7.0"))
     :components ((:module :cl-genomic-ontology-test
-                          :pathname "test/"
+                          :pathname "test/ontology/"
                           :components
                           ((:file "package")
                            (:file "cl-genomic-ontology-test"
