@@ -87,25 +87,29 @@ made optional."
      (pli:change-module *current-module*)))
 
 (defun dollar-reader (stream char)
-  "This reader enables us to read PowerLoom concepts with dollar
+  (declare (ignore char))
+  (let ((name (%read-symbol-name stream)))
+    (if (equal "" name)
+        (error 'reader-error :stream stream)
+      `(stella-symbol ,name))))
+
+(defun ampersand-reader (stream char)
+  "This reader enables us to read PowerLoom concepts with ampersand
 syntax. Thus
 ;;; (get-concept 'concept-symbol)
-becomes
-;;; $concept-symbol
-and
-;;; (get-concept \"concept-name\")
-becomes
-;;; $\"concept-name\""
+may be written as
+;;; @concept-symbol"
   (declare (ignore char))
-  (let ((value (read stream t nil t)))
-    (etypecase value
-      (symbol `(get-concept ',value))
-      (string `(get-concept ,value)))))
+  (let ((name (%read-symbol-name stream)))
+    (if (equal "" name)
+        (error 'reader-error :stream stream)
+      `(get-concept ,name))))
 
-(defun setup-dollar-reader (&optional (readtable *readtable*))
+(defun setup-powerloom-reader (&optional (readtable *readtable*))
   "Sets the {defun dollar-reader} to be used in READTABLE, dispatching
 on the $ character."
   (set-macro-character #\$ #'dollar-reader nil readtable)
+  (set-macro-character #\@ #'ampersand-reader nil readtable)
   readtable)
 
 (defun stella-symbol (name &optional (module *current-module*)
@@ -118,9 +122,10 @@ on the $ character."
   "Recursively converts FORM to a Stella equivalent. The result may be
 used for PowerLoom queries."
   (cond ((and (listp form)
-              (eql (first form) 'get-concept)
+              (or (eql (first form) 'get-concept)
+                  (eql (first form) 'stella-symbol)) ; evaluate these
               (fboundp (first form)))
-         (apply (first form) (rest form))) ; evaluate get-concept calls
+         (apply (first form) (rest form)))
         ((symbolp form)
          (stella-symbol form module env))
         ((listp form)
@@ -145,7 +150,7 @@ used for PowerLoom queries."
          (pli:object-to-string object))))
 
 (defvar *powerloom-readtable*
-  (setup-dollar-reader (copy-readtable nil))
+  (setup-powerloom-reader (copy-readtable nil))
   "The PowerLoom reader with dollar syntax for concepts.")
 
 ;; Wrap some PowerLoom functions
@@ -186,6 +191,10 @@ used for PowerLoom queries."
   (check-arguments (modulep name) (name) "no such module")
   (pli:get-module (%ensure-string name) env))
 
+(defun clear-module (name)
+  (check-arguments (modulep name) (name) "no such module")
+  (pli:clear-module (%ensure-string name)))
+
 (defun get-concept (name &key (module *current-module*)
                     (env *current-environment*))
   "Identical to PLI:GET-CONCEPT, but with keyword arguments."
@@ -213,10 +222,10 @@ reader syntax is enabled, it may be used here.
 
 e.g.
 
-;;; (retrieve '(all ?x (part_of $\"SO:0000179\" ?x)))
-;;; (retrieve '(all ?x (part_of $|SO:0000179| ?x)))
-;;; (retrieve '(all ?x (part_of $|SO:0000179| ?x)) :realise :nconc)
-;;; (retrieve '(all (?x ?n ?d) (and (part_of $\"SO:0000179\" ?x)
+;;; (retrieve '(all ?x (part_of |SO:0000179| ?x)))
+;;; (retrieve '(all ?x (part_of $SO:0000179 ?x)))
+;;; (retrieve '(all ?x (part_of $SO:0000179 ?x)) :realise :nconc)
+;;; (retrieve '(all (?x ?n ?d) (and (part_of $SO:0000179 ?x)
 ;;;                                 (= (documentation ?x) ?d))))
 
 Key:
@@ -269,9 +278,9 @@ PL-ITER, merging the tuples with nconc."
 
 (defun subrelation-tree (relation &key (module *current-module*)
                          (env *current-environment*))
-  "Returns a cons tree of all the subrelations of REALTION."
-  (let ((subs (nconc-tuples (get-direct-subrelations
-                             relation :module module :env env))))
+  "Returns a cons tree of all the subrelations of RELATION."
+  (let ((subs (get-direct-subrelations relation :module module :env env
+                                       :realise :nconc)))
     (if (null subs)
         relation
       (cons relation (mapcar (lambda (sub)
@@ -286,3 +295,13 @@ PL-ITER, merging the tuples with nconc."
                                 (symbolp (second name)))
                            (name) "expected a quoted symbol")
           (symbol-name (second name)))))
+
+(defun %read-symbol-name (stream)
+  (flet ((paren-char-p (char)
+           (or (char= #\( char) (char= #\) char))))
+    (with-output-to-string (s)
+      (loop
+         for c = (peek-char nil stream)
+         while c
+         until (or (whitespace-char-p c) (paren-char-p c))
+         do (write-char (read-char stream) s)))))

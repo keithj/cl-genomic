@@ -69,6 +69,18 @@ part_of."
 (defun term-parent-p (parent child)
   (ask `(part_of ,child ,parent)))
 
+(defmethod assert-instance ((seq bs:bio-sequence) (concept string))
+  (evaluate `(assert (,(stella-symbol concept)
+                       ,(stella-symbol (bs:identity-of seq))))))
+
+(defmethod assert-instance ((seq bs:bio-sequence) (concept symbol))
+  (evaluate `(assert (,concept ,(stella-symbol (bs:identity-of seq))))))
+
+(defmethod assert-instance ((seq bs:bio-sequence) concept)
+  (evaluate `(assert (,concept ,(stella-symbol (bs:identity-of seq))))))
+
+
+
 ;; At REPL:
 ;; (load-ontology "/home/keith/dev/lisp/cl-genomic.git/ontology/sofa_2_4_2.plm")
 ;; (load-ontology "/home/keith/dev/lisp/cl-genomic.git/ontology/sofa_addenda.plm")
@@ -80,18 +92,18 @@ part_of."
 ;; (with-module (:sofa)
 ;;    (get-concept "SO:0000001"))
 ;; (with-module (:sofa)
-;;   $"SO:0000001")
-;; (with-module (:sofa)
-;;   $|SO:0000001|)
+;;   @SO:0000001)
 ;;
 ;; Switch to module
 ;; (in-module :sofa)
 ;;
+;; (retrieve '(all ?x (part_of |SO:0000179| ?x)))
+;;
 ;; With the dollar reader syntax enabled:
-;; (retrieve '(all ?x (part_of $"SO:0000179" ?x)))
-;; (retrieve '(all ?x (part_of $|SO:0000179| ?x)))
-;; (retrieve '(all ?x (part_of $|SO:0000179| ?x)) :realise :nconc)
-;; (retrieve '(all (?x ?n ?d) (and (part_of $"SO:0000179" ?x)
+;; (retrieve '(all ?x (part_of |SO:0000179| ?x)))
+;; (retrieve '(all ?x (part_of $SO:0000179 ?x)))
+;; (retrieve '(all ?x (part_of $SO:0000179 ?x)) :realise :nconc)
+;; (retrieve '(all (?x ?d) (and (part_of $SO:0000179 ?x)
 ;;                                 (= (documentation ?x) ?d))))
 ;;
 ;; Splice in Lisp values with backquote:
@@ -101,20 +113,20 @@ part_of."
 ;;                      (= (name ?c) ,name))) :realise :nconc))
 ;;
 ;;
-;; Get tree of sub-terms
-;; (subrelation-tree $|SO:0000001|)
+;; Get tree of sub-terms. Requires concept argument
+;; (subrelation-tree @SO:0000001)
 ;;
 ;; Apply term-name function to all nodes to get new tree
 ;; (traverse * #'term-name)
 ;;
 ;; Get all part_of SO:0000179
-;; (retrieve '(all ?x (part_of $|SO:0000179| ?x)))
+;; (retrieve '(all ?x (part_of $SO:0000179 ?x)))
 ;;
 ;; or just
-;; (retrieve '(all (part_of $|SO:0000179| ?x)))
+;; (retrieve '(all (part_of $SO:0000179 ?x)))
 ;;
 ;; or flattened
-;; (retrieve '(all (part_of $|SO:0000179| ?x)) :realise :nconc)
+;; (retrieve '(all (part_of $SO:0000179 ?x)) :realise :nconc)
 ;;
 ;; or as generator function
-;; (retrieve '(all (part_of $|SO:0000179| ?x)) :realise nil)
+;; (retrieve '(all (part_of $SO:0000179 ?x)) :realise nil)
