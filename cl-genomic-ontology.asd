@@ -34,7 +34,7 @@
                         ((:file "powerloom-loader")
                          (:file "package")
                          (:file "powerloom")
-                         (:file "sofa-knowledgebase")))
+                         (:file "sequence-ontology-kb")))
                (:lift-test-config :lift-tests
                                   :pathname "cl-genomic-ontology-test"
                                   :target-system :cl-genomic-ontology)))
