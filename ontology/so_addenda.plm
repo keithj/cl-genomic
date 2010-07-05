@@ -17,12 +17,12 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;
 
-(in-module "SOFA")
+(in-module "SEQUENCE-ONTOLOGY")
 
 (defrelation member_of ((?x THING) (?y THING))
              :=> (part_of ?x ?y)
   :documentation "SO member_of is_a part_of. This relation is missing
-from the SOFA 2.4.2 release.")
+from the SO 2.4.3 release.")
 (assert (transitive member_of))
 
 (defrule "subset-of && part_of"
