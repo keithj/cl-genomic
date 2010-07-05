@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (C) 2007-2010 Keith James. All rights reserved.
+;;; Copyright (C) 2010 Keith James. All rights reserved.
 ;;;
 ;;; This file is part of cl-genomic.
 ;;;
@@ -17,11 +17,20 @@
 ;;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ;;;
 
-(in-package :cl-user)
+(in-package :cl-genomic-ontology-test)
 
-(defpackage :cl-genomic-test
-  (:use #:common-lisp #:deoxybyte-utilities #:deoxybyte-io
-        #:bio-sequence #:lift)
-  (:export #:cl-genomic-tests)
-  (:documentation "cl-genomic tests."))
+;; The base test of all cl-genomic-ontology tests
+(deftestsuite cl-genomic-ontology-tests ()
+  ()
+  (:setup (unless (modulep :sofa)
+            (load-ontology (merge-pathnames "ontology/so_2_4_3.plm"))
+            (load-ontology (merge-pathnames "ontology/so_addenda.plm")))))
 
+(addtest (cl-genomic-ontology-tests) modulep/1
+  (ensure (modulep "SEQUENCE-ONTOLOGY"))
+  (ensure (modulep :sequence-ontology))
+  (ensure (not (modulep :foo))))
+
+(addtest (cl-genomic-ontology-tests) get-module/1
+  (ensure (get-module "SEQUENCE-ONTOLOGY"))
+  (ensure (get-module :sequence-ontology)))

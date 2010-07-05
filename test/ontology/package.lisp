@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (C) 2007-2010 Keith James. All rights reserved.
+;;; Copyright (C) 2010 Keith James. All rights reserved.
 ;;;
 ;;; This file is part of cl-genomic.
 ;;;
@@ -19,9 +19,7 @@
 
 (in-package :cl-user)
 
-(defpackage :cl-genomic-test
-  (:use #:common-lisp #:deoxybyte-utilities #:deoxybyte-io
-        #:bio-sequence #:lift)
-  (:export #:cl-genomic-tests)
-  (:documentation "cl-genomic tests."))
-
+(defpackage :cl-genomic-ontology-test
+  (:use #:common-lisp #:bio-sequence #:bio-ontology #:lift)
+  (:export #:cl-genomic-ontology-tests)
+  (:documentation "cl-genomic-ontology tests."))
