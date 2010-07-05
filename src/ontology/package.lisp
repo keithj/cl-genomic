@@ -23,7 +23,7 @@
   (defun powerloom-symbols ()
     "Returns a list of the symbols required for the PowerLoom Lisp
 API."
-    '(#:clear-module
+    '(#:initialize
       #:get-current-module
       #:get-home-module
       #:get-child-modules
@@ -63,6 +63,7 @@ API."
       #:in-module
       #:modulep
       #:get-module
+      #:clear-module
 
       #:get-concept
 
