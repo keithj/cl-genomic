@@ -22,12 +22,10 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (defun powerloom-symbols ()
     "Returns a list of the symbols required for the PowerLoom Lisp
-API."
+API. These are PowerLoom symbols that are simply re-exported."
     '(#:initialize
       #:get-current-module
       #:get-home-module
-      #:get-child-modules
-      #:get-parent-modules
 
       #:get-name
       #:get-domain
@@ -45,7 +43,11 @@ API."
       #:is-number
       #:is-string
       #:is-true
-      #:is-unknown)))
+      #:is-unknown
+
+      #:object-to-float
+      #:object-to-integer
+      #:object-to-string)))
 
 (defmacro define-bio-ontology-package ()
   `(defpackage :bio-ontology
@@ -53,7 +55,12 @@ API."
      (:nicknames #:bo)
      (:import-from #:pli ,@(powerloom-symbols))
      (:export
+      ,@(powerloom-symbols)
 
+      #:*powerloom-readtable*
+      #:*current-module*
+      #:*current-environment*
+      
       #:load-ontology
       #:in-syntax
 
@@ -64,6 +71,8 @@ API."
       #:modulep
       #:get-module
       #:clear-module
+      #:get-child-modules
+      #:get-parent-modules
 
       #:get-concept
 
@@ -82,6 +91,7 @@ API."
    
       #:term-name
       #:term-doc
+      #:term-same
       #:term-parents
       #:term-parent-p
 
