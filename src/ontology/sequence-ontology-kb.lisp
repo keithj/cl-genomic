@@ -21,6 +21,8 @@
 
 (in-syntax *powerloom-readtable*)
 
+(defparameter *instances* (make-hash-table :test 'equal))
+
 (defun traverse (tree fn) ; move this to utilities
   (cond ((null tree)
          nil)
@@ -58,6 +60,9 @@ not such term."
                             (= (name ?c) ,name)
                             (= (documentation ?c) ?d))) :realise :nconc)))
 
+(defun term-same (term1 term2)
+  (equal (get-name term1) (get-name term2)))
+
 (defun term-parents (child)
   "Return a list of the \"parent\" terms of term CHILD. This is
 parenthood in the GFF3 sense; meaning the terms which CHILD is a
@@ -69,15 +74,34 @@ part_of."
 (defun term-parent-p (parent child)
   (ask `(part_of ,child ,parent)))
 
+(defmethod assert-instance :after ((seq bs:bio-sequence) concept)
+  (with-accessors ((identity bs:identity-of))
+      seq
+    (when (ask `(,concept ,(stella-symbol identity)))
+      (setf (gethash identity *instances*) seq))))
+
 (defmethod assert-instance ((seq bs:bio-sequence) (concept string))
   (evaluate `(assert (,(stella-symbol concept)
                        ,(stella-symbol (bs:identity-of seq))))))
 
-(defmethod assert-instance ((seq bs:bio-sequence) (concept symbol))
-  (evaluate `(assert (,concept ,(stella-symbol (bs:identity-of seq))))))
-
 (defmethod assert-instance ((seq bs:bio-sequence) concept)
   (evaluate `(assert (,concept ,(stella-symbol (bs:identity-of seq))))))
+
+;; (defmethod retract-instance :after ((identity string) concept)
+;;   (when (ask `(,concept ,(stella-symbol identity)))
+;;     (remhash identity *instances*)))
+
+(defmethod retract-instance :after ((seq bs:bio-sequence) concept)
+  (with-accessors ((identity bs:identity-of))
+      seq
+    (when (ask `(,concept ,(stella-symbol identity)))
+      (remhash identity *instances*))))
+
+;; (defmethod retract-instance ((identity string) concept)
+;;   (evaluate `(retract (,concept ,(stella-symbol identity)))))
+
+(defmethod retract-instance ((seq bs:bio-sequence) concept)
+  (evaluate `(retract (,concept ,(stella-symbol (bs:identity-of seq))))))
 
 
 
