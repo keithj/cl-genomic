@@ -53,14 +53,12 @@ conditions."))
 ;; on bio-sequences."))
 
 (define-condition bio-sequence-op-error (invalid-operation-error
-                                         bio-sequence-error)
-  ((text :initform nil
-         :initarg :text
-         :reader text-of
-         :documentation "Error message text."))
+                                         bio-sequence-error
+                                         simple-text-condition)
+  ()
   (:report (lambda (condition stream)
              (format stream "Invalid bio-sequence operation~@[: ~a~]"
-                     (text-of condition))))
+                     (message-of condition))))
   (:documentation "An error that is raised when performing operations
 on bio-sequences."))
 
@@ -100,6 +98,6 @@ a non-initiator codon as an initiator."))
   (:report (lambda (condition stream)
              (format stream "Invalid translation of ~a~@[: ~a~]"
                      (sequence-of condition)
-                     (text-of condition))))
+                     (message-of condition))))
   (:documentation "An error that is raised when attempting an invalid
   translation of a sequence."))

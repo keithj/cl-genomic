@@ -25,7 +25,7 @@
 
 (defsystem cl-genomic
     :name "Common Lisp Genomics"
-    :version "0.6.0"
+    :version "0.6.1"
     :author "Keith James"
     :licence "GPL v3"
     :depends-on ((:version :cffi "0.10.3")
@@ -35,9 +35,9 @@
                                              ; is out of sync with its
                                              ; professed version
                  (:version :ironclad "0.27")
-                 (:version :deoxybyte-io "0.6.0")
-                 (:version :deoxybyte-unix "0.6.3")
-                 (:version :deoxybyte-utilities "0.6.0")
+                 (:version :deoxybyte-io "0.6.2")
+                 (:version :deoxybyte-unix "0.6.5")
+                 (:version :deoxybyte-utilities "0.7.0")
                  :puri)
     :in-order-to ((test-op (load-op :cl-genomic :cl-genomic-test)))
     :components ((:module :core
