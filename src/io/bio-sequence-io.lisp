@@ -149,7 +149,8 @@
 (defmethod make-bio-sequence ((parser simple-sequence-parser))
   (let ((constructor (ecase (parsed-alphabet-of parser)
                        (:dna #'make-dna)
-                       (:rna #'make-rna)))
+                       (:rna #'make-rna)
+                       (:aa #'make-aa)))
         (chunks (parsed-residues-of parser)))
     (when (zerop (length chunks))
       (error 'malformed-record-error
@@ -166,7 +167,8 @@
 (defmethod make-bio-sequence ((parser virtual-sequence-parser))
   (let ((class (ecase (parsed-alphabet-of parser)
                  (:dna 'virtual-dna-sequence)
-                 (:rna 'virtual-rna-sequence))))
+                 (:rna 'virtual-rna-sequence)
+                 (:aa 'virtual-aa-sequence))))
     (make-instance class
                    :identity (parsed-identity-of parser)
                    :description (parsed-description-of parser)
