@@ -127,11 +127,8 @@ Returns:
 as :dna :rna or :aa."
   (multiple-value-bind (alphabet presentp)
       (gethash name *alphabets*)
-    (unless presentp
-      (error 'invalid-argument-error
-             :params 'name
-             :args name
-             :text "no such alphabet"))
+    (check-arguments presentp (name) "no such alphabet. Expected one of ~a"
+                     (mapcar #'name-of (registered-alphabets)))
     alphabet))
 
 (defun registered-alphabets ()
