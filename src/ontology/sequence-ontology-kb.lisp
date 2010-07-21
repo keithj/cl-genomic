@@ -72,7 +72,17 @@ part_of."
                           (part_of ,child ?p))) :realise :nconc))
 
 (defun term-parent-p (parent child)
+  "Returns T if term PARENT is a \"parent\" of term CHILD. This is
+parenthood in the GFF3 sense; meaning the CHILD is a part_of the
+PARENT."
   (ask `(part_of ,child ,parent)))
+
+(defgeneric assert-instance (bio-sequence term)
+  (:documentation "Asserts that BIO-SEQUENCE is an instance of TERM."))
+
+(defgeneric retract-instance (bio-sequence term)
+  (:documentation "Retracts the assrtion that BIO-SEQUENCE is an
+instance of TERM."))
 
 (defmethod assert-instance :after ((seq bs:bio-sequence) concept)
   (with-accessors ((identity bs:identity-of))
@@ -103,23 +113,36 @@ part_of."
 (defmethod retract-instance ((seq bs:bio-sequence) concept)
   (evaluate `(retract (,concept ,(stella-symbol (bs:identity-of seq))))))
 
+(defun find-instance (identity)
+  (gethash identity *instances*))
+
+(defmethod instancep ((seq bs:bio-sequence))
+  (find-instance (bs:identity-of seq)))
+
+(defmethod instance-terms ((seq bs:bio-sequence))
+  (when (instancep seq)
+    (with-accessors ((identity bs:identity-of))
+        seq
+      (get-types (first (retrieve `(1 (= ,(stella-symbol identity) ?x))
+                                  :realise :nconc)) :realise :nconc))))
+
 
 
 ;; At REPL:
-;; (load-ontology "/home/keith/dev/lisp/cl-genomic.git/ontology/sofa_2_4_2.plm")
-;; (load-ontology "/home/keith/dev/lisp/cl-genomic.git/ontology/sofa_addenda.plm")
+;; (load-ontology "/home/keith/dev/lisp/cl-genomic.git/ontology/so_2_4_3.plm")
+;; (load-ontology "/home/keith/dev/lisp/cl-genomic.git/ontology/so_addenda.plm")
 ;;
 ;; Use syntax:
 ;; (in-syntax *powerloom-readtable*)
 ;;
 ;; These are all equivalent
-;; (with-module (:sofa)
+;; (with-module (:sequence-ontology)
 ;;    (get-concept "SO:0000001"))
-;; (with-module (:sofa)
+;; (with-module (:sequence-ontology)
 ;;   @SO:0000001)
 ;;
 ;; Switch to module
-;; (in-module :sofa)
+;; (in-module :sequence-ontology)
 ;;
 ;; (retrieve '(all ?x (part_of |SO:0000179| ?x)))
 ;;
