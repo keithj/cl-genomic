@@ -582,7 +582,9 @@ number of strands, or NIL otherwise."
                do (write-char (code-char (cffi:mem-aref ptr :char i)) stream)
                finally (return str)))
         (error 'invalid-operation-error
-               :text "cannot coerce to string when unmapped from memory")))))
+               :format-control (txt "cannot coerce ~a to a"
+                                    "string when unmapped from memory")
+               :format-arguments (list seq))))))
 
 (defmethod subsequence ((seq encoded-vector-sequence) (start fixnum)
                         &optional end)
@@ -868,12 +870,14 @@ number of strands, or NIL otherwise."
 (defmethod translate :before ((seq na-sequence) (code genetic-code)
                               &key (start 0) end initiator-codon partial-codon)
   (declare (ignore initiator-codon))
-  (%check-token-range (length-of seq) start end)
-  (if (and (plusp (rem (- end start) +codon-size+))
-           (not partial-codon))
-      (error 'translation-error :sequence seq :start start :end end
-             :genetic-code code
-             :text "the translated region includes a partial codon")))
+  (let* ((na-len (length-of seq))
+         (end (or end na-len)))
+    (%check-token-range na-len start end)
+    (if (and (plusp (rem (- end start) +codon-size+))
+             (not partial-codon))
+        (error 'translation-error :sequence seq :start start :end end
+               :genetic-code code
+               :text "the translated region includes a partial codon"))))
 
 (defmethod translate ((seq virtual-dna-sequence) (code genetic-code)
                       &key (start 0) end (initiator-codon t) partial-codon)
