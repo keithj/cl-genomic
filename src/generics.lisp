@@ -187,19 +187,27 @@ matches bio-sequence-1."))
 cumulative total lengths of RANGES."))
 
 (defgeneric translate (nucleic-acid-sequence genetic-code
-                       &key start end initiator-codon partial-codon))
+                       &key start end initiator-codon partial-codon)
+  (:documentation "Translates a region of NUCLEIC-ACID-SEQUENCE,
+bounded by START and END, using GENETIC-CODE. If INITIATOR-CODON is T,
+the region is must begin with a recognised initiator codon, according
+to GENETIC-CODE. If PARTIAL-CODON is T, the last codon in the region
+may be partial and is padded with fully ambiguous bases at its end."))
 
 (defgeneric translate-codon (codon genetic-code &key initiator)
   (:documentation "Returns an amino acid for CODON using
-  GENETIC-CODE."))
+GENETIC-CODE. An implementation should consider ambiguities in CODON,
+effectively enumerating all possible unambiguous codons from it,
+translating them and unifying the result into a single, possibly
+ambiguous amino acid."))
 
 (defgeneric start-codon-p (codon genetic-code)
   (:documentation "Returns T if CODON may be a start codon in
-  GENETIC-CODE."))
+GENETIC-CODE."))
 
 (defgeneric term-codon-p (codon genetic-code)
   (:documentation "Returns T if CODON may be a terminator in
-  GENETIC-CODE."))
+GENETIC-CODE."))
 
 (defgeneric residue-position (character bio-sequence
                               &key from-end test test-not start end)
