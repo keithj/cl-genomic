@@ -178,6 +178,8 @@
    #:search-sequence
    #:residue-frequencies
 
+   #:translate
+
    #:make-interval
    #:beforep
    #:afterp
