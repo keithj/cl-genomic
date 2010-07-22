@@ -59,14 +59,14 @@ becomes full of chunks of sequence tokens.")
   (let ((seq-header (find-line stream #'content-string-p)))
     (cond ((eql :eof seq-header)
            nil)
-          ((char-fasta-header-p seq-header)
+          ((fasta-header-p seq-header)
            (push-line stream seq-header)
            t)
           (t
            (push-line stream seq-header)
            (error 'malformed-record-error
-                  :record seq-header
-                  :text "the stream does not contain Fasta data")))))
+                  :format-control "the stream contains non-Fasta data ~s"
+                  :format-arguments (list seq-header))))))
 
 (defmethod read-fasta-sequence ((stream character-line-input-stream)
                                 (alphabet symbol)
@@ -75,7 +75,7 @@ becomes full of chunks of sequence tokens.")
       (let ((seq-header (find-line stream #'content-string-p)))
         (cond ((eql :eof seq-header)
                (values nil nil))
-              ((char-fasta-header-p seq-header)
+              ((fasta-header-p seq-header)
                (multiple-value-bind (identity description)
                    (parse-fasta-header seq-header)
                  (begin-object parser)
@@ -85,21 +85,20 @@ becomes full of chunks of sequence tokens.")
                  (loop
                     for line = (stream-read-line stream)
                     while (not (eql :eof line))
-                    until (char-fasta-header-p line)
+                    until (fasta-header-p line)
                     do (object-residues parser line)
                     finally (unless (eql :eof line) ; push back the new header
                               (push-line stream line)))
                  (values (end-object parser) t)))
               (t
-               (error 'malformed-record-error
-                      :record seq-header
-                      :text  (format nil
-                                     "~s is not recognised as as Fasta header"
-                                     seq-header)))))
+               (error 'malformed-field-error
+                      :field seq-header
+                      :format-control "~s is not recognised as as Fasta header"
+                      :format-arguments (list seq-header)))))
     (skip-sequence-record ()
       :report "Skip this sequence."
       ;; Restart skips on to the next header
-      (let ((line (find-line stream #'char-fasta-header-p)))
+      (let ((line (find-line stream #'fasta-header-p)))
         (unless (eql :eof line)
           (push-line stream line)))
       (values nil t))))
@@ -118,7 +117,8 @@ becomes full of chunks of sequence tokens.")
        do (write-line
            (nadjust-case
             (coerce-sequence seq 'string
-                             :start i :end (min len (+ i *fasta-line-width*)))
+                             :start i
+                             :end (min len (+ i *fasta-line-width*)))
             token-case) stream))))
 
 (defmethod write-fasta-sequence ((alist list) stream &key token-case)
@@ -171,7 +171,8 @@ cases where the identity, description, or both are empty strings."
                         "")))
     (values identity description)))
 
-(defun char-fasta-header-p (str)
+(declaim (inline fasta-header-p))
+(defun fasta-header-p (str)
   "Returns T if STR is a Fasta header (starts with the character
 '>'), or NIL otherwise."
   (starts-with-char-p str #\>))

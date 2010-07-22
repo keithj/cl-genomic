@@ -49,42 +49,55 @@
   (let ((seq-header (find-line stream #'content-string-p)))
     (cond ((eql :eof seq-header)
            nil)
-          ((char-fastq-header-p seq-header)
+          ((fastq-header-p seq-header)
            (push-line stream seq-header)
            t)
           (t
            (push-line stream seq-header)
            (error 'malformed-record-error
-                  :record seq-header
-                  :text "the stream does not contain Fastq data")))))
+                  :format-control "the stream contains non-Fastq data ~s"
+                  :format-arguments (list seq-header))))))
 
 (defmethod read-fastq-sequence ((stream character-line-input-stream)
                                 (alphabet symbol)
                                 (parser bio-sequence-parser))
-  (restart-case
-      (let ((seq-header (find-line stream #'content-string-p)))
-        (cond ((eql :eof seq-header)
-               (values nil nil))
-              ((char-fastq-header-p seq-header)
-               (multiple-value-bind (residues quality-header quality)
-                   (parse-fastq-record stream #'char-fastq-quality-header-p)
-                 (declare (ignore quality-header quality))
-                 (begin-object parser)
-                 (object-alphabet parser alphabet)
-                 (object-identity parser (string-left-trim '(#\@) seq-header))
-                 (object-residues parser residues)
-                 (values (end-object parser) t)))
-              (t
+  (flet ((parse-residues (id s)
+           (let ((residues (stream-read-line s))
+                 (quality-header (stream-read-line s))
+                 (quality (stream-read-line s)))
+             (unless (and (stringp residues)
+                          (stringp quality-header)
+                          (stringp quality)
+                          (fastq-quality-header-p quality-header))
                (error 'malformed-record-error
-                      :text (format nil
-                                    "~s is not recognised as as Fastq header"
-                                    seq-header)))))
-    (skip-bio-sequence ()
-      :report "Skip this sequence."
-      ;; Restart skips on to the next header
-      (let ((line (find-line stream #'char-fastq-header-p)))
-        (push-line stream line))
-      (values nil t))))
+                      :record (pairlis '(:identity :residues :quality)
+                                       (list id residues quality))
+                      :format-control "invalid Fastq record ~s"
+                      :format-arguments (list id)))
+             residues)))
+    (restart-case
+        (let ((seq-header (find-line stream #'content-string-p)))
+          (cond ((eql :eof seq-header)
+                 (values nil nil))
+                ((fastq-header-p seq-header)
+                 (let* ((identity (string-left-trim '(#\@) seq-header))
+                        (residues (parse-residues identity stream)))
+                   (begin-object parser)
+                   (object-alphabet parser alphabet)
+                   (object-identity parser identity)
+                   (object-residues parser residues)
+                   (values (end-object parser) t)))
+                (t
+                 (error 'malformed-field-error
+                        :field seq-header
+                        :format-control "~s is not recognised as as Fastq header"
+                        :format-arguments (list seq-header)))))
+      (skip-bio-sequence ()
+        :report "Skip this sequence."
+        ;; Restart skips on to the next header
+        (let ((line (find-line stream #'fastq-header-p)))
+          (push-line stream line))
+        (values nil t)))))
 
 (defmethod read-fastq-sequence ((stream character-line-input-stream)
                                 (alphabet symbol)
@@ -94,35 +107,35 @@
             (seq-len 0))
         (cond ((eql :eof seq-header)
                (values nil nil))
-              ((char-fastq-header-p seq-header)
+              ((fastq-header-p seq-header)
                (begin-object parser)
                (object-alphabet parser alphabet)
                (object-identity parser (string-left-trim '(#\@) seq-header))
                (loop
                   for line = (stream-read-line stream)
                   while (not (eql :eof line))
-                  until (char-fastq-quality-header-p line) ; discard this line
+                  until (fastq-quality-header-p line) ; discard this line
                   do (progn
                        (object-residues parser line)
                        (incf seq-len (length line))))
                (loop
                   for line = (stream-read-line stream)
                   while (not (eql :eof line))
-                  until (and (char-fastq-header-p line) (= seq-len qual-len))
+                  until (and (fastq-header-p line) (= seq-len qual-len))
                   sum (length line) into qual-len
                   do (object-quality parser line)
                   finally (unless (eql :eof line) ; push back the new header
                             (push-line stream line)))
                (values (end-object parser) t))
               (t
-               (error 'malformed-record-error
-                      :text (format nil
-                                    "~s is not recognised as as Fastq header"
-                                    seq-header)))))
+               (error 'malformed-field-error
+                      :field seq-header
+                      :format-control "~s is not recognised as as Fastq header"
+                      :format-arguments (list seq-header)))))
     (skip-bio-sequence ()
       :report "Skip this sequence."
       ;; Restart skips on to the next header
-      (let ((line (find-line stream #'char-fastq-header-p)))
+      (let ((line (find-line stream #'fastq-header-p)))
         (unless (eql :eof line)
           (push-line stream line)))
       (values nil t))))
@@ -164,23 +177,8 @@ must contain keys and values as created by {defclass raw-sequence-parser} ."
     (write-line "+" stream)
     (write-line (or (assocdr :quality alist) "") stream)))
 
-(defun parse-fastq-record (stream qual-header-validate-fn)
-  "Reads the body of a Fastq record that follows the header from
-STREAM, validates the quality header with the predicate
-QUAL-HEADER-VALIDATE-FN and returns three vector values: the sequence,
-the quality header and the quality."
-  (declare (optimize (speed 3)))
-  (declare (type function qual-header-validate-fn))
-  (let ((residues (stream-read-line stream))
-        (quality-header (stream-read-line stream))
-        (quality (stream-read-line stream)))
-    (unless (and (vectorp residues)
-                 (funcall qual-header-validate-fn quality-header)
-                 (vectorp quality))
-      (error 'malformed-record-error :text "Incomplete Fastq record."))
-    (values residues quality-header quality)))
-
-(defun char-fastq-header-p (str)
+(declaim (inline fastq-header-p))
+(defun fastq-header-p (str)
   "Returns T if STR is a Fastq header (starts with the character '@'),
 or NIL otherwise. This function is sensitive to the well-known design
 fault in the Fastq format, being that in general it is not possible to
@@ -188,7 +186,8 @@ distinguish a record header from a line of quality data where the
 first character is '@'."
   (starts-with-char-p str #\@))
 
-(defun char-fastq-quality-header-p (str)
+(declaim (inline fastq-quality-header-p))
+(defun fastq-quality-header-p (str)
  "Returns T if STR is a Fastq header (starts with the character '@'),
 or NIL otherwise."
   (starts-with-char-p str #\+))

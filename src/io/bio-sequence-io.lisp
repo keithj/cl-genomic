@@ -155,7 +155,7 @@
     (when (zerop (length chunks))
       (error 'malformed-record-error
              :record (parsed-identity-of parser)
-             :text "no sequence residue data provided"))
+             :format-control "no sequence residue data provided"))
     (let ((residues (etypecase (aref chunks 0)
                       (string (concat-strings chunks))
                       ((array (unsigned-byte 8))
@@ -220,29 +220,24 @@
 
 (defmacro with-mapped-dna ((seq &key filespec delete length) &body body)
   (with-gensyms (fsize len)
-    `(let ((,len (cond (,filespec
-                        (let ((,fsize (with-open-file (s ,filespec)
-                                        (file-length s))))
-                          (cond ((null ,length)
-                                 ,fsize)
-                                ((<= ,length ,fsize)
-                                 ,length)
-                                (t
-                                 (error 'invalid-argument-error
-                                        :parameters '(,filespec ,length)
-                                        :arguments (list ,filespec ,length)
-                                        :text "requested length too large")))))
-                       (,length
-                        ,length)
-                       (t
-                        (error 'invalid-argument-error
-                               :parameters '(,filespec ,length)
-                               :arguments (list ,filespec ,length)
-                               :text "no filespec or length were provided")))))
-           (dxn:with-mapped-vector (,seq 'mapped-dna-sequence
-                                         :filespec ,filespec :delete ,delete
-                                         :length ,len)
-             ,@body))))
+    `(progn
+       (check-arguments (or ,filespec ,length) (,filespec ,length)
+                        "either filespec or length must be provided")
+       (let ((,len (if ,filespec
+                       (let ((,fsize (with-open-file (s ,filespec)
+                                       (file-length s))))
+                         (cond (,length
+                                (check-arguments (<= ,length ,fsize)
+                                                 (,filespec ,length)
+                                                 "requested length too large")
+                                ,length)
+                               (t
+                                ,fsize)))
+                     ,length)))
+         (dxn:with-mapped-vector (,seq 'mapped-dna-sequence
+                                       :filespec ,filespec :delete ,delete
+                                       :length ,len)
+           ,@body)))))
 
 (defun skip-malformed-sequence (condition)
   "Restart function that invokes the SKIP-SEQUENCE-RECORD restart to

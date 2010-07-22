@@ -26,8 +26,8 @@
 by IN-FILESPEC in format IN-FORMAT, to OUT-FORMAT, writing the data to
 a new file identified by OUT-FILESPEC. Returns the number of records
 converted."
-  (with-seq-input (seqi in-filespec in-format :parser (make-instance
-                                                       'raw-sequence-parser))
+  (with-seq-input (seqi in-filespec in-format
+                        :parser (make-instance 'raw-sequence-parser))
     (with-seq-output (seqo out-filespec out-format)
       (loop
          for seq = (next seqi)
