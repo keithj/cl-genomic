@@ -138,21 +138,6 @@ becomes full of chunks of sequence tokens.")
                           :if-exists :supersede)
     (write-fasta-sequence obj stream :token-case token-case)))
 
-(defun write-fasta-alist (alist stream)
-  "Writes sequence data ALIST to STREAM in Fasta format. ALIST must
-contain keys and values as created by {defclass raw-sequence-parser} ."
-  (declare (optimize (speed 3) (safety 1)))
-  (let* ((*print-pretty* nil)
-         (residues (or (assocdr :residues alist) ""))
-         (len (length (the simple-string residues))))
-    (write-char #\> stream)
-    (write-line (or (assocdr :identity alist) "") stream)
-    (loop
-       for i from 0 below len by *fasta-line-width*
-       do (write-line residues stream
-                      :start i
-                      :end (min len (+ i *fasta-line-width*))))))
-
 (defun parse-fasta-header (str)
   "Performs a basic parse of a Fasta header string STR by removing the
 leading '>' character and splitting the line on the first space(s)

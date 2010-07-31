@@ -158,16 +158,6 @@
   (with-open-file (stream filespec :direction :output)
     (write-fastq-sequence obj stream :token-case token-case)))
 
-(defun write-fastq-alist (alist stream)
-  "Writes sequence data ALIST to STREAM in Fastq format. ALIST
-must contain keys and values as created by {defclass raw-sequence-parser} ."
-  (let ((*print-pretty* nil))
-    (write-char #\@ stream)
-    (write-line (or (assocdr :identity alist) "") stream)
-    (write-line (or (assocdr :residues alist) "") stream)
-    (write-line "+" stream)
-    (write-line (or (assocdr :quality alist) "") stream)))
-
 (declaim (inline fastq-header-p))
 (defun fastq-header-p (str)
   "Returns T if STR is a Fastq header (starts with the character '@'),
