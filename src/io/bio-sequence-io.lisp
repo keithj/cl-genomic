@@ -147,58 +147,62 @@
 
 ;;; CLOS instance constructors
 (defmethod make-bio-sequence ((parser simple-sequence-parser))
-  (let ((constructor (ecase (parsed-alphabet-of parser)
-                       (:dna #'make-dna)
-                       (:rna #'make-rna)
-                       (:aa #'make-aa)))
-        (chunks (parsed-residues-of parser)))
-    (when (zerop (length chunks))
-      (error 'malformed-record-error
-             :record (parsed-identity-of parser)
-             :format-control "no sequence residue data provided"))
-    (let ((residues (etypecase (aref chunks 0)
-                      (string (concat-strings chunks))
-                      ((array (unsigned-byte 8))
-                       (concat-into-sb-string chunks)))))
-      (funcall constructor residues
-               :identity (parsed-identity-of parser)
-               :description (parsed-description-of parser)))))
+   (with-accessors ((identity parsed-identity-of)
+                    (description parsed-description-of)
+                    (alphabet parsed-alphabet-of)
+                    (chunks parsed-residues-of))
+       parser
+     (check-record (plusp (length chunks)) identity
+                   "no sequence residue data provided")
+     (let ((constructor (ecase alphabet
+                          (:dna #'make-dna)
+                          (:rna #'make-rna)
+                          (:aa #'make-aa)))
+           (residues (with-output-to-string (s)
+                       (loop
+                          for chunk across chunks
+                          do (write-string chunk s)))))
+      (funcall constructor residues :identity identity
+               :description description))))
 
 (defmethod make-bio-sequence ((parser virtual-sequence-parser))
-  (let ((class (ecase (parsed-alphabet-of parser)
-                 (:dna 'virtual-dna-sequence)
-                 (:rna 'virtual-rna-sequence)
-                 (:aa 'virtual-aa-sequence))))
-    (make-instance class
-                   :identity (parsed-identity-of parser)
-                   :description (parsed-description-of parser)
-                   :length (parsed-length-of parser))))
+  (with-accessors ((identity parsed-identity-of)
+                   (description parsed-description-of)
+                   (alphabet parsed-alphabet-of)
+                   (length parsed-length-of))
+      parser
+    (let ((class (ecase alphabet
+                   (:dna 'virtual-dna-sequence)
+                   (:rna 'virtual-rna-sequence)
+                   (:aa 'virtual-aa-sequence))))
+      (make-instance class :identity identity :description description
+                     :length length))))
 
 (defmethod make-bio-sequence ((parser quality-sequence-parser))
-  (let ((constructor (ecase (parsed-alphabet-of parser)
-                       (:dna 'make-dna-quality)))
-        (residue-chunks (parsed-residues-of parser))
-        (quality-chunks (parsed-quality-of parser)))
-    (check-record (plusp (length residue-chunks)) (parsed-identity-of parser)
+  (with-accessors ((identity parsed-identity-of)
+                   (description parsed-description-of)
+                   (alphabet parsed-alphabet-of)
+                   (residue-chunks parsed-residues-of)
+                   (quality-chunks parsed-quality-of)
+                   (metric parsed-metric-of))
+      parser
+    (check-record (plusp (length residue-chunks)) identity
                   "no sequence residue data provided")
-    (check-record (plusp (length quality-chunks)) (parsed-identity-of parser)
+    (check-record (plusp (length quality-chunks)) identity
                   "no quality data provided")
     (flet ((maybe-concat (chunks)
              (if (= 1 (length chunks))
                  (aref chunks 0)
-               (etypecase (aref chunks 0)
-                 (string (concat-strings chunks))
-                 ((array (unsigned-byte 8))
-                  (with-output-to-string (s)
-                    (loop
-                       for chunk across chunks
-                       do (write-string chunk s))))))))
-      (let ((residues (maybe-concat residue-chunks))
+                 (with-output-to-string (s)
+                   (loop
+                      for chunk across chunks
+                      do (write-string chunk s))))))
+      (let ((constructor (ecase alphabet
+                           (:dna 'make-dna-quality)))
+            (residues (maybe-concat residue-chunks))
             (quality (maybe-concat quality-chunks)))
-        (funcall constructor residues quality
-                 :identity (parsed-identity-of parser)
-                 :description (parsed-description-of parser)
-                 :metric (parsed-metric-of parser))))))
+        (funcall constructor residues quality :identity identity
+                 :description description :metric metric)))))
 
 (defmethod make-seq-input ((stream stream) format &rest args)
   (let ((s (make-line-input-stream stream)))
@@ -251,8 +255,8 @@ N of them into a series of new files using function WRITER. The new
 files names are denoted by filespecs read from function
 PATHNAME-GEN. Returns when INPUT-GEN is exhausted."
   (loop
-     as num-written = (write-n-raw-sequences input-gen writer n
-                                             (funcall pathname-gen))
+     for num-written = (write-n-raw-sequences
+                        input-gen writer n (funcall pathname-gen))
      until (zerop num-written)))
 
 (defun write-n-raw-sequences (input-gen writer n pathname)
@@ -273,7 +277,7 @@ for example, {defun write-raw-fasta} and {defun write-raw-fastq} ."
                           :external-format :ascii)
            (loop
               for count of-type fixnum from 0 below n
-              as raw = (next input-gen)
+              for raw = (next input-gen)
               while raw
               do (funcall writer raw out)
               finally (return count)))))
