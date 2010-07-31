@@ -59,14 +59,12 @@ becomes full of chunks of sequence tokens.")
   (let ((seq-header (find-line stream #'content-string-p)))
     (cond ((eql :eof seq-header)
            nil)
-          ((fasta-header-p seq-header)
-           (push-line stream seq-header)
-           t)
           (t
-           (push-line stream seq-header)
-           (error 'malformed-record-error
-                  :format-control "the stream contains non-Fasta data ~s"
-                  :format-arguments (list seq-header))))))
+           (unwind-protect
+                (check-record (fasta-header-p seq-header) nil
+                              "the stream contains non-Fasta data ~s"
+                              seq-header)
+             (push-line stream seq-header))))))
 
 (defmethod read-fasta-sequence ((stream character-line-input-stream)
                                 (alphabet symbol)
@@ -75,7 +73,10 @@ becomes full of chunks of sequence tokens.")
       (let ((seq-header (find-line stream #'content-string-p)))
         (cond ((eql :eof seq-header)
                (values nil nil))
-              ((fasta-header-p seq-header)
+              (t
+               (check-field (fasta-header-p seq-header) nil seq-header
+                            "~s is not recognised as as Fasta header"
+                            seq-header)
                (multiple-value-bind (identity description)
                    (parse-fasta-header seq-header)
                  (begin-object parser)
@@ -89,12 +90,7 @@ becomes full of chunks of sequence tokens.")
                     do (object-residues parser line)
                     finally (unless (eql :eof line) ; push back the new header
                               (push-line stream line)))
-                 (values (end-object parser) t)))
-              (t
-               (error 'malformed-field-error
-                      :field seq-header
-                      :format-control "~s is not recognised as as Fasta header"
-                      :format-arguments (list seq-header)))))
+                 (values (end-object parser) t)))))
     (skip-sequence-record ()
       :report "Skip this sequence."
       ;; Restart skips on to the next header
