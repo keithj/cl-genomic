@@ -46,4 +46,4 @@
 #+:sbcl(defparameter *gc-verbose* nil)
 
 (load-powerloom)
-(pli:initialize)
+(funcall (intern "INITIALIZE" 'pli))
