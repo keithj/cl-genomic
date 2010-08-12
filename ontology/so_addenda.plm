@@ -25,6 +25,12 @@
 from the SO 2.4.3 release.")
 (assert (transitive member_of))
 
+(defrelation integral_part_of ((?x THING) (?y THING))
+  :=> (and (part_of ?x ?y)
+           (has_part ?y ?x))
+  :documentation "SO member_of is_a part_of. This relation is missing
+from the SO 2.4.3 release.")
+
 (defrule "subset-of && part_of"
     (<= (part_of ?x ?z)
         (and (subset-of ?x ?y)
