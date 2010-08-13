@@ -21,7 +21,12 @@
 
 (in-syntax *powerloom-readtable*)
 
-(defparameter *instances* (make-hash-table :test 'equal))
+(defparameter *bio-sequence-instances* (make-hash-table :test 'equal)
+  "Maps bio-sequence identity strings to their corresponding
+bio-sequence object and PowerLoom logic object.")
+(defparameter *logic-instances* (make-hash-table)
+  "Maps PowerLoom logic objects representing bio-sequence instances to
+their corresponding bio-sequence object.")
 
 (defun traverse (tree fn) ; move this to utilities
   (cond ((null tree)
@@ -77,6 +82,16 @@ parenthood in the GFF3 sense; meaning the CHILD is a part_of the
 PARENT."
   (ask `(part_of ,child ,parent)))
 
+;; In asserting that a sequence object is-a thing:
+;;
+;; - We need to assert the object in the context of a PL module
+;; - We can't change the identity-of the object
+;;
+;; Therefore we map the identity-of the object to the asserted instance
+;;
+;; (identity-of object) => (list object logic-object)
+;; logic-object => object
+
 (defgeneric assert-instance (bio-sequence term)
   (:documentation "Asserts that BIO-SEQUENCE is an instance of TERM."))
 
@@ -84,40 +99,52 @@ PARENT."
   (:documentation "Retracts the assrtion that BIO-SEQUENCE is an
 instance of TERM."))
 
-(defmethod assert-instance :after ((seq bs:bio-sequence) concept)
-  (with-accessors ((identity bs:identity-of))
-      seq
-    (when (ask `(,concept ,(stella-symbol identity)))
-      (setf (gethash identity *instances*) seq))))
-
 (defmethod assert-instance ((seq bs:bio-sequence) (concept string))
   (evaluate `(assert (,(stella-symbol concept)
                        ,(stella-symbol (bs:identity-of seq))))))
 
 (defmethod assert-instance ((seq bs:bio-sequence) concept)
-  (evaluate `(assert (,concept ,(stella-symbol (bs:identity-of seq))))))
+  (let ((identity (stella-symbol (bs:identity-of seq))))
+    (evaluate `(assert (,concept ,identity)))))
 
-;; (defmethod retract-instance :after ((identity string) concept)
-;;   (when (ask `(,concept ,(stella-symbol identity)))
-;;     (remhash identity *instances*)))
-
-(defmethod retract-instance :after ((seq bs:bio-sequence) concept)
+(defmethod assert-instance :after ((seq bs:bio-sequence) concept)
   (with-accessors ((identity bs:identity-of))
       seq
-    (when (ask `(,concept ,(stella-symbol identity)))
-      (remhash identity *instances*))))
+    (let* ((name (stella-symbol identity))
+           (instance (retrieve `(1 ?i (= ,name ?i)) :realise :nconc)))
+      (when instance
+        (setf (gethash identity *bio-sequence-instances*) (cons seq instance)
+              (gethash (car instance) *logic-instances*) seq)))))
 
-;; (defmethod retract-instance ((identity string) concept)
-;;   (evaluate `(retract (,concept ,(stella-symbol identity)))))
+(defmethod retract-instance ((identity string) concept)
+  (evaluate `(retract (,concept ,(stella-symbol identity)))))
 
 (defmethod retract-instance ((seq bs:bio-sequence) concept)
   (evaluate `(retract (,concept ,(stella-symbol (bs:identity-of seq))))))
 
+(defmethod retract-instance :after ((identity string) concept)
+  (remhash identity *bio-sequence-instances*)
+  (remhash (logic-instance identity) *logic-instances*))
+
+(defmethod retract-instance :after ((seq bs:bio-sequence) concept)
+  (with-accessors ((identity bs:identity-of))
+      seq
+    (remhash identity *bio-sequence-instances*)
+    (remhash (logic-instance identity) *logic-instances*)))
+
 (defun find-instance (identity)
-  (gethash identity *instances*))
+  (first (gethash identity *bio-sequence-instances*)))
+
+(defun logic-instance (identity)
+  (second (gethash identity *bio-sequence-instances*))) 
 
 (defmethod instancep ((seq bs:bio-sequence))
   (find-instance (bs:identity-of seq)))
+
+(defmethod instance-module ((seq bs:bio-sequence))
+  (let ((instance (find-instance (bs:identity-of seq))))
+    (when instance
+      (get-home-module (second instance)))))
 
 (defmethod instance-terms ((seq bs:bio-sequence))
   (when (instancep seq)
@@ -126,7 +153,12 @@ instance of TERM."))
       (get-types (first (retrieve `(1 (= ,(stella-symbol identity) ?x))
                                   :realise :nconc)) :realise :nconc))))
 
+;; (assert-instance (bs:make-dna "atggcatcgcatgc" :identity "foo") "SO:0000673")
+;; (assert-instance (bs:make-dna "atggc" :identity "bar") "SO:0000147")
 
+;; (let ((logic-transcript (logic-instance "foo"))
+;;       (logic-exon (logic-instance "bar")))
+;;   (evaluate `(assert (part_of ,logic-exon ,logic-transcript))))
 
 ;; At REPL:
 ;; (load-ontology "/home/keith/dev/lisp/cl-genomic.git/ontology/so_2_4_3.plm")
