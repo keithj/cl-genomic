@@ -134,8 +134,7 @@ becomes full of chunks of sequence tokens.")
                         :end (min len (+ i *fasta-line-width*)))))))
 
 (defmethod write-fasta-sequence (obj filespec &key token-case)
-  (with-open-file (stream filespec :direction :output
-                          :if-exists :supersede)
+  (with-open-file (stream filespec :direction :output :if-exists :supersede)
     (write-fasta-sequence obj stream :token-case token-case)))
 
 (defun parse-fasta-header (str)
