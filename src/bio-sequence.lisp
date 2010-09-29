@@ -23,10 +23,6 @@
   "Parameterized type for encoded sequence residues."
   `(simple-array (unsigned-byte ,n) (*)))
 
-(deftype quality-score ()
-  "Type for sequence base quality score."
-  '(signed-byte 8))
-
 (defparameter *sequence-print-limit* 160
   "Maximum length of sequence to be pretty-printed.")
 
@@ -119,7 +115,7 @@ Returns:
   (if (or (null residues) (zerop (length residues)))
       (apply #'make-instance 'virtual-dna-sequence initargs)
       (make-encoded-vector-seq 'encoded-dna-sequence residues
-                               #'encode-dna-4bit '(unsigned-byte 4) initargs)))
+                               #'encode-dna-4bit 'nibble initargs)))
 
 (defun make-rna (residues &rest initargs)
   "Returns a new RNA sequence object.
@@ -140,7 +136,7 @@ Returns:
   (if (or (null residues) (zerop (length residues)))
       (apply #'make-instance 'virtual-rna-sequence initargs)
       (make-encoded-vector-seq 'encoded-rna-sequence residues
-                               #'encode-rna-4bit '(unsigned-byte 4) initargs)))
+                               #'encode-rna-4bit 'nibble initargs)))
 
 (defun make-dna-quality (residues quality &rest initargs
                          &key (metric :sanger) &allow-other-keys)
@@ -169,8 +165,7 @@ Returns:
                    "the residues and quality vectors were not the same length")
   (let ((initargs (remove-key-values '(:metric) initargs)))
     (apply #'make-instance 'dna-quality-sequence
-           :vector (ensure-encoded
-                    residues #'encode-dna-4bit '(unsigned-byte 4))
+           :vector (ensure-encoded residues #'encode-dna-4bit 'nibble)
            :quality (ensure-decoded-quality quality metric)
            :metric metric
            initargs)))
@@ -487,7 +482,7 @@ number of strands, or NIL otherwise."
 
 (defun (setf residue-of) (value seq index)
   "Sets the residue of SEQ at INDEX to VALUE. This is a synonym of
-(SETF ELEMENT-OF)."
+\(SETF ELEMENT-OF\)."
   (setf (element-of seq index) value))
 
 (defmethod num-gaps-of ((seq encoded-vector-sequence) &key (start 0) end)
@@ -619,7 +614,7 @@ number of strands, or NIL otherwise."
       seq
     (let ((end (or end length)))
       (declare (fixnum end))
-      (let ((vector (make-array (- end start) :element-type '(unsigned-byte 4)))
+      (let ((vector (make-array (- end start) :element-type 'nibble))
             (ptr (dxn:mmap-area-ptr area)))
         (loop
            for i of-type vector-index from start below end
@@ -934,7 +929,7 @@ or :ILLUMINA )."
   "Encodes QUALITY, an array of bytes representing base quality
 scores, as a string using function ENCODER."
   (declare (optimize (speed 3)))
-  (declare (type (simple-array quality-score (*)) quality)
+  (declare (type simple-octet-vector quality)
            (type function encoder))
   (map-into (make-string (length quality) :element-type 'base-char)
             encoder quality))
@@ -945,19 +940,27 @@ DECODER."
   (declare (optimize (speed 3)))
   (declare (type simple-string quality)
            (type function decoder))
-  (map-into (make-array (length quality) :element-type 'quality-score)
+  (map-into (make-array (length quality) :element-type 'octet)
             decoder quality))
 
 (defun ensure-encoded (vector encoder element-type)
   "If VECTOR is a string, returns an encoded token vector of element
-type (unsigned-byte 4) of the same length, otherwise returns
-VECTOR. ENCODER is the encoding function used to convert characters to
-\(unsigned-byte 4\)."
-  (if (stringp vector)
-      (when (plusp (length vector))
-        (map-into (make-array (length vector) :element-type element-type)
-                  encoder vector))
-    vector))
+type (unsigned-byte 4) or (unsigned-byte 7) of the same length,
+otherwise returns VECTOR. ENCODER is the encoding function used to
+convert characters to small integers."
+  (declare (optimize (speed 3)))
+  (declare (type function encoder))
+  (typecase vector
+    (simple-string
+     (cond ((subtypep element-type 'nibble)
+            (map-into (make-array (length vector) :element-type 'nibble)
+                      encoder vector))
+           ((subtypep element-type '(unsigned-byte 7))
+            (map-into (make-array (length vector)
+                                  :element-type '(unsigned-byte 7))
+                      encoder vector))))
+    (t
+     vector)))
 
 (defun ensure-decoded-quality (quality metric)
   "If QUALITY is a string, returns a decoded quality vector of

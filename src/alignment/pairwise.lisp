@@ -438,9 +438,9 @@ Returns:
   (declare (optimize (speed 3) (safety 1)))
   (declare (type (encoded-residues 4) vecm vecn)
            (type (simple-array single-float (* *)) score insertx inserty))
-  (let ((alm (make-array 100 :element-type '(unsigned-byte 4)
+  (let ((alm (make-array 100 :element-type 'nibble
                              :adjustable t :fill-pointer 0))
-        (aln (make-array 100 :element-type '(unsigned-byte 4)
+        (aln (make-array 100 :element-type 'nibble
                              :adjustable t :fill-pointer 0)))
     (define-backtrace ((vecm vecn alm aln :gap 0)
                        (score insertx inserty)
