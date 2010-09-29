@@ -85,12 +85,12 @@ Forms to be executed in the context of these bindings."
          (with-slots ((,vector vector))
              ,seq
            (loop
-              for i of-type array-index from ,lower below ,upper
+              for i of-type vector-index from ,lower below ,upper
               do (symbol-macrolet ((,var (%aref-dna-4bit ,vector i)))
                    ,@body))))
         (t
          (loop
-            for i of-type array-index from ,lower below ,upper
+            for i of-type vector-index from ,lower below ,upper
             do (symbol-macrolet ((,var (element-of ,seq i)))
                  ,@body))))
       ,seq)))
@@ -116,10 +116,10 @@ Rest:
 Returns:
 
 - A DNA sequence object."
-  (if (null residues)
+  (if (or (null residues) (zerop (length residues)))
       (apply #'make-instance 'virtual-dna-sequence initargs)
-    (make-encoded-vector-seq 'encoded-dna-sequence residues
-                             #'encode-dna-4bit '(unsigned-byte 4) initargs)))
+      (make-encoded-vector-seq 'encoded-dna-sequence residues
+                               #'encode-dna-4bit '(unsigned-byte 4) initargs)))
 
 (defun make-rna (residues &rest initargs)
   "Returns a new RNA sequence object.
@@ -137,10 +137,10 @@ Rest:
 Returns:
 
 - A RNA sequence object."
-  (if (null residues)
+  (if (or (null residues) (zerop (length residues)))
       (apply #'make-instance 'virtual-rna-sequence initargs)
-    (make-encoded-vector-seq 'encoded-rna-sequence residues
-                             #'encode-rna-4bit '(unsigned-byte 4) initargs)))
+      (make-encoded-vector-seq 'encoded-rna-sequence residues
+                               #'encode-rna-4bit '(unsigned-byte 4) initargs)))
 
 (defun make-dna-quality (residues quality &rest initargs
                          &key (metric :sanger) &allow-other-keys)
@@ -169,7 +169,8 @@ Returns:
                    "the residues and quality vectors were not the same length")
   (let ((initargs (remove-key-values '(:metric) initargs)))
     (apply #'make-instance 'dna-quality-sequence
-           :vector (ensure-encoded residues #'encode-dna-4bit '(unsigned-byte 4))
+           :vector (ensure-encoded
+                    residues #'encode-dna-4bit '(unsigned-byte 4))
            :quality (ensure-decoded-quality quality metric)
            :metric metric
            initargs)))
@@ -621,8 +622,8 @@ number of strands, or NIL otherwise."
       (let ((vector (make-array (- end start) :element-type '(unsigned-byte 4)))
             (ptr (dxn:mmap-area-ptr area)))
         (loop
-           for i of-type array-index from start below end
-           for j of-type array-index = 0 then (1+ j)
+           for i of-type vector-index from start below end
+           for j of-type vector-index = 0 then (1+ j)
            do (setf (aref vector j)
                     (encode-dna-4bit (code-char (cffi:mem-aref ptr :char i)))))
         (make-instance 'encoded-dna-sequence :vector vector)))))
@@ -782,7 +783,7 @@ number of strands, or NIL otherwise."
 
 (defmethod search-sequence :around ((seq1 token-sequence)
                                     (seq2 token-sequence)
-                                    &key from-end start1 start2 end1 end2)
+                                    &key from-end start1 end1 start2 end2)
   (declare (ignore from-end start1 start2 end1 end2))
   (if (subtypep (class-of (alphabet-of seq1))
                 (class-of (alphabet-of seq2)))
@@ -791,11 +792,9 @@ number of strands, or NIL otherwise."
 
 (defmethod search-sequence ((seq1 encoded-vector-sequence)
                             (seq2 encoded-vector-sequence)
-                            &key from-end start1 start2 end1 end2)
+                            &key from-end (start1 0) end1 (start2 0) end2)
   (let ((vector1 (slot-value seq1 'vector))
-        (vector2 (slot-value seq2 'vector))
-        (start1 (or start1 0))
-        (start2 (or start2 0)))
+        (vector2 (slot-value seq2 'vector)))
     (search vector1 vector2 :from-end from-end :start1 start1 :start2 start2
             :end1 end1 :end2 end2 :test #'eq)))
 
@@ -827,7 +826,7 @@ number of strands, or NIL otherwise."
     (let ((frequencies (make-array (size-of alphabet)
                                    :element-type 'fixnum :initial-element 0)))
       (loop
-         for i of-type array-index from 0 below length
+         for i of-type vector-index from 0 below length
          do (let ((token (encode-dna-4bit
                           (code-char
                            (cffi:mem-aref (dxn:mmap-area-ptr area)
@@ -1081,7 +1080,7 @@ index END."
          for initiator = (and initiator-codon (< j +codon-size+))
          for codon = () then (if (codon-start-p j)
                                  ()
-                               codon)
+                                 codon)
          do (push (aref vector i) codon)
          when (codon-end-p j)
          collect (translate-codon (nreverse codon) code
