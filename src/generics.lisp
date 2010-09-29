@@ -177,10 +177,21 @@ the reference sequence."))
   (:documentation "Subsequence creates a bio-sequence that is a copy
 of the subsequence of BIO-SEQUENCE bounded by START and END."))
 
-(defgeneric search-sequence (bio-sequence-1 bio-sequence-2
+(defgeneric search-sequence (bio-sequence1 bio-sequence2
                              &key from-end start1 start2 end1 end2)
-  (:documentation "Searches bio-sequence-2 for a subsequence that
-matches bio-sequence-1."))
+  (:documentation "Searches BIO-SEQUENCE2 for a subsequence that
+matches BIO-SEQUENCE1."))
+
+(defgeneric hamming-distance (bio-sequence1 bio-sequence2
+                              &key start1 start2 end1 end2)
+  (:documentation "Returns the Hamming distance between BIO-SEQUENCE1
+and BIO-SEQUENCE2. Sequences or sequence ranges must be the same
+length."))
+
+(defgeneric hamming-search (bio-sequence1 bio-sequence2
+                            &key start1 start2 end1 end2 max-distance)
+  (:documentation "Searches BIO-SEQUENCE2 for a subsequence that
+is up to MAX-DISTANCE Hamming distance from BIO-SEQUENCE1."))
 
 (defgeneric cumulative-lengths (ranges)
   (:documentation "Returns a list of integers which are the

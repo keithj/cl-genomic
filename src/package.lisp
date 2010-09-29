@@ -214,6 +214,8 @@
    #:aligned-length-of
    #:align-local
    #:align-local-ksh
+   #:hamming-distance
+   #:hamming-search
 
    #:make-seq-input
    #:make-seq-output

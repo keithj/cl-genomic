@@ -25,7 +25,7 @@
 
 (defsystem cl-genomic
     :name "Common Lisp Genomics"
-    :version "0.6.2"
+    :version "0.7.0"
     :author "Keith James"
     :licence "GPL v3"
     :depends-on ((:version :cffi "0.10.3")
@@ -113,6 +113,7 @@
                           :pathname "src/alignment/"
                           :components
                           ((:file "bio-sequence-alignment")
+                           (:file "hamming")
                            (:file "matrices")
                            (:file "pairwise"
                             :depends-on ("matrices"
