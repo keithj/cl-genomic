@@ -1002,17 +1002,31 @@ index END."
                                       (:upper char))))))
 
 (defun %to-string-encoded (seq decoder start end token-case)
-  (with-accessors ((length length-of))
-      seq
-    (let ((end (or end length)))
-      (let ((str (make-string (- end start) :element-type 'base-char)))
-        (when (< 0 (length str))
-          (copy-array (slot-value seq 'vector) start (1- end)
-                      str 0 decoder))
-        (ecase token-case
-          ((nil) str)
-          (:lower str)
-          (:upper (nstring-upcase str)))))))
+  (macrolet ((to-string (vec-type vec &key (speed 1))
+               `(prog ()
+                   (declare (optimize (speed ,speed)))
+                   (declare (type ,vec-type ,vec)
+                            (type function decoder))
+                   (let ((end (or end (length ,vec))))
+                     (declare (type vector-index start end))
+                     (let* ((len (- end start))
+                            (str (make-string len :element-type 'base-char)))
+                       (when (plusp len)
+                         (copy-array ,vec start (1- end)
+                                     str 0 decoder))
+                       (return (ecase token-case
+                                 ((nil) str)
+                                 (:lower str)
+                                 (:upper (nstring-upcase str)))))))))
+    (with-slots (vector)
+        seq
+      (typecase vector
+        ((encoded-residues 4)
+         (to-string (encoded-residues 4) vector :speed 3))
+        ((encoded-residues 7)
+         (to-string (encoded-residues 7) vector :speed 3))
+        (t
+         (to-string vector vector))))))
 
 (declaim (inline %check-token-range))
 (defun %check-token-range (length start &optional end)
