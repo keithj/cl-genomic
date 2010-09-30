@@ -59,7 +59,7 @@
 (defclass identity-mixin ()
   ((identity :initform nil
              :initarg :identity
-             :reader identity-of
+             :accessor identity-of
              :documentation "A temporary, locally unique identifier."))
   (:documentation "A mixin which allows assignment of a temporary
 local identifier to an object. An identity of NIL signifies an
@@ -76,7 +76,7 @@ description to an object."))
 (defclass quality-mixin ()
   ((metric :initform (error "A metric is required.")
            :initarg :metric
-           :reader metric-of
+           :accessor metric-of
            :documentation "A description of the quality metric
 measured by the quality values. For example, p-value, Phred score or
 Illumina score. This should be changed to a controlled vocabulary or

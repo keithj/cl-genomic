@@ -426,6 +426,10 @@ number of strands, or NIL otherwise."
       seq
     (= 2 num-strands)))
 
+(defmethod (setf metric-of) :before (metric (obj quality-mixin))
+  (check-arguments (member metric '(:sanger :solexa :illumina)) (metric)
+                   "must be one of :sanger :solexa or :illumina"))
+
 (defmethod (setf num-strands-of) :before (value (seq na-sequence))
   (check-arguments (< 0 value 3) (value)
                    "nucleic acid sequences may have 1 or 2 strands"))

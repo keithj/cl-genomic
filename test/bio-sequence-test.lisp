@@ -381,6 +381,13 @@
           '(#\a #\c #\g #\t)
           '(2 3 3 1))))
 
+;;; Previously we did not allow mutation of the identity
+(addtest (bio-sequence-tests) bio-sequence/4
+  (let ((seq (make-dna "aacccgggt")))
+    (ensure (anonymousp seq))
+    (setf (identity-of seq) "test")
+    (ensure (string= "test" (identity-of seq)))))
+
 (addtest (bio-sequence-tests) na-sequence/1
   (let ((ss-seq (make-dna "aaaaaaaaaa" :num-strands 1))
         (ds-seq (make-dna "aaaaaaaaaa" :num-strands 2)))
@@ -501,6 +508,29 @@
       (residue-of seq -1))
     (ensure-error 'invalid-argument-error
       (residue-of seq 10))))
+
+;;; Mutation of sequence quality was allowed, so it make sense to
+;;; allow mutation of the quality metric, otherwise the former is not
+;;; very useful
+
+(addtest (bio-sequence-tests) dna-quality-sequence/1
+  (let* ((residues "agaatattctgaccccagttactttcaaga")
+         (quality "<<<<<<<<<<<<<<<<<<<<<735513;3<")
+         (seq (make-dna-quality residues quality :metric :sanger)))
+    (ensure (eql :sanger (metric-of seq)))
+    (setf (quality-of seq) (encode-quality
+                            (decode-quality quality #'decode-phred-quality)
+                            #'encode-illumina-quality)
+          (metric-of seq) :illumina)
+    (ensure (eql :illumina (metric-of seq)))))
+
+(addtest (bio-sequence-tests) dna-quality-sequence/2
+  (let* ((residues "agaatattctgaccccagttactttcaaga")
+         (quality "<<<<<<<<<<<<<<<<<<<<<735513;3<")
+         (seq (make-dna-quality residues quality :metric :sanger)))
+    (ensure (eql :sanger (metric-of seq)))
+    (ensure-error
+      (setf (metric-of seq) :invalid-metric))))
 
 (addtest (bio-sequence-tests) dna-quality-sequence/3
   (let* ((residues "agaatattctgaccccagttactttcaaga")
