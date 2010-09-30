@@ -290,8 +290,8 @@ bioinformatics use cases. See also {defun overlapsp} ."))
       interval
     (if reference
         (call-next-method)
-      (make-string (- upper lower) :element-type 'base-char
-                   :initial-element +gap-char+))))
+        (make-string (- upper lower) :element-type 'base-char
+                     :initial-element +gap-char+))))
 
 (defmethod coerce-sequence ((interval interval) (type (eql 'string))
                             &key (start 0) (end (length-of interval)))
@@ -322,7 +322,8 @@ bioinformatics use cases. See also {defun overlapsp} ."))
         interval
       (cond ((or (eql *unknown-strand* strand) (eql *forward-strand* strand))
              (subsequence reference (+ lower start) (+ lower end)))
-            ((and (eql *reverse-strand* strand) (= 2 (num-strands-of reference)))
+            ((and (eql *reverse-strand* strand)
+                  (= 2 (num-strands-of reference)))
              (nreverse-complement
               (subsequence reference (+ lower start) (+ lower end))))
             (t
@@ -476,9 +477,9 @@ ensure that the interval lies within the bounds of the reference."
   (if reference
       (let ((length (length-of reference)))
         (check-arguments (<= 0 lower upper length) (lower upper)
-                         "must satisfy (<= 0 lower upper ~d)" length)))
-  (check-arguments (<= lower upper) (lower upper)
-                   "must satisty (<= lower upper"))
+                         "must satisfy (<= 0 lower upper ~d)" length))
+      (check-arguments (<= lower upper) (lower upper)
+                       "must satisty (<= lower upper")))
 
 (declaim (inline %check-interval-strands))
 (defun %check-interval-strands (strand num-strands reference)
@@ -486,14 +487,14 @@ ensure that the interval lies within the bounds of the reference."
 double-stranded interval is not applied to a single-stranded reference
 and a reverse-strand interval is not applied to a single-stranded
 reference."
-  (if reference
-      (let ((num-ref-strands (num-strands-of reference)))
-        (check-arguments (not (> num-strands num-ref-strands))
-                         (num-strands reference)
-                         (txt "a double-stranded interval may not be"
-                              "applied to a single-stranded sequence"))
-        (check-arguments (not (and (= 1 num-ref-strands)
-                                   (eql *reverse-strand* strand)))
-                         (num-strands reference)
-                         (txt "a reverse-strand interval may not be"
-                                   "applied to a single-stranded sequence")))))
+  (when reference
+    (let ((num-ref-strands (num-strands-of reference)))
+      (check-arguments (not (> num-strands num-ref-strands))
+                       (num-strands reference)
+                       (txt "a double-stranded interval may not be"
+                            "applied to a single-stranded sequence"))
+      (check-arguments (not (and (= 1 num-ref-strands)
+                                 (eql *reverse-strand* strand)))
+                       (num-strands reference)
+                       (txt "a reverse-strand interval may not be"
+                            "applied to a single-stranded sequence")))))
