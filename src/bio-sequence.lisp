@@ -188,8 +188,8 @@ Returns:
 - An AA sequence object."
   (if (null residues)
       (apply #'make-instance 'virtual-aa-sequence initargs)
-    (make-encoded-vector-seq 'encoded-aa-sequence residues #'encode-aa-7bit
-                             '(unsigned-byte 7) initargs)))
+      (make-encoded-vector-seq 'encoded-aa-sequence residues #'encode-aa-7bit
+                               '(unsigned-byte 7) initargs)))
 
 (defun make-encoded-vector-seq (class residues encoder element-type initargs)
   (check-arguments (vectorp residues) (residues) "expected a vector")
@@ -240,10 +240,10 @@ the same alphabet, or NIL otherwise."
 number of strands, or NIL otherwise."
   (if (null seqs)
       nil
-    (loop
-       with num-strands = (num-strands-of (first seqs))
-       for seq in (rest seqs)
-       always (= num-strands (num-strands-of seq)))))
+      (loop
+         with num-strands = (num-strands-of (first seqs))
+         for seq in (rest seqs)
+         always (= num-strands (num-strands-of seq)))))
 
 (defun concat-sequence (&rest seqs)
   (check-arguments (apply #'same-biotype-p seqs) (seqs)
@@ -302,8 +302,8 @@ number of strands, or NIL otherwise."
 (defmethod print-object ((seq mapped-dna-sequence) stream)
   (if (dxn:in-memory-p seq)
       (%print-seq seq stream)
-    (print-unreadable-object (seq stream :type t :identity t)
-      (format stream "length ~d UNMAPPED" (length-of seq)))))
+      (print-unreadable-object (seq stream :type t :identity t)
+        (format stream "length ~d UNMAPPED" (length-of seq)))))
 
 ;;; Implementation methods
 (defmethod anonymousp ((seq identity-mixin))
@@ -326,31 +326,23 @@ number of strands, or NIL otherwise."
   (decode-strand strand))
 
 (defmethod forward-strand-p ((strand sequence-strand))
-  (if (eql *forward-strand* strand)
-      t
-    nil))
+  (eql *forward-strand* strand))
 
 (defmethod reverse-strand-p ((strand sequence-strand))
-  (if (eql *reverse-strand* strand)
-      t
-    nil))
+  (eql *reverse-strand* strand))
 
 (defmethod unknown-strand-p ((strand sequence-strand))
-  (if (eql *unknown-strand* strand)
-      t
-    nil))
+  (eql *unknown-strand* strand))
 
 (defmethod strand= ((strand1 sequence-strand) (strand2 sequence-strand))
-  (cond ((or (eql *unknown-strand* strand1) (eql *unknown-strand* strand2))
-         nil)
-        (t
-         (eql strand1 strand2))))
+  (and (not (eql *unknown-strand* strand1))
+       (not (eql *unknown-strand* strand2))
+       (eql strand1 strand2)))
 
 (defmethod strand-equal ((strand1 sequence-strand) (strand2 sequence-strand))
-  (cond ((or (eql *unknown-strand* strand1) (eql *unknown-strand* strand2))
-         t)
-        (t
-         (eql strand1 strand2))))
+  (or (eql *unknown-strand* strand1)
+      (eql *unknown-strand* strand2)
+      (eql strand1 strand2)))
 
 (defmethod complement-strand ((strand sequence-strand))
   (cond ((eql *forward-strand* strand)
@@ -581,10 +573,10 @@ number of strands, or NIL otherwise."
                for i from start below end
                do (write-char (code-char (cffi:mem-aref ptr :char i)) stream)
                finally (return str)))
-        (error 'invalid-operation-error
-               :format-control (txt "cannot coerce ~a to a"
-                                    "string when unmapped from memory")
-               :format-arguments (list seq))))))
+          (error 'invalid-operation-error
+                 :format-control (txt "cannot coerce ~a to a"
+                                      "string when unmapped from memory")
+                 :format-arguments (list seq))))))
 
 (defmethod subsequence ((seq encoded-vector-sequence) (start fixnum)
                         &optional end)
@@ -787,7 +779,7 @@ number of strands, or NIL otherwise."
   (if (subtypep (class-of (alphabet-of seq1))
                 (class-of (alphabet-of seq2)))
       (call-next-method)
-    nil))
+      nil))
 
 (defmethod search-sequence ((seq1 encoded-vector-sequence)
                             (seq2 encoded-vector-sequence)
@@ -904,7 +896,7 @@ number of strands, or NIL otherwise."
     (let ((len (length-of seq)))
       (if (<= len *sequence-print-limit*)
           (format stream "~s" (coerce-sequence seq 'string))
-        (format stream "length ~d" len)))))
+          (format stream "length ~d" len)))))
 
 (defun %print-quality-seq (seq stream)
   "Helper function for printing bio-sequence objects."
@@ -916,7 +908,7 @@ number of strands, or NIL otherwise."
         (if (<= length *sequence-print-limit*)
             (format stream "~s ~a quality \"~a\"" (coerce-sequence seq 'string)
                     metric (quality-string quality metric))
-          (format stream "~a quality, length ~d" metric length))))))
+            (format stream "~a quality, length ~d" metric length))))))
 
 (defun quality-string (quality metric)
   "Wrapper for ENCODE-QUALITY that encodes QUALITY, an array of bytes
@@ -977,7 +969,7 @@ be used when decoding."
                        (:solexa #'decode-solexa-quality)
                        (:illumina #'decode-illumina-quality))))
         (decode-quality quality decoder))
-    quality))
+      quality))
 
 (defun token-subsequence (tokens start end)
   "Returns a subsequence of TOKENS between indices START and END."
@@ -1103,4 +1095,4 @@ index END."
     (let ((end (or end length)))
       (if (and (zerop start) (= length end))
           seq
-        (subsequence seq start end)))))
+          (subsequence seq start end)))))
