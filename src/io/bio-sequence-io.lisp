@@ -205,14 +205,15 @@
                  :description description :metric metric)))))
 
 (defmethod make-seq-input ((stream stream) format &rest args)
-  (let ((s (make-line-input-stream stream)))
+  (let ((s (make-line-stream stream)))
     (apply #'make-seq-input s format args)))
 
 (defmacro with-seq-input ((seqi filespec format &rest args) &body body)
   (with-gensyms (stream)
-    `(with-ascii-li-stream (,stream ,filespec)
-      (let ((,seqi (make-seq-input ,stream ,format ,@args)))
-        ,@body))))
+    `(with-open-file (,stream ,filespec
+                              :element-type 'base-char :external-format :ascii)
+       (let ((,seqi (make-seq-input ,stream ,format ,@args)))
+         ,@body))))
 
 (defmacro with-seq-output ((seqo filespec format &rest args) &body body)
   (with-gensyms (stream)

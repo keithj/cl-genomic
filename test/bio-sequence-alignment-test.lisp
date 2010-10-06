@@ -106,10 +106,9 @@
          (gap-open -5.0f0)
          (gap-extend -1.0f0)
          ;; 1000 Fasta sequences
-         (seqs (with-ascii-li-stream (stream (merge-pathnames
-                                              "data/alignment_test_db.fasta"))
+         (seqs (with-seq-input (seqi (merge-pathnames
+                                      "data/alignment_test_db.fasta") :fasta)
                  (loop
-                    with seqi = (make-seq-input stream :fasta)
                     while (has-more-p seqi)
                     collect (next seqi))))
          ;; Scores from aligning with EMBOSS 5.0 water

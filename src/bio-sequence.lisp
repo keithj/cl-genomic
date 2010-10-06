@@ -568,6 +568,8 @@ number of strands, or NIL otherwise."
                             :adjustable t :fill-pointer 0))
            (ptr (dxn:mmap-area-ptr area)))
       (if (dxn:mmap-area-live-p area) ; Only access residues if mapped
+          ;; FIXME -- with-output-to-string is 3x slower than simple
+          ;; octet conversion
           (with-output-to-string (stream str :element-type 'base-char)
             (loop
                for i from start below end
@@ -1012,8 +1014,8 @@ index END."
                      (let* ((len (- end start))
                             (str (make-string len :element-type 'base-char)))
                        (when (plusp len)
-                         (copy-array ,vec start (1- end)
-                                     str 0 decoder))
+                         (copy-vector ,vec start end
+                                      str 0 decoder))
                        (return (ecase token-case
                                  ((nil) str)
                                  (:lower str)

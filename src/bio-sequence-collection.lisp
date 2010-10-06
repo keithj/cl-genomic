@@ -88,14 +88,12 @@
                                  :external-format :ascii)
         (let ((parser (make-instance 'indexing-sequence-parser
                                      :stream data-stream)))
-          (with-ascii-li-stream (input-stream filespec)
-            (let ((seqi (make-seq-input input-stream format
-                                        :alphabet alphabet
-                                        :parser parser)))
-              (loop
-                 for seq = (next seqi)
-                 while (has-more-p seqi)
-                 finally (prin1 (index-of parser) index-stream)))))))))
+          (with-seq-input (seqi input-stream format :alphabet alphabet
+                                :parser parser)
+            (loop
+               for seq = (next seqi)
+               while (has-more-p seqi)
+               finally (prin1 (index-of parser) index-stream))))))))
 
 (defun index-sequence-file2 (filespec format alphabet)
   (let ((index (make-instance 'tc:tc-hdb))
@@ -112,26 +110,24 @@
                                       :external-format :ascii)
            (let ((parser (make-instance 'indexing-sequence-parser
                                         :stream data-stream)))
-             (with-ascii-li-stream (input-stream filespec)
-               (let ((seqi (make-seq-input input-stream format
-                                           :alphabet alphabet
-                                           :parser parser)))
-                 (loop
-                    for seq = (next seqi)
-                    for i = 0 then (1+ i)
-                    with time = (get-universal-time)
-                    with total-time = 0
-                    while (has-more-p seqi)
-                    do (progn
-                         (tc:dbm-put index (identity-of seq) (princ-to-string i))
-                         (when (zerop (rem i 100000))
-                           (let* ((now (get-universal-time))
-                                  (interval (- now time)))
-                             (setf time now)
-                             (incf total-time interval)
-                             (format t "~d records in ~d seconds, total ~d seconds~%"
-                                     i interval total-time)))))))))
-      (tc:dbm-close index))))
+             (with-seq-input (seqi input-stream format :alphabet alphabet
+                                   :parser parser)
+               (loop
+                  for seq = (next seqi)
+                  for i = 0 then (1+ i)
+                  with time = (get-universal-time)
+                  with total-time = 0
+                  while (has-more-p seqi)
+                  do (progn
+                       (tc:dbm-put index (identity-of seq) (princ-to-string i))
+                       (when (zerop (rem i 100000))
+                         (let* ((now (get-universal-time))
+                                (interval (- now time)))
+                           (setf time now)
+                           (incf total-time interval)
+                           (format t "~d records in ~d seconds, total ~d seconds~%"
+                                   i interval total-time)))))))))
+    (tc:dbm-close index)))
 
 (defun index-sequence-file3 (filespec format alphabet)
   (let ((index (merge-pathnames (make-pathname :type "index") filespec))
@@ -146,19 +142,17 @@
                                     :external-format :ascii)
         (let ((parser (make-instance 'indexing-sequence-parser
                                      :stream data-stream)))
-          (with-ascii-li-stream (input-stream filespec)
-            (let ((seqi (make-seq-input input-stream format
-                                        :alphabet alphabet
-                                        :parser parser)))
-              (loop
-                 for rlen = (- (offset-of parser) (parsed-length-of parser))
-                 for seq = (next seqi)
-                 while (has-more-p seqi)
-                 do (prog1
-                        (princ (identity-of seq) index-stream)
-                      (write-char #\Tab index-stream)
-                      (princ rlen index-stream)
-                      (terpri index-stream))))))))))
+          (with-seq-input (seqi input-stream format :alphabet alphabet
+                                :parser parser)
+            (loop
+               for rlen = (- (offset-of parser) (parsed-length-of parser))
+               for seq = (next seqi)
+               while (has-more-p seqi)
+               do (prog1
+                      (princ (identity-of seq) index-stream)
+                    (write-char #\Tab index-stream)
+                    (princ rlen index-stream)
+                    (terpri index-stream)))))))))
 
 
 (defun lookup-sequence (identity filespec)
@@ -177,5 +171,3 @@
                                               (third entry))
            collect (code-char (dxn:mref vector i)) into bases
            finally (return (values identity bases)))))))
-
-
