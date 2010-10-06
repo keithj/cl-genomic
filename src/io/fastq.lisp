@@ -19,7 +19,7 @@
 
 (in-package :bio-sequence)
 
-(defmethod make-seq-input ((stream character-line-input-stream)
+(defmethod make-seq-input ((stream line-input-stream)
                            (format (eql :fastq))
                            &key (alphabet :dna) (metric :sanger) parser)
   (let ((parser (or parser
@@ -29,20 +29,17 @@
         (next (read-fastq-sequence stream alphabet parser)))))
 
 (defmethod make-seq-output ((stream stream) (format (eql :fastq))
-                            &key token-case)
+                            &key token-case metric)
   (lambda (obj)
-    (write-fastq-sequence obj stream :token-case token-case)))
+    (write-fastq-sequence obj stream :token-case token-case :metric metric)))
 
 (defmethod split-sequence-file (filespec (format (eql :fastq))
                                 pathname-gen &key (chunk-size 1))
-  (let ((file-pathname (pathname filespec)))
-    (with-ascii-li-stream (stream file-pathname)
-      (split-from-generator
-       (make-seq-input stream :fastq
-                       :parser (make-instance 'raw-sequence-parser))
-       #'write-fastq-sequence chunk-size pathname-gen))))
+  (with-seq-input (seqi (pathname filespec) :fastq
+                        :parser (make-instance 'raw-sequence-parser))
+    (split-from-generator seqi #'write-fastq-sequence chunk-size pathname-gen)))
 
-(defmethod has-sequence-p ((stream character-line-input-stream)
+(defmethod has-sequence-p ((stream line-input-stream)
                            (format (eql :fastq)) &key alphabet)
   (declare (ignore alphabet))
   (let ((seq-header (find-line stream #'content-string-p)))
@@ -55,7 +52,7 @@
                               seq-header)
              (push-line stream seq-header))))))
 
-(defmethod read-fastq-sequence ((stream character-line-input-stream)
+(defmethod read-fastq-sequence ((stream line-input-stream)
                                 (alphabet symbol)
                                 (parser bio-sequence-parser))
   (flet ((parse-residues (id s)
@@ -92,7 +89,7 @@
           (push-line stream line))
         (values nil t)))))
 
-(defmethod read-fastq-sequence ((stream character-line-input-stream)
+(defmethod read-fastq-sequence ((stream line-input-stream)
                                 (alphabet symbol)
                                 (parser quality-parser-mixin))
   (restart-case
@@ -132,15 +129,16 @@
       (values nil t))))
 
 (defmethod write-fastq-sequence ((seq dna-quality-sequence) (stream stream)
-                                 &key token-case)
-  (let ((*print-pretty* nil))
+                                 &key token-case metric)
+  (let ((*print-pretty* nil)
+        (metric (or metric (metric-of seq))))
     (write-char #\@ stream)
     (write-line (if (anonymousp seq)
                     ""
-                  (identity-of seq)) stream)
+                    (identity-of seq)) stream)
     (write-line (nadjust-case (coerce-sequence seq 'string) token-case) stream)
     (write-line "+" stream)
-    (write-line (quality-string (quality-of seq) (metric-of seq)) stream)))
+    (write-line (quality-string (quality-of seq) metric) stream)))
 
 (defmethod write-fastq-sequence ((alist list) (stream stream) &key token-case)
   (let ((*print-pretty* nil)

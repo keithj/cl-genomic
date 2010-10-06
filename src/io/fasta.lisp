@@ -27,7 +27,7 @@
   "The number of elements by which the token cache is extended when it
 becomes full of chunks of sequence tokens.")
 
-(defmethod make-seq-input ((stream character-line-input-stream)
+(defmethod make-seq-input ((stream line-input-stream)
                            (format (eql :fasta))
                            &key (alphabet :dna) parser virtual)
   (let ((parser (or parser
@@ -46,14 +46,11 @@ becomes full of chunks of sequence tokens.")
 
 (defmethod split-sequence-file (filespec (format (eql :fasta))
                                 pathname-gen &key (chunk-size 1))
-  (let ((file-pathname (pathname filespec)))
-    (with-ascii-li-stream (stream file-pathname)
-      (split-from-generator
-       (make-seq-input stream :fasta
-                       :parser (make-instance 'raw-sequence-parser))
-       #'write-fasta-sequence chunk-size pathname-gen))))
+  (with-seq-input (seqi (pathname filespec) :fasta
+                        :parser (make-instance 'raw-sequence-parser))
+    (split-from-generator seqi #'write-fasta-sequence chunk-size pathname-gen)))
 
-(defmethod has-sequence-p ((stream character-line-input-stream)
+(defmethod has-sequence-p ((stream line-input-stream)
                            (format (eql :fasta)) &key alphabet)
   (declare (ignore alphabet))
   (let ((seq-header (find-line stream #'content-string-p)))
@@ -66,7 +63,7 @@ becomes full of chunks of sequence tokens.")
                               seq-header)
              (push-line stream seq-header))))))
 
-(defmethod read-fasta-sequence ((stream character-line-input-stream)
+(defmethod read-fasta-sequence ((stream line-input-stream)
                                 (alphabet symbol)
                                 (parser bio-sequence-parser))
   (restart-case

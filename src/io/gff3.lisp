@@ -96,15 +96,6 @@
                   :record line
                   :text "the stream does not contain GFF3 data")))))
 
-(defun test-gff3 ()
-  (with-ascii-li-stream (s "/home/keith/dev/lisp/cl-genomic.git/data/gff3_spec.gff3")
-    (let* ((parser (make-instance 'gff3-parser))
-           (gff3 (make-seq-input s :gff3 :parser parser)))
-      (loop
-         for record = (next gff3)
-         while record
-         collect record))))
-
 (defmethod gff3-directive ((parser gff3-parser) (directive list))
   ;; FIXME -- push to parser
   directive)
