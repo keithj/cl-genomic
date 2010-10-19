@@ -66,8 +66,9 @@ Returns:
 - A filespec  (pathname designator) for the PowerLoom file."
   (with-open-file (plm plm-filespec :direction :output
                        :if-exists if-exists)
-    (with-li-stream (obo obo-filespec)
-      (let* ((*default-base-concept* base-concept)
+    (with-open-file (stream obo-filespec)
+      (let* ((obo (make-line-stream stream))
+             (*default-base-concept* base-concept)
              (parser (read-obo-stream obo (make-instance
                                            'obo-powerloom-parser)))
              (tmpl (txt ";;; Created ~d-~2,'0d-~2,'0d ~d:~2,'0d:~2,'0d"
