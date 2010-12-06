@@ -344,11 +344,12 @@ uppercase for amino acids."))
   (:documentation "Reads a single Fastq format record of ALPHABET from
 STREAM using PARSER."))
 
-(defgeneric write-fastq-sequence (bio-sequence stream &key token-case)
-  (:documentation "Writes BIO-SEQUENCE to STREAM in Fastq format. The
-TOKEN-CASE keyword is used to override the default character case for
-printing sequence residues, which is lowercase for DNA or RNA and
-uppercase for amino acids."))
+(defgeneric write-fastq-sequence (bio-sequence stream &key token-case metric)
+  (:documentation "Writes BIO-SEQUENCE to STREAM in Fastq format using
+quality METRIC (e.g. :solexa , :sanger, :illumina ). The TOKEN-CASE
+keyword is used to override the default character case for printing
+sequence residues, which is lowercase for DNA or RNA and uppercase for
+amino acids."))
 
 (defgeneric split-sequence-file (filespec format pathname-gen
                                  &key chunk-size)
