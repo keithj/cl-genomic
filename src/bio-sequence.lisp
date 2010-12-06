@@ -1061,9 +1061,13 @@ index END."
   (setf (aref vector i) (encode-rna-4bit value)))
 
 (defun codon-start-p (base-pos)
+  (declare (optimize (speed 3)))
+  (declare (type vector-index base-pos))
   (zerop (mod base-pos +codon-size+)))
 
 (defun codon-end-p (base-pos)
+  (declare (optimize (speed 3)))
+  (declare (type vector-index base-pos))
   (= 2 (mod base-pos +codon-size+)))
 
 (defun translate-virtual (seq code start end initiator-codon)
@@ -1084,26 +1088,31 @@ index END."
                                     :initial-contents aa))))))
 
 (defun translate-encoded-4bit (seq code start end initiator-codon)
+  (declare (optimize (speed 3)))
   (with-slots (vector)
       seq
+    (declare (type (encoded-residues 4) vector))
     (let* ((na-len (length vector))
-           (end (or end na-len))
-           (aa-len (floor (- end start) +codon-size+)))
-      (loop
-         for i from start below end
-         for j = 0 then (1+ j)
-         for initiator = (and initiator-codon (< j +codon-size+))
-         for codon = () then (if (codon-start-p j)
-                                 ()
-                                 codon)
-         do (push (aref vector i) codon)
-         when (codon-end-p j)
-         collect (translate-codon (nreverse codon) code
-                                  :initiator initiator) into aa
-         finally (return (make-aa
-                          (make-array aa-len
-                                      :element-type '(unsigned-byte 7)
-                                      :initial-contents aa)))))))
+           (end (or end na-len)))
+      (declare (type vector-index start end))
+      (let* ((aa-len (floor (- end start) +codon-size+))
+             (aa (make-array aa-len :element-type '(unsigned-byte 7))))
+        (loop
+           with k = 0
+           for i of-type vector-index from start below end
+           for j of-type vector-index = 0 then (1+ j)
+           for initiator = (and initiator-codon (< j +codon-size+))
+           for codon = () then (if (codon-start-p j)
+                                   ()
+                                   codon)
+           do (progn
+                (push (aref vector i) codon)
+                (when (codon-end-p j)
+                  (setf (aref aa k)
+                        (translate-codon (nreverse codon) code
+                                         :initiator initiator)
+                        k (1+ k)))))
+        (make-aa aa)))))
 
 (defun maybe-subsequence (seq start &optional end)
   (with-accessors ((length length-of))

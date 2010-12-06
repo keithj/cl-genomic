@@ -140,7 +140,9 @@
     (write-line "+" stream)
     (write-line (quality-string (quality-of seq) metric) stream)))
 
-(defmethod write-fastq-sequence ((alist list) (stream stream) &key token-case)
+(defmethod write-fastq-sequence ((alist list) (stream stream)
+                                 &key token-case metric)
+  (declare (ignore metric))
   (let ((*print-pretty* nil)
         (residues (let ((str (or (assocdr :residues alist) "")))
                     (nadjust-case str token-case)))
@@ -152,9 +154,9 @@
     (write-line "+" stream)
     (write-line quality stream)))
 
-(defmethod write-fastq-sequence (obj filespec &key token-case)
+(defmethod write-fastq-sequence (obj filespec &key token-case metric)
   (with-open-file (stream filespec :direction :output)
-    (write-fastq-sequence obj stream :token-case token-case)))
+    (write-fastq-sequence obj stream :token-case token-case :metric metric)))
 
 (declaim (inline fastq-header-p))
 (defun fastq-header-p (str)

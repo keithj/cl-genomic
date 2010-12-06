@@ -91,7 +91,7 @@ Key:
               (let ((encoded-aa
                      (delete-duplicates
                       (mapcar #'trn (enum-encoded-codon codon)))))
-                (cond ((= 1 (length encoded-aa))
+                (cond ((= 1 (list-length encoded-aa))
                        (cond ((and initiator (gethash codon ,start-table))
                               (encode-aa-7bit #\M))
                              (initiator
@@ -100,7 +100,7 @@ Key:
                                      :genetic-code code))
                              (t
                               (first encoded-aa))))
-                      ((= 2 (length encoded-aa))
+                      ((= 2 (list-length encoded-aa))
                        (cond ((null (set-difference ',glu-gln encoded-aa))
                               (encode-aa-7bit #\B)) ; D and N -> B
                              ((null (set-difference ',asp-asn encoded-aa))

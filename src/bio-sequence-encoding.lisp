@@ -505,6 +505,8 @@ amino-acid character AA."
 (defun enum-encoded-base (encoded-base)
   "Returns a list of all the unambiguous encoded bases represented by
 ENCODED-BASE."
+  (declare (optimize (speed 3)))
+  (declare (type octet encoded-base))
   (loop
      for b from 0 below (integer-length encoded-base)
      when (logbitp b encoded-base)
@@ -515,11 +517,11 @@ ENCODED-BASE."
 ENCODED-CODON."
   (if (null (rest encoded-codon))
       (mapcar #'list (enum-encoded-base (first encoded-codon)))
-    (loop
-       for x in (enum-encoded-base (first encoded-codon))
-       nconc (mapcar (lambda (y)
-                       (cons x y))
-                     (enum-encoded-codon (rest encoded-codon))))))
+      (loop
+         for x in (enum-encoded-base (first encoded-codon))
+         nconc (mapcar (lambda (y)
+                         (cons x y))
+                       (enum-encoded-codon (rest encoded-codon))))))
 
 (defun enum-encoded-aa (encoded-aa)
    "Returns a list of all the unambiguous encoded amino-acids
