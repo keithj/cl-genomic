@@ -173,6 +173,20 @@
     (ensure-condition malformed-record-error
       (next seqi))))
 
+(addtest (bio-sequence-io-tests) fastq/4
+  ;; Identifier is an empty string. This is technically legal because
+  ;; the Fastq paper explicitly states that there is no length limit
+  ;; on the title field. The authors probably meant no upper length
+  ;; limit only.
+  (with-seq-input (seqi (merge-pathnames "data/no_identifier.fastq")
+                        :fastq :alphabet :dna :metric :sanger)
+    (ensure (string= "" (identity-of (next seqi))))
+    (let ((seq2 (next seqi)))
+      (ensure (string= "" (identity-of seq2)))
+      ;; Currently we ignore the description for Fastq
+      ;; (ensure (string= "a description" (description-of seq2)))
+      (ensure (null (description-of seq2))))))
+
 (addtest (bio-sequence-io-tests) write-fastq-sequence/1
   (let ((seq (make-dna-quality "acgtn" "<<<<<"
                                :identity "foo"

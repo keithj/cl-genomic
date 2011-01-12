@@ -75,7 +75,7 @@
                  (check-field (fastq-header-p seq-header) nil seq-header
                               "~s is not recognised as as Fastq header"
                               seq-header)
-                 (let* ((identity (string-left-trim '(#\@) seq-header))
+                 (let* ((identity (parse-fastq-header seq-header))
                         (residues (parse-residues identity stream)))
                    (begin-object parser)
                    (object-alphabet parser alphabet)
@@ -103,7 +103,7 @@
                             seq-header)
                (begin-object parser)
                (object-alphabet parser alphabet)
-               (object-identity parser (string-left-trim '(#\@) seq-header))
+               (object-identity parser (parse-fastq-header seq-header))
                (loop
                   for line = (stream-read-line stream)
                   while (not (eql :eof line))
@@ -172,3 +172,20 @@ first character is '@'."
  "Returns T if STR is a Fastq header (starts with the character '@'),
 or NIL otherwise."
   (starts-with-char-p str #\+))
+
+(defun parse-fastq-header (str &key description)
+  "Performs a basic parse of a Fastq header string STR by removing the
+leading '@' character and splitting the line on the first space(s)
+into identity and description. This function supports pathological
+cases where the identity is an empty string. This is technically legal
+because the Fastq paper explicitly states that there is no length
+limit on the title field. The authors probably meant no upper length
+limit only."
+  (let* ((split-index (position #\Space str :test #'char=)))
+    (cond ((and split-index description)
+           (values (string-left-trim '(#\@) (subseq str 0 split-index))
+                   (string-left-trim '(#\Space) (subseq str split-index))))
+          (split-index
+           (values (string-left-trim '(#\@) (subseq str 0 split-index)) nil))
+          (t
+           (values (string-left-trim '(#\@) str) nil)))))
