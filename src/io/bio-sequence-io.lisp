@@ -63,9 +63,9 @@
     (let ((vec (assocdr :residues raw))) 
       (if vec
           (vector-push-extend residues vec)
-        (setf raw (acons :residues
-                         (make-array 1 :adjustable t :fill-pointer t
-                                     :initial-element residues) raw))))))
+          (setf raw (acons :residues
+                           (make-array 1 :adjustable t :fill-pointer t
+                                       :initial-element residues) raw))))))
 
 (defmethod object-quality ((parser raw-sequence-parser) (quality string))
   (with-accessors ((raw parsed-raw-of))

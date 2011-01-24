@@ -94,7 +94,9 @@
                                 (parser quality-parser-mixin))
   (restart-case
       (let ((seq-header (find-line stream #'content-string-p))
-            (seq-len 0))
+            (seq-len 0)
+            (qual-len 0))
+        (declare (type fixnum seq-len qual-len))
         (cond ((eql :eof seq-header)
                (values nil nil))
               (t
@@ -108,15 +110,14 @@
                   for line = (stream-read-line stream)
                   while (not (eql :eof line))
                   until (fastq-quality-header-p line) ; discard this line
-                  do (progn
-                       (object-residues parser line)
-                       (incf seq-len (length line))))
+                  do (object-residues parser line)
+                    (incf seq-len (length line)))
                (loop
                   for line = (stream-read-line stream)
                   while (not (eql :eof line))
                   until (and (fastq-header-p line) (= seq-len qual-len))
-                  sum (length line) into qual-len
                   do (object-quality parser line)
+                    (incf qual-len (length line))
                   finally (unless (eql :eof line) ; push back the new header
                             (push-line stream line)))
                (values (end-object parser) t))))
@@ -173,6 +174,7 @@ first character is '@'."
 or NIL otherwise."
   (starts-with-char-p str #\+))
 
+(declaim (inline parse-fastq-header))
 (defun parse-fastq-header (str &key description)
   "Performs a basic parse of a Fastq header string STR by removing the
 leading '@' character and splitting the line on the first space(s)
@@ -181,11 +183,18 @@ cases where the identity is an empty string. This is technically legal
 because the Fastq paper explicitly states that there is no length
 limit on the title field. The authors probably meant no upper length
 limit only."
-  (let* ((split-index (position #\Space str :test #'char=)))
-    (cond ((and split-index description)
-           (values (string-left-trim '(#\@) (subseq str 0 split-index))
-                   (string-left-trim '(#\Space) (subseq str split-index))))
-          (split-index
-           (values (string-left-trim '(#\@) (subseq str 0 split-index)) nil))
-          (t
-           (values (string-left-trim '(#\@) str) nil)))))
+  (declare (optimize (speed 3)))
+  (declare (type simple-string str))
+  (flet ((split (s i &optional j)
+           (declare (type simple-string s))
+           (the simple-string (subseq s i j))))
+    (let ((split-index (position #\Space str :test #'char=))
+          id desc)
+      (cond ((and split-index description)
+             (setf id (split str 0 split-index)
+                   desc (string-left-trim '(#\Space) (split str split-index))))
+            (split-index
+             (setf id (split str 0 split-index)))
+            (t
+             (setf id str)))
+      (values (string-left-trim '(#\@) id) desc))))
