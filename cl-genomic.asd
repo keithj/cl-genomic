@@ -25,7 +25,7 @@
 
 (defsystem cl-genomic
     :name "Common Lisp Genomics"
-    :version "0.8.1"
+    :version "0.8.2"
     :author "Keith James"
     :licence "GPL v3"
     :depends-on ((:version :cffi "0.10.3")
