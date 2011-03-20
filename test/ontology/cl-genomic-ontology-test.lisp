@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (C) 2010 Keith James. All rights reserved.
+;;; Copyright (c) 2010-2011 Keith James. All rights reserved.
 ;;;
 ;;; This file is part of cl-genomic.
 ;;;
@@ -78,4 +78,3 @@
     ;; biological_region, region and sequence_feature (via is_a)
     (dolist (term (list @SO:0005855 @SO:0001411 @SO:0000001 @SO:0000110))
       (ensure (term-parent-p term @SO:0000704)))))
-

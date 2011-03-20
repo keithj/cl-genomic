@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (C) 2008-2010 Keith James. All rights reserved.
+;;; Copyright (c) 2008-2011 Keith James. All rights reserved.
 ;;;
 ;;; This file is part of cl-genomic.
 ;;;
@@ -87,7 +87,8 @@
   (let ((line (find-line stream #'content-string-p)))
     (cond ((eql :eof line)
            nil)
-          ((or (gff3-directive-p line) (gff3-comment-p line) (gff3-record-p line))
+          ((or (gff3-directive-p line) (gff3-comment-p line)
+               (gff3-record-p line))
            (push-line stream line)
            t)
           (t

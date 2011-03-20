@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (C) 2008-2010 Keith James. All rights reserved.
+;;; Copyright (c) 2008-2011 Keith James. All rights reserved.
 ;;;
 ;;; This file is part of cl-genomic.
 ;;;
