@@ -560,8 +560,8 @@ probability."
   (let ((denom (- 1 p)))
     (if (zerop denom)
         -20
-      (round (* -10 (/ (log (/ p denom))
-                       (log 10)))))))
+        (round (* -10 (/ (log (/ p denom))
+                         (log 10)))))))
 
 (defun encode-solexa-quality (q)
   "Returns a character encoding of the Solexa quality score Q."

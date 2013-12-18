@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (c) 2010-2011 Keith James. All rights reserved.
+;;; Copyright (c) 2010-2013 Keith James. All rights reserved.
 ;;;
 ;;; This file is part of cl-genomic.
 ;;;
@@ -24,7 +24,8 @@
 (in-package :deoxybyte-systems)
 
 (defsystem cl-genomic-ontology
-  :depends-on (:cl-genomic)
+  :depends-on ((:version :deoxybyte-systems "1.0.0")
+               :cl-genomic)
   :in-order-to ((test-op (load-op :cl-genomic-ontology
                                   :cl-genomic-ontology-test)))
   :components ((:module :powerloom
@@ -34,7 +35,7 @@
                         ((:file "powerloom-loader")
                          (:file "package")
                          (:file "powerloom")
-                         (:file "sequence-ontology-kb")))
-               (:lift-test-config :lift-tests
-                                  :pathname "cl-genomic-ontology-test"
-                                  :target-system :cl-genomic-ontology)))
+                         (:file "sequence-ontology-kb"))))
+  :perform (test-op :after (op c)
+                    (maybe-run-lift-tests :cl-genomic-ontology
+                                          "cl-genomic-ontology-test.config")))

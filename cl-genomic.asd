@@ -1,5 +1,5 @@
 ;;;
-;;; Copyright (c) 2007-2011 Keith James. All rights reserved.
+;;; Copyright (c) 2007-2013 Keith James. All rights reserved.
 ;;;
 ;;; This file is part of cl-genomic.
 ;;;
@@ -25,10 +25,11 @@
 
 (defsystem cl-genomic
     :name "Common Lisp Genomics"
-    :version "0.8.2"
+    :version "0.9.0"
     :author "Keith James"
     :licence "GPL v3"
-    :depends-on ((:version :cffi "0.10.3")
+    :depends-on ((:version :deoxybyte-systems "1.0.0")
+                 (:version :cffi "0.10.3")
                  (:version :cl-ppcre "2.0.0")
                  (:version :cl-base64 "3.1") ; Actually 3.3.1, but
                                              ; cl-base64's ASDF file
@@ -39,7 +40,8 @@
                  (:version :deoxybyte-unix "0.6.5")
                  (:version :deoxybyte-utilities "0.9.0")
                  :puri)
-    :in-order-to ((test-op (load-op :cl-genomic :cl-genomic-test)))
+    :in-order-to ((test-op (load-op :cl-genomic :cl-genomic-test))
+                  (doc-op (load-op :cl-genomic :cldoc)))
     :components ((:module :core
                           :pathname "src/"
                           :components
@@ -118,10 +120,9 @@
                            (:file "pairwise"
                             :depends-on ("matrices"
                                          "bio-sequence-alignment")))
-                          :depends-on (:core))
-                 (:lift-test-config :lift-tests
-                                    :pathname "cl-genomic-test"
-                                    :target-system :cl-genomic)
-                 (:cldoc-config :cldoc-documentation
-                                :pathname "doc/html/"
-                                :target-system :cl-genomic)))
+                          :depends-on (:core)))
+    :perform (test-op :after (op c)
+                      (maybe-run-lift-tests :cl-genomic
+                                            "cl-genomic-test.config"))
+    :perform (doc-op :after (op c)
+                     (maybe-build-cldoc-docs :cl-genomic "doc/html")))
